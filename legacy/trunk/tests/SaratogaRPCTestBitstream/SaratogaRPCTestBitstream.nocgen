@@ -1,0 +1,140 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                                    //
+//ANTIKERNEL v0.1                                                                                                     //
+//                                                                                                                    //
+//Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                         //
+//All rights reserved.                                                                                                //
+//                                                                                                                    //
+//Redistribution and use in source and binary forms, with or without modification, are permitted provided that the    //
+//following conditions are met:                                                                                       //
+//                                                                                                                    //
+//   * Redistributions of source code must retain the above copyright notice, this list of conditions, and the        //
+//     following disclaimer.                                                                                          //
+//                                                                                                                    //
+//   * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the      //
+//     following disclaimer in the documentation and/or other materials provided with the distribution.               //
+//                                                                                                                    //
+//   * Neither the name of the author nor the names of any contributors may be used to endorse or promote products    //
+//     derived from this software without specific prior written permission.                                          //
+//                                                                                                                    //
+//THIS SOFTWARE IS PROVIDED BY THE AUTHORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED  //
+//TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL//
+//THE AUTHORS BE HELD LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES       //
+//(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR      //
+//BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT//
+//(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE      //
+//POSSIBILITY OF SUCH DAMAGE.                                                                                         //
+//                                                                                                                    //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// @file
+// @author Andrew D. Zonenberg
+// @brief NocGen script for generating SaratogaRPCTestBitstream
+
+// Top-level module name
+top SaratogaRPCTestBitstream
+
+//Signing key for the name server
+namesrvr_key "SampleNameServerPassword"
+
+//Floorplan constraints for stuff that ISE insists on placing in a stupid spot
+floorplan CpuLA					SLICE_X46Y175:SLICE_X99Y199
+floorplan CpuLA					RAMB36_X3Y35:RAMB36_X5Y39
+floorplan CpuSniff				SLICE_X62Y160:SLICE_X77Y199
+floorplan debug_controller   	SLICE_X36Y135:SLICE_X41Y174
+floorplan dma_router_8000_8 	SLICE_X42Y130:SLICE_X61Y158
+floorplan dma_router_8000_8 	RAMB36_X2Y25:RAMB36_X2Y33
+floorplan dma_router_8000_10	SLICE_X42Y158:SLICE_X61Y174
+floorplan dma_router_8000_12	SLICE_X36Y175:SLICE_X61Y199
+floorplan dma_router_8000_14	SLICE_X24Y200:SLICE_X51Y249
+floorplan dma_router_8004_14	SLICE_X62Y175:SLICE_X83Y199
+floorplan rpc_router_8000_8 	SLICE_X42Y130:SLICE_X61Y158
+floorplan rpc_router_8000_10	SLICE_X42Y158:SLICE_X61Y174
+floorplan rpc_router_8000_12	SLICE_X36Y175:SLICE_X61Y199
+floorplan rpc_router_8000_14	SLICE_X24Y200:SLICE_X51Y249
+floorplan rpc_router_8004_14	SLICE_X62Y175:SLICE_X83Y199
+floorplan namesrvr				SLICE_X0Y200:SLICE_X23Y224
+floorplan namesrvr				RAMB36_X0Y40:RAMB36_X0Y44
+floorplan sysinfo 				SLICE_X0Y225:SLICE_X23Y249
+
+// Clock generation
+pll MainClockPLL
+	diffclk clkin
+	outclk clk_noc freq 200M duty 0.5 phase 0.0
+endpll
+
+// RAM for packet buffers and stack
+node ram BlockRamAllocator
+
+	floorplan CLOCKREGION_X0Y4:CLOCKREGION_X0Y4
+
+	rpc
+	dma
+endnode
+
+// ROM for firmware
+node rom BlockROM
+	parameter init_file			"$outdir/mips-elf/SaratogaRPCTestFirmware.hex"
+	parameter wordsize			2048
+	
+	floorplan CLOCKREGION_X0Y4:CLOCKREGION_X0Y4
+	
+	rpc
+	dma
+endnode
+
+//More extensive CPU floorplanning (TODO: nocgen should allow placing these inside the node declaration)
+floorplan cpu/bootloader								SLICE_X50Y109:SLICE_X77Y129
+floorplan cpu/bootloader/hmac							SLICE_X50Y100:SLICE_X77Y108
+floorplan cpu/bootloader/hmac_hasher					SLICE_X50Y100:SLICE_X77Y108
+floorplan cpu/bootloader								RAMB36_X3Y20:RAMB36_X4Y24
+floorplan cpu/dma_txvr									SLICE_X62Y125:SLICE_X77Y136				
+floorplan cpu/dma_arbiter								SLICE_X62Y125:SLICE_X77Y136
+floorplan cpu/exec_unit0/divider						SLICE_X100Y100:SLICE_X109Y174
+floorplan cpu/l1_cache/dside_bank						RAMB36_X4Y27:RAMB36_X5Y34
+floorplan cpu/l1_cache/dside_bank/memblocks[0].tag_mem	RAMB36_X5Y30:RAMB36_X5Y32
+floorplan cpu/l1_cache/dside_bank/memblocks[1].tag_mem	RAMB36_X5Y30:RAMB36_X5Y32
+floorplan cpu/l1_cache/iside_bank						RAMB36_X3Y20:RAMB36_X4Y26
+floorplan cpu/l1_cache/iside_bank/memblocks[0].tag_mem	RAMB36_X5Y20:RAMB36_X5Y22
+floorplan cpu/l1_cache/iside_bank/memblocks[1].tag_mem	RAMB36_X5Y20:RAMB36_X5Y22
+floorplan cpu/mdu_hi_mem								SLICE_X88Y135:SLICE_X99Y174
+floorplan cpu/mdu_lo_mem								SLICE_X88Y135:SLICE_X99Y174
+floorplan cpu/regfile									RAMB36_X5Y20:RAMB36_X6Y26
+floorplan cpu/rpc_subsystem								SLICE_X62Y125:SLICE_X77Y174
+floorplan cpu/rpc_subsystem								RAMB36_X3Y26:RAMB36_X3Y34
+floorplan cpu/rpc_txvr									SLICE_X62Y140:SLICE_X77Y174
+
+// The MCU core
+node cpu SaratogaCPU
+
+	floorplan SLICE_X50Y100:SLICE_X109Y174
+	floorplan RAMB36_X3Y20:RAMB36_X6Y34
+
+	//subnet size must be 2x MAX_THREADS
+	//MAX_THREADS-1 of these addresses are wasted but that's just how it goes
+	//address NOC_ADDR + [MAX_THREADS, 2*MAX_THREADS-1] is threads
+	//address NOC_ADDR + 0 is OoB management
+	subnet 					64
+	parameter MAX_THREADS	32
+	
+	//HMAC-SHA256 key 
+	hmac_key				"SampleCodeSigningPassword"
+
+	rpc
+	dma
+endnode
+
+
+sniffer CpuSniff
+	target cpu
+	rpc
+endsniffer
+
+la CpuLA
+
+	depth 1024
+
+	signal		cpu_rpc_rx_en
+	signal		cpu_rpc_tx_en
+	
+endla

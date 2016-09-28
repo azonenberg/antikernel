@@ -1,0 +1,111 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                                    //
+//ANTIKERNEL v0.1                                                                                                     //
+//                                                                                                                    //
+//Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                         //
+//All rights reserved.                                                                                                //
+//                                                                                                                    //
+//Redistribution and use in source and binary forms, with or without modification, are permitted provided that the    //
+//following conditions are met:                                                                                       //
+//                                                                                                                    //
+//   * Redistributions of source code must retain the above copyright notice, this list of conditions, and the        //
+//     following disclaimer.                                                                                          //
+//                                                                                                                    //
+//   * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the      //
+//     following disclaimer in the documentation and/or other materials provided with the distribution.               //
+//                                                                                                                    //
+//   * Neither the name of the author nor the names of any contributors may be used to endorse or promote products    //
+//     derived from this software without specific prior written permission.                                          //
+//                                                                                                                    //
+//THIS SOFTWARE IS PROVIDED BY THE AUTHORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED  //
+//TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL//
+//THE AUTHORS BE HELD LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES       //
+//(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR      //
+//BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT//
+//(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE      //
+//POSSIBILITY OF SUCH DAMAGE.                                                                                         //
+//                                                                                                                    //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// @file
+// @author Andrew D. Zonenberg
+// @brief NocGen script for generating TacoshieldTopLevel
+
+// Top-level module name
+top TacoshieldTopLevel
+
+//Pre-shared HMAC key for the name server to allow writing
+namesrvr_key "ThisIsALongAndComplicatedPassword"
+
+// Clock generation
+inclk		clk_noc
+
+//The main pinger device
+node pinger TacoshieldPinger
+
+	rpc
+	dma
+
+	output	1	led_0			port led_0
+	output	1	led_1			port led_1
+	
+	output	1	mic_clk			port mic_clk
+	input	1	mic_data		port mic_data
+
+	output	1	dac_mclk		port dac_mclk
+	output	1	dac_reset_n		port dac_reset_n
+	output	1	dac_din			port dac_din
+	output	1	dac_wclk		port dac_wclk
+	output	1	dac_bclk		port dac_bclk
+	output	1	dac_spi_cs_n	port dac_spi_cs_n
+	output	1	dac_spi_mosi	port dac_spi_mosi
+	input	1	dac_spi_miso	port dac_spi_miso
+	output	1	dac_spi_sck		port dac_spi_sck
+	
+	debug	1	spi_shift_en	port spi_shift_en
+	debug	1	spi_shift_done	port spi_shift_done
+	debug	8	spi_tx_data		port spi_tx_data
+	debug	8	spi_rx_data		port spi_rx_data
+	debug	4	dac_init_state	port dac_init_state
+
+	debug	32	agc_sample_shifted	port agc_sample_shifted
+	debug	1	agc_update		port agc_update
+
+	debug	16	i_shifted		port i_shifted
+	debug	16	q_shifted		port q_shifted
+
+endnode
+
+//Logic analyzer for debugging
+la MyLA
+
+	depth 1024
+	
+	//signal dac_mclk
+	//signal dac_reset_n
+
+	//signal dac_din
+	//signal dac_wclk
+	//signal dac_bclk
+
+	//signal dac_spi_sck
+	//signal dac_spi_cs_n
+	//signal dac_spi_mosi
+	//signal dac_spi_miso
+	
+	//signal spi_shift_en
+	//signal spi_shift_done
+	//signal spi_tx_data
+	//signal spi_rx_data
+	//signal dac_init_state
+
+	signal	agc_update
+	signal	agc_sample_shifted
+	decode	agc_out	"Digital to analog"	agc_sample_shifted
+
+	signal	i_shifted
+	signal	q_shifted
+	decode	i_raw	"Digital to analog"	i_shifted
+	decode	q_raw	"Digital to analog"	q_shifted
+
+endla

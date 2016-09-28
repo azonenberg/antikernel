@@ -1,0 +1,73 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                                    //
+//ANTIKERNEL v0.1                                                                                                     //
+//                                                                                                                    //
+//Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                         //
+//All rights reserved.                                                                                                //
+//                                                                                                                    //
+//Redistribution and use in source and binary forms, with or without modification, are permitted provided that the    //
+//following conditions are met:                                                                                       //
+//                                                                                                                    //
+//   * Redistributions of source code must retain the above copyright notice, this list of conditions, and the        //
+//     following disclaimer.                                                                                          //
+//                                                                                                                    //
+//   * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the      //
+//     following disclaimer in the documentation and/or other materials provided with the distribution.               //
+//                                                                                                                    //
+//   * Neither the name of the author nor the names of any contributors may be used to endorse or promote products    //
+//     derived from this software without specific prior written permission.                                          //
+//                                                                                                                    //
+//THIS SOFTWARE IS PROVIDED BY THE AUTHORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED  //
+//TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL//
+//THE AUTHORS BE HELD LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES       //
+//(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR      //
+//BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT//
+//(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE      //
+//POSSIBILITY OF SUCH DAMAGE.                                                                                         //
+//                                                                                                                    //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// @file
+// @author Andrew D. Zonenberg
+// @brief Bitfields for register IDs defined in IEEE 802.3 section 22.2.4.2
+	
+BIT_CONTROL_RESET				5'hf		//Set to reset the PHY
+BIT_CONTROL_LOOPBACK			5'he		//Set to enable loopback mode
+BIT_CONTROL_SPEED_LO			5'hd		//Low half of speed selector
+BIT_CONTROL_AUTONEG				5'hc		//Set to enable autonegotiation
+BIT_CONTROL_PWRDN				5'hb		//Set to power down the PHY
+BIT_CONTROL_ISOLATE				5'ha		//Set to tri-state GMII interface
+BIT_CONTROL_RENEG				5'h9		//Set to forcibly restart autonegotiation
+BIT_CONTROL_DUPLEX				5'h8		//1 = full duplex, 0 = half duplex
+BIT_CONTROL_COLTST				5'h7		//Set to enable collision test
+BIT_CONTROL_SPEED_HI			5'h6		//High half of speed selector
+BIT_CONTROL_UNIDIR				5'h5		//Set to enable unidirectional transmission
+											//even when we aren't seeing a link
+
+//Bits 4:0 reserved, write as zero and ignore on read
+
+BIT_STATUS_AUTONEG_DONE			4'h5		//Autonegotiation complete
+BIT_STATUS_AUTONEG_CAPABLE		4'h3		//PHY is autonegotiation capable
+BIT_STATUS_LINK_STATE			4'h2		//Link state
+
+BIT_GIG_CTRL_MANUAL_CONFIG		4'hc		//Enable manual master/slave configuration mode
+BIT_GIG_CTRL_MANUAL_MODE		4'hb		//Configure PHY as master if 1, slave if 0
+											//Only valid if BIT_GIG_CTRL_MANUAL_CONFIG is set
+BIT_GIG_CTRL_AUTO_PREFERENCE	4'ha		//Preference for master mode if 1, slave if 0
+											//Only valid if BIT_GIG_CTRL_MANUAL_CONFIG is clear
+BIT_GIG_CTRL_FULL_DUPLEX		4'h9		//Advertise full duplex mode
+
+//KSZ9021RN specific
+BIT_KSZ_INTCON_LINKDNIE			4'ha		//Enable link-down interrupt
+BIT_KSZ_INTCON_LINKUPIE			4'h8		//Enable link-up interrupt
+BIT_KSZ_INTCON_LINKDNIF			4'h2		//Link-down interrupt flag
+BIT_KSZ_INTCON_LINKUPIF			4'h0		//Link-up interrupt flag
+
+BIT_KSZ_PHYCON_SPEED_GIG		4'h6		//Final speed negotiated to gigabit
+BIT_KSZ_PHYCON_SPEED_100		4'h5		//Final speed negotiated to 100mbit
+BIT_KSZ_PHYCON_SPEED_10			4'h4		//Final speed negotiated to 10mbit
+BIT_KSZ_PHYCON_DUPLEX			4'h3		//Negotiated duplex state
+
+BIT_KSZ_EXT_WRITE				4'hf		//Specifies write to extended register
+
+BIT_KSZ_EXT_CCTL_INBAND			4'h8		//Enable in-band status

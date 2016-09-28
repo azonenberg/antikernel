@@ -1,0 +1,69 @@
+CAPACITORS
+4.7 uF 0603 MLCC		103		buy 100, use old ones first
+0.47 uF 0402 MLCC		138		use existing inventory
+0.1 uF 0402 MLCC		108		use existing inventory
+100 uF 1206 MLCC		26		buy 25 samsung, use existing murata first
+47 uF 0805 MLCC			16		buy 25, use old one first
+22 uF 0805 MLCC			13		buy 25
+220 uF 1210 MLCC		3		buy 5
+100 uF 50V poly 10mm	4		buy 5
+22 uF 1210 25V MLCC		12		buy 15
+1 nF 0402 MLCC			1		use existing inventory
+10 uF 0603 MLCC			3		buy 5
+4.7 uF 25V 1206 MLCC	1		buy 10
+10 nF 0402 MLCC			1		use existing inventory
+3.3 nF 0402 MLCC		5		buy 10
+10 uF 25V 1206 MLCC		10		buy 25
+0.1 uF 25V 0402 MLCC	5		buy 1k
+1 uF 0402 MLCC			4		buy 1k
+Total					453
+
+DIODES
+Green 0603 LED			18		use existing inventory
+Red 0603 LED			1		use existing inventory
+Total					19
+
+FUSES
+5A 0603 SMT				1		use existing inventory
+
+CONNECTORS
+Xilinx JTAG header		4(?)	TODO check inventory - do we have enough?
+PCIe x16				1		On board
+SFP+ host				4		buy 4
+
+RESISTORS
+249 1% 0402				1		buy 1k
+33 0402					28		use existing inventory
+100 1% 0402				12		use existing inventory
+0.1 0402				4		buy 10
+0.5 0402				8		buy 10
+3.3K 0402				8		buy 1k
+4.7k 0402				21		use existing inventory
+49.9 1% 0402			63		use existing inventory
+220 0402				8		use existing inventory
+2K 0603					1		use existing inventory
+DNP 0402				2		DNP
+2.49K 0402				1		buy 50
+0 0402					8		use existing inventory
+10k 0402				11		use existing inventory
+20k 0402				7		use existing inventory
+1k 0402					16		use existing inventory
+150K 1% 0402			2		buy 25
+10m LVK12				6		buy 6
+20m LVK12				1		buy 1
+560 0402				11		buy 1k
+130k 1% 0402			1		buy 25
+75k 1% 0402				1		buy 25
+180k 1% 0402			1		buy 25
+390K 1% 0402			1		buy 25
+7.5k 1% 0402			1		buy 25
+1k 1% 0402				1		buy 1k
+750 uR 1% 0612			1		buy 1
+
+INDUCTORS
+85 nH					2		buy 2
+600R 0402				4		use existing inventory
+2.2 uH					5		buy 5
+4.7 uH 0603				8		buy 10
+110R 0603				3		buy 10
+120R 0402				1		buy 10

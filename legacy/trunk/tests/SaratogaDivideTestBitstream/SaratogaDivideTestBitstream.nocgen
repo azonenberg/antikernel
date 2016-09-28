@@ -1,0 +1,77 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                                    //
+//ANTIKERNEL v0.1                                                                                                     //
+//                                                                                                                    //
+//Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                         //
+//All rights reserved.                                                                                                //
+//                                                                                                                    //
+//Redistribution and use in source and binary forms, with or without modification, are permitted provided that the    //
+//following conditions are met:                                                                                       //
+//                                                                                                                    //
+//   * Redistributions of source code must retain the above copyright notice, this list of conditions, and the        //
+//     following disclaimer.                                                                                          //
+//                                                                                                                    //
+//   * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the      //
+//     following disclaimer in the documentation and/or other materials provided with the distribution.               //
+//                                                                                                                    //
+//   * Neither the name of the author nor the names of any contributors may be used to endorse or promote products    //
+//     derived from this software without specific prior written permission.                                          //
+//                                                                                                                    //
+//THIS SOFTWARE IS PROVIDED BY THE AUTHORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED  //
+//TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL//
+//THE AUTHORS BE HELD LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES       //
+//(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR      //
+//BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT//
+//(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE      //
+//POSSIBILITY OF SUCH DAMAGE.                                                                                         //
+//                                                                                                                    //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// @file
+// @author Andrew D. Zonenberg
+// @brief NocGen script for generating SaratogaDivideTestBitstream
+
+// Top-level module name
+top SaratogaDivideTestBitstream
+
+//Signing key for the name server
+namesrvr_key "SampleNameServerPassword"
+
+// Clock generation
+pll MainClockPLL
+	diffclk clkin
+	outclk clk_noc freq 100M duty 0.5 phase 0.0
+endpll
+
+// RAM for packet buffers and stack
+node ram BlockRamAllocator
+
+	rpc
+	dma
+endnode
+
+// ROM for firmware
+node rom BlockROM
+	parameter init_file			"$outdir/mips-elf/SaratogaDivideTestFirmware.hex"
+	parameter wordsize			2048
+
+	rpc
+	dma
+endnode
+
+// The MCU core
+node cpu SaratogaCPU
+
+	//subnet size must be 2x MAX_THREADS
+	//MAX_THREADS-1 of these addresses are wasted but that's just how it goes
+	//address NOC_ADDR + [MAX_THREADS, 2*MAX_THREADS-1] is threads
+	//address NOC_ADDR + 0 is OoB management
+	subnet 					64
+	parameter MAX_THREADS	32
+	
+	//HMAC-SHA256 key 
+	hmac_key				"SampleCodeSigningPassword"
+	
+	rpc
+	dma
+endnode

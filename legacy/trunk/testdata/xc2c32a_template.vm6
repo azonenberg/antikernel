@@ -1,0 +1,92 @@
+NDS Database:  version P.40xd
+
+NDS_INFO | xbr | 2C32A44VQ | XC2C32A-6-VQ44
+
+DEVICE | 2C32A | 2C32A44VQ | 
+
+NETWORK | sandbox01 | 0 | 0 | 1073758214 | 0
+
+INPUT_INSTANCE | 0 | 0 | NULL | clk_II | sandbox01_COPY_0_COPY_0 | 16 | 1 | 1
+INPUT_NODE_TYPE | 0 | 5 | II_IN
+NODE | clk | 107 | PI | 0 | 0 | sandbox01_COPY_0_COPY_0 | NULL | NULL | NULL | 0 | 100 | NOTYPE
+OUTPUT_NODE_TYPE | 3 | 5 | II_FCLK
+NODE | clk_II/FCLK | 116 | ? | 0 | 0 | sandbox01_COPY_0_COPY_0 | NULL | NULL | clk_II | 3 | 5 | II_FCLK
+
+MACROCELL_INSTANCE | PrldLow | dout_MC | sandbox01_COPY_0_COPY_0 | 1024 | 2 | 1
+INPUT_NODE_TYPE | 1 | 100 | NOTYPE
+NODE | tflop | 111 | ? | 0 | 0 | sandbox01_COPY_0_COPY_0 | NULL | tflop_MC.Q | tflop_MC | 1 | 0 | MC_UIM
+INPUT_NODE_TYPE | 1 | 100 | NOTYPE
+NODE | clk_II/FCLK | 116 | ? | 0 | 0 | sandbox01_COPY_0_COPY_0 | NULL | NULL | clk_II | 3 | 5 | II_FCLK
+OUTPUT_NODE_TYPE | 0 | 0 | MC_Q
+NODE | dout_MC.Q | 118 | ? | 0 | 0 | sandbox01_COPY_0_COPY_0 | NULL | dout_MC.Q | dout_MC | 0 | 0 | MC_Q
+
+SIGNAL_INSTANCE | dout_MC.SI | dout_MC | 0 | 1 | 2
+INPUT_NODE_TYPE | 1 | 100 | NOTYPE
+NODE | tflop | 111 | ? | 0 | 0 | sandbox01_COPY_0_COPY_0 | NULL | tflop_MC.Q | tflop_MC | 1 | 0 | MC_UIM
+OUTPUT_NODE_TYPE | 1 | 9 | MC_SI_D1
+SIGNAL | NODE | dout_MC.D1 | 109 | ? | 0 | 0 | dout_MC | NULL | NULL | dout_MC.SI | 1 | 9 | MC_SI_D1
+SPPTERM | 1 | IV_TRUE | tflop
+OUTPUT_NODE_TYPE | 2 | 9 | MC_SI_D2
+SIGNAL | NODE | dout_MC.D2 | 110 | ? | 0 | 0 | dout_MC | NULL | NULL | dout_MC.SI | 2 | 9 | MC_SI_D2
+SPPTERM | 0 | IV_ZERO
+
+SRFF_INSTANCE | dout_MC.REG | dout_MC | 0 | 2 | 1
+INPUT_NODE_TYPE | 0 | 8 | SRFF_D
+NODE | dout_MC.D | 108 | ? | 0 | 0 | dout_MC | NULL | NULL | dout_MC.XOR | 0 | 7 | ALU_F
+INPUT_NODE_TYPE | 1 | 8 | SRFF_C
+NODE | clk_II/FCLK | 116 | ? | 0 | 0 | sandbox01_COPY_0_COPY_0 | NULL | NULL | clk_II | 3 | 5 | II_FCLK
+OUTPUT_NODE_TYPE | 0 | 8 | SRFF_Q
+NODE | dout_MC.Q | 117 | ? | 0 | 0 | dout_MC | NULL | NULL | dout_MC.REG | 0 | 8 | SRFF_Q
+
+MACROCELL_INSTANCE | Inv+PrldLow+Tff | tflop_MC | sandbox01_COPY_0_COPY_0 | 5376 | 1 | 1
+INPUT_NODE_TYPE | 1 | 100 | NOTYPE
+NODE | clk_II/FCLK | 116 | ? | 0 | 0 | sandbox01_COPY_0_COPY_0 | NULL | NULL | clk_II | 3 | 5 | II_FCLK
+OUTPUT_NODE_TYPE | 1 | 0 | MC_UIM
+NODE | tflop | 111 | ? | 0 | 0 | sandbox01_COPY_0_COPY_0 | NULL | tflop_MC.Q | tflop_MC | 1 | 0 | MC_UIM
+
+SIGNAL_INSTANCE | tflop_MC.SI | tflop_MC | 0 | 0 | 2
+OUTPUT_NODE_TYPE | 1 | 9 | MC_SI_D1
+SIGNAL | NODE | tflop_MC.D1 | 115 | ? | 0 | 0 | tflop_MC | NULL | NULL | tflop_MC.SI | 1 | 9 | MC_SI_D1
+SPPTERM | 0 | IV_ZERO
+OUTPUT_NODE_TYPE | 2 | 9 | MC_SI_D2
+SIGNAL | NODE | tflop_MC.D2 | 114 | ? | 0 | 0 | tflop_MC | NULL | NULL | tflop_MC.SI | 2 | 9 | MC_SI_D2
+SPPTERM | 0 | IV_ZERO
+
+SRFF_INSTANCE | tflop_MC.REG | tflop_MC | 0 | 2 | 1
+INPUT_NODE_TYPE | 0 | 8 | SRFF_D
+NODE | tflop_MC.D | 113 | ? | 0 | 0 | tflop_MC | NULL | NULL | tflop_MC.XOR | 0 | 7 | ALU_F
+INPUT_NODE_TYPE | 1 | 8 | SRFF_C
+NODE | clk_II/FCLK | 116 | ? | 0 | 0 | sandbox01_COPY_0_COPY_0 | NULL | NULL | clk_II | 3 | 5 | II_FCLK
+OUTPUT_NODE_TYPE | 0 | 8 | SRFF_Q
+NODE | tflop_MC.Q | 112 | ? | 0 | 0 | tflop_MC | NULL | NULL | tflop_MC.REG | 0 | 8 | SRFF_Q
+
+OUTPUT_INSTANCE | 0 | dout | sandbox01_COPY_0_COPY_0 | 3 | 1 | 1
+INPUT_NODE_TYPE | 0 | 6 | OI_IN
+NODE | dout_MC.Q | 118 | ? | 0 | 0 | sandbox01_COPY_0_COPY_0 | NULL | dout_MC.Q | dout_MC | 0 | 0 | MC_Q
+OUTPUT_NODE_TYPE | 0 | 6 | OI_OUT
+NODE | dout | 119 | PO | 0 | 0 | sandbox01_COPY_0_COPY_0 | NULL | NULL | dout | 0 | 6 | OI_OUT
+
+FB_INSTANCE | FOOBAR1_ | sandbox01_COPY_0_COPY_0 | 0 | 0 | 0
+FBPIN | 2 | dout_MC | 1 | NULL | 0 | dout | 1 | 37 | 49152
+FBPIN | 6 | tflop_MC | 1 | NULL | 0 | NULL | 0 | 32 | 53248
+
+FB_INSTANCE | FOOBAR2_ | sandbox01_COPY_0_COPY_0 | 0 | 0 | 0
+FBPIN | 7 | NULL | 0 | clk_II | 1 | NULL | 0 | 1 | 57344
+
+FB_INSTANCE | INPUTPINS_FOOBAR3_ | sandbox01_COPY_0_COPY_0 | 0 | 0 | 0
+
+CT_INSTANCE | FOOBAR1_ | FOOBAR1__ctinst | sandbox01_COPY_0_COPY_0 | 0 | 0 | 0
+
+CT_INSTANCE | FOOBAR2_ | FOOBAR2__ctinst | sandbox01_COPY_0_COPY_0 | 0 | 0 | 0
+
+PLA | FOOBAR1_ | 1
+PLA_TERM | 13 | 
+SPPTERM | 1 | IV_TRUE | tflop
+
+IOSTD | LVCMOS18
+clk | LVCMOS33
+dout | LVCMOS33
+
+[[TEMPLATE_MARKER]]
+
+GLOBAL_FCLK | clk | 2 | 2

@@ -1,0 +1,48 @@
+#!/nfs/home/azonenberg/Documents/local/programming/3rdparty/yosys/yosys
+
+# Specify default verilog parsing flags
+verilog_defaults -add -defer -I../hdl-corelib/ 
+
+# Read standard library cells
+read_verilog -lib ../hdl-corelib/pcb-footprint.v
+
+# Component library
+read_verilog ../hdl-components/common/caps.v
+read_verilog ../hdl-components/common/led.v
+read_verilog ../hdl-components/common/res.v
+read_verilog ../hdl-components/connectors/usb.v
+read_verilog ../hdl-components/microchip/ICSP.v
+read_verilog ../hdl-components/microchip/PIC12F683.v
+
+# Top level file
+read_verilog uvtest.v
+
+# Expand parametric modules
+hierarchy -top uvtest -check
+
+# Clean up processes
+proc
+
+# Add standard cells as needed
+techmap -autoproc
+
+# Clean up processes again
+proc
+
+# Flatten the design fully
+flatten
+
+# Split multi-part nets
+splitnets
+
+# Optimize to merge nets
+opt
+
+# Remove unused nets
+clean
+
+# Print current status
+# show -colors 1 -width test
+
+# Write the IR
+write_ilang temp.rtlil

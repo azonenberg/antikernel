@@ -1,0 +1,105 @@
+########################################################################################################################
+# Hub status
+
+NET "hub_status[0]" LOC = P11 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "hub_fault[0]"  LOC = P10 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "hub_status[1]" LOC = P13 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "hub_fault[1]"  LOC = P12 | IOSTANDARD = LVCMOS33 | PULLUP;
+
+########################################################################################################################
+# Port status
+
+NET "port_status[0]" LOC = P7  | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_fault[0]"  LOC = P6  | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_status[1]" LOC = P9  | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_fault[1]"  LOC = P8  | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_status[2]" LOC = P90 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_fault[2]"  LOC = P89 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_status[3]" LOC = P92 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_fault[3]"  LOC = P91 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_status[4]" LOC = P94 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_fault[4]"  LOC = P93 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_status[5]" LOC = P96 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_fault[5]"  LOC = P95 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_status[6]" LOC = P30 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_fault[6]"  LOC = P29 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_status[7]" LOC = P33 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_fault[7]"  LOC = P32 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_status[8]" LOC = P35 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_fault[8]"  LOC = P34 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_status[9]" LOC = P37 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_fault[9]"  LOC = P36 | IOSTANDARD = LVCMOS33 | PULLUP;
+
+########################################################################################################################
+# Port power enables from hub controller
+
+NET "port_pwr_n[0]"  LOC = P4  | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_pwr_n[1]"  LOC = P1  | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_pwr_n[2]"  LOC = P82 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_pwr_n[3]"  LOC = P81 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_pwr_n[4]"  LOC = P3  | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_pwr_n[5]"  LOC = P2  | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_pwr_n[6]"  LOC = P28 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_pwr_n[7]"  LOC = P27 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_pwr_n[8]"  LOC = P39 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "port_pwr_n[9]"  LOC = P40 | IOSTANDARD = LVCMOS33 | PULLUP;
+
+########################################################################################################################
+# Port power enables to PMIC
+
+NET "vbus_en_n[0]"  LOC = P71  | IOSTANDARD = LVCMOS33;
+NET "vbus_en_n[1]"  LOC = P70  | IOSTANDARD = LVCMOS33;
+NET "vbus_en_n[2]"  LOC = P77  | IOSTANDARD = LVCMOS33;
+NET "vbus_en_n[3]"  LOC = P78  | IOSTANDARD = LVCMOS33;
+NET "vbus_en_n[4]"  LOC = P79  | IOSTANDARD = LVCMOS33;
+NET "vbus_en_n[5]"  LOC = P80  | IOSTANDARD = LVCMOS33;
+NET "vbus_en_n[6]"  LOC = P14  | IOSTANDARD = LVCMOS33;
+NET "vbus_en_n[7]"  LOC = P15  | IOSTANDARD = LVCMOS33;
+NET "vbus_en_n[8]"  LOC = P16  | IOSTANDARD = LVCMOS33;
+NET "vbus_en_n[9]"  LOC = P17  | IOSTANDARD = LVCMOS33;
+
+########################################################################################################################
+# Indicator LEDs
+
+NET "status_led_p"  LOC = P42 | IOSTANDARD = LVCMOS33;
+NET "status_led_n"  LOC = P41 | IOSTANDARD = LVCMOS33;
+
+NET "port_led_p[0]" LOC = P43 | IOSTANDARD = LVCMOS33;
+NET "port_led_p[1]" LOC = P46 | IOSTANDARD = LVCMOS33;
+NET "port_led_p[2]" LOC = P50 | IOSTANDARD = LVCMOS33;
+NET "port_led_p[3]" LOC = P53 | IOSTANDARD = LVCMOS33;
+NET "port_led_p[4]" LOC = P55 | IOSTANDARD = LVCMOS33;
+NET "port_led_p[5]" LOC = P58 | IOSTANDARD = LVCMOS33;
+NET "port_led_p[6]" LOC = P60 | IOSTANDARD = LVCMOS33;
+NET "port_led_p[7]" LOC = P63 | IOSTANDARD = LVCMOS33;
+NET "port_led_p[8]" LOC = P65 | IOSTANDARD = LVCMOS33;
+NET "port_led_p[9]" LOC = P67 | IOSTANDARD = LVCMOS33;
+
+NET "port_led_n[0]" LOC = P44 | IOSTANDARD = LVCMOS33;
+NET "port_led_n[1]" LOC = P49 | IOSTANDARD = LVCMOS33;
+NET "port_led_n[2]" LOC = P52 | IOSTANDARD = LVCMOS33;
+NET "port_led_n[3]" LOC = P54 | IOSTANDARD = LVCMOS33;
+NET "port_led_n[4]" LOC = P56 | IOSTANDARD = LVCMOS33;
+NET "port_led_n[5]" LOC = P59 | IOSTANDARD = LVCMOS33;
+NET "port_led_n[6]" LOC = P61 | IOSTANDARD = LVCMOS33;
+NET "port_led_n[7]" LOC = P64 | IOSTANDARD = LVCMOS33;
+NET "port_led_n[8]" LOC = P66 | IOSTANDARD = LVCMOS33;
+NET "port_led_n[9]" LOC = P68 | IOSTANDARD = LVCMOS33;
+
+########################################################################################################################
+# Expansion header SPI bus
+
+NET "expansion_spi_miso" LOC = P18 | IOSTANDARD = LVCMOS33;
+NET "expansion_spi_mosi" LOC = P19 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "expansion_spi_sck"  LOC = P23 | IOSTANDARD = LVCMOS33 | PULLUP;
+NET "expansion_spi_cs_n" LOC = P24 | IOSTANDARD = LVCMOS33 | PULLUP;
+
+########################################################################################################################
+# Clock
+
+NET "clk_24mhz" LOC = P22 | IOSTANDARD = LVCMOS33;
+NET "clk_24mhz" TNM_NET = "clk_24mhz";
+
+# Disable timing analysis to remove warnings about not-found signals.
+# We have no real logic anyway so there's no way we could fail timing
+#TIMESPEC TS_clk_24mhz = PERIOD "clk_24mhz" 24 MHz HIGH 50 %;

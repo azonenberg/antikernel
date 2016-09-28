@@ -1,0 +1,343 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                                    //
+//ANTIKERNEL v0.1                                                                                                     //
+//                                                                                                                    //
+//Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                         //
+//All rights reserved.                                                                                                //
+//                                                                                                                    //
+//Redistribution and use in source and binary forms, with or without modification, are permitted provided that the    //
+//following conditions are met:                                                                                       //
+//                                                                                                                    //
+//   * Redistributions of source code must retain the above copyright notice, this list of conditions, and the        //
+//     following disclaimer.                                                                                          //
+//                                                                                                                    //
+//   * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the      //
+//     following disclaimer in the documentation and/or other materials provided with the distribution.               //
+//                                                                                                                    //
+//   * Neither the name of the author nor the names of any contributors may be used to endorse or promote products    //
+//     derived from this software without specific prior written permission.                                          //
+//                                                                                                                    //
+//THIS SOFTWARE IS PROVIDED BY THE AUTHORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED  //
+//TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL//
+//THE AUTHORS BE HELD LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES       //
+//(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR      //
+//BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT//
+//(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE      //
+//POSSIBILITY OF SUCH DAMAGE.                                                                                         //
+//                                                                                                                    //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// @file
+// @author Andrew D. Zonenberg
+// @brief Top level module for TDR
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Global / clock configuration
+
+top TDRTopLevel
+
+//Signing key for the name server
+namesrvr_key "TDRNameServerPassword"
+
+//PLL configuration
+//For now, use global clocks for everything
+pll MainClockPLL
+	inclk 		clkin
+	
+	//must be 1/4 of clk_serdes
+	//outclk		clk_noc			freq 150M  duty 0.5 phase 0.0
+	outclk		clk_noc			freq 100M	duty 0.5 phase 0.0
+	
+	//sampling rate is 2x this since we're now DDR
+	//1.2 GSa/s
+	//outclk		clk_serdes		freq 600M  duty 0.5 phase 0.0
+	outclk		clk_serdes		freq 400M	duty 0.5 phase 0.0
+	
+endpll
+
+//Use a separate PLL for this
+pll EthPLL
+	inclk		clkin
+	
+	//fixed frequency clocks for ethernet
+	outclk		clk_25mhz		freq 25M	duty 0.5 phase 0.0
+	outclk		clk_125mhz		freq 125M	duty 0.5 phase 0.0
+	
+	//fixed frequency clocks for I/O delay calibration
+	outclk		clk_200mhz		freq 200M	duty 0.5 phase 0.0
+	
+endpll
+
+//Calibrate I/O delays using this clock
+//Must be 200 MHz for now (TODO: Support other frequencies for fine delay adjustment)
+//For now, we only support a single ungrouped IODELAY reference.
+//TODO: If there is a 200 MHz reference, use it automatically by default
+//TODO: Generate one if necessary
+iodelay_refclk clk_200mhz
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Router and infrastructure floorplan constraints
+
+//Root router stuff adjacent to CPU
+floorplan debug_controller		SLICE_X12Y60:SLICE_X23Y74
+floorplan debug_controller		RAMB18_X1Y24:RAMB18_X1Y29
+floorplan rpc_router_8000_10	SLICE_X0Y41:SLICE_X11Y78
+floorplan dma_router_8000_10	SLICE_X0Y41:SLICE_X11Y78
+floorplan dma_router_8000_10	RAMB18_X0Y18:RAMB18_X0Y29
+
+//Intermediate routers
+floorplan rpc_router_8000_12	SLICE_X0Y134:SLICE_X23Y159
+floorplan dma_router_8000_12	SLICE_X0Y134:SLICE_X23Y159
+floorplan dma_router_8000_12	RAMB18_X0Y53:RAMB18_X1Y57
+
+//Infrastructure at top of die
+floorplan dma_router_8000_14	SLICE_X0Y160:SLICE_X19Y191
+floorplan dma_router_8000_14	RAMB18_X0Y63:RAMB18_X0Y75
+floorplan rpc_router_8000_14	SLICE_X0Y160:SLICE_X19Y191
+floorplan namesrvr				SLICE_X20Y178:SLICE_X35Y199
+floorplan namesrvr				RAMB36_X1Y35:RAMB36_X1Y39
+floorplan sysinfo				SLICE_X0Y192:SLICE_X19Y199
+
+//Child routers for IPv6, TDR, Flash, and ICMP
+floorplan dma_router_8004_14	SLICE_X0Y85:SLICE_X23Y116
+floorplan rpc_router_8004_14	SLICE_X0Y85:SLICE_X23Y116
+
+//Child routers for DMA bridges and debug cores (Y150 with no debug stuff)
+floorplan dma_router_8008_14	SLICE_X36Y130:SLICE_X53Y184
+floorplan dma_router_8008_14	RAMB18_X1Y60:RAMB18_X2Y69
+floorplan rpc_router_8008_14	SLICE_X36Y130:SLICE_X53Y184
+
+//Packet sniffer
+floorplan CpuSniff				SLICE_X36Y60:SLICE_X61Y99
+
+//Logic analyzer
+floorplan TdrLA					SLICE_X36Y60:SLICE_X61Y99
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Block RAM buffer for stacks etc
+
+node ram BlockRamAllocator
+	parameter NUM_PAGES				16
+	
+	floorplan SLICE_X0Y175:SLICE_X35Y199
+	floorplan RAMB36_X0Y33:RAMB36_X2Y39
+	floorplan RAMB18_X0Y67:RAMB18_X2Y79
+	
+	rpc
+	dma
+endnode
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Firmware ROM for all CPU threads
+
+node rom BlockROM
+	parameter init_file			"$outdir/mips-elf/SaratogaDualProcessDemoFirmware.hex"
+	parameter wordsize			16384		//32 KB
+	
+	floorplan SLICE_X20Y150:SLICE_X35Y164
+	floorplan RAMB36_X0Y28:RAMB36_X2Y36
+	
+	rpc
+	dma
+endnode
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Communications
+
+// The IP offload core
+node ipv6 IPv6OffloadEngine
+
+	parameter PHY_CHIPSET			"KSZ9031"
+	parameter PHY_INTERFACE			"RGMII"
+	parameter OUTPUT_PHASE_SHIFT	"PLL"
+	parameter CLOCK_BUF_TYPE		"LOCAL"
+	
+	floorplan SLICE_X0Y0:SLICE_X11Y42
+	floorplan RAMB36_X0Y0:RAMB36_X0Y8
+	floorplan RAMB18_X0Y0:RAMB18_X0Y17
+	
+	//MD address is ZERO
+	//even though strap pins are configured for address 1. Need to investigate why...
+	parameter PHY_MD_ADDR			5'h0
+	
+	//Forward upper-layer packets to the appropriate handler
+	parameter ICMP_HOST			[[node_icmp_addr]]
+	parameter UDP_HOST			[[node_ubridge_addr]]
+	parameter TCP_HOST			[[node_tbridge_addr]]
+	
+	clock   	clk_25mhz		port clk_25mhz
+	clock   	clk_125mhz		port clk_125mhz
+	clock		eth0_rxc		port xmii_rxc
+	
+	input	1 	eth0_rx_ctl		port xmii_rx_ctl
+	input	4 	eth0_rxd		port xmii_rxd
+	
+	output	1 	eth0_tx_ctl		port xmii_tx_ctl
+	output	1 	eth0_txc		port xmii_txc
+	output	4 	eth0_txd		port xmii_txd
+	
+	inout	1	eth0_mdio		port mgmt_mdio
+	output	1	eth0_mdc		port mgmt_mdc
+	
+	output	1	eth0_reset_n	port reset_n
+	
+	//Don't need output clock
+	nc							port clkout
+	
+	//Tie off unused baseX ports
+	constant	1'b0				port sfp_refclk
+	constant	1'b0				port sfp_rx_p
+	constant	1'b0				port sfp_rx_n
+	nc								port sfp_tx_p
+	nc								port sfp_tx_n
+	nc								port gmii_rxc
+	
+	rpc
+	dma
+endnode
+
+//ICMP
+node icmp ICMPv6OffloadEngine
+
+	floorplan SLICE_X0Y117:SLICE_X23Y128
+
+	parameter IPV6_HOST				[[node_ipv6_addr]]
+
+	rpc
+	dma	
+endnode
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// The main TDR subsystem
+
+node tdr TDRSystem
+	
+	floorplan SLICE_X36Y60:SLICE_X61Y99
+	
+	clock		clk_serdes		port clk_serdes
+	
+	output 	1	dac_spi_sck		port dac_spi_sck
+	output 	1	dac_spi_mosi	port dac_spi_mosi
+	output 	1	dac_spi_cs_n	port dac_spi_cs_n
+	
+	output	4	pga_sck			port pga_sck
+	output	4	pga_mosi		port pga_mosi
+	input	4	pga_miso		port pga_miso
+	output	4	pga_cs_n		port pga_cs_n
+	
+	output	1	ch1_pulse_p		port ch1_pulse_p
+	output	1	ch1_pulse_n		port ch1_pulse_n
+	
+	input	1	ch1_sample_p	port ch1_sample_p
+	input	1	ch1_sample_n	port ch1_sample_n
+	
+	output	2	tdr_leds		port tdr_leds
+	
+	debug	4	pga_shift_en	port pga_shift_en
+	debug	4	pga_shift_done	port pga_shift_done
+	debug	8	pga_tx_data		port pga_tx_data
+	debug	32	pga_rx_data		port pga_rx_data
+	
+	debug	2	preamp_chan		port preamp_chan
+	debug	4	preamp_reg		port preamp_reg
+	debug	1	preamp_rd		port preamp_rd
+	debug	1	preamp_wr		port preamp_wr
+	debug	1	preamp_done		port preamp_done
+	debug	8	preamp_rdata	port preamp_rdata
+	debug	8	preamp_wdata	port preamp_wdata
+	
+	rpc
+	dma
+	
+endnode
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SPI NOR flash for FPGA bitstream etc
+
+//TODO: Do some kind of filesystem on this?
+
+node flash BasicNetworkedQuadSPIFlashController
+	
+	floorplan SLICE_X0Y75:SLICE_X23Y84
+	
+	output 1 spi_cs_n port spi_cs_n
+	output 1 spi_sck port spi_sck
+	inout  4 spi_data port spi_data
+	
+	//Memory map
+	//Flash is 64 Mbits = 8 MBytes, so usable range is 0x00000000 to 0x007FFFFF
+	//0x00000000 - 0x002FFFFF		FPGA bitstream (nominal size is 0x2DF2FC but leave some padding)
+	//0x00300000 - 0x007FFFFF		Available
+
+	rpc
+	dma
+	
+endnode
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// DMA bridges
+
+//Bridge for UDP traffic
+node ubridge DMABridge
+
+	floorplan SLICE_X36Y185:SLICE_X53Y199
+	floorplan RAMB18_X2Y76:RAMB18_X2Y79
+
+	rpc
+	dma
+
+endnode
+
+//Bridge for TCP traffic
+node tbridge DMABridge
+
+	floorplan SLICE_X20Y160:SLICE_X35Y179
+
+	rpc
+	dma
+
+endnode
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// The MCU core
+node cpu SaratogaCPU
+
+	//Place it in the bottom ~third of the device
+	floorplan SLICE_X6Y0:SLICE_X61Y59
+	floorplan RAMB36_X0Y0:RAMB36_X3Y11
+	floorplan RAMB18_X0Y0:RAMB18_X3Y23
+	floorplan DSP48_X0Y0:DSP48_X2Y23
+
+	//subnet size must be 2x MAX_THREADS
+	//MAX_THREADS-1 of these addresses are wasted but that's just how it goes
+	//address NOC_ADDR + [MAX_THREADS, 2*MAX_THREADS-1] is threads
+	//address NOC_ADDR + 0 is OoB management
+	subnet 						16
+	parameter MAX_THREADS		8
+	
+	//Use a bigger L1 cache than the default since we don't have a ton of threads
+	parameter LINES_PER_BANK	64
+	
+	//HMAC-SHA256 key 
+	hmac_key				"TDRCodeSigningPassword"
+	
+	rpc
+	dma
+endnode
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Debug stuff
+
+sniffer CpuSniff
+	target cpu
+	rpc
+endsniffer
+
+la TdrLA
+
+	signal	pga_shift_en
+	signal	pga_shift_done
+	signal	pga_tx_data
+	signal	pga_rx_data
+	
+endla

@@ -1,0 +1,229 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                                    //
+//ANTIKERNEL v0.1                                                                                                     //
+//                                                                                                                    //
+//Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                         //
+//All rights reserved.                                                                                                //
+//                                                                                                                    //
+//Redistribution and use in source and binary forms, with or without modification, are permitted provided that the    //
+//following conditions are met:                                                                                       //
+//                                                                                                                    //
+//   * Redistributions of source code must retain the above copyright notice, this list of conditions, and the        //
+//     following disclaimer.                                                                                          //
+//                                                                                                                    //
+//   * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the      //
+//     following disclaimer in the documentation and/or other materials provided with the distribution.               //
+//                                                                                                                    //
+//   * Neither the name of the author nor the names of any contributors may be used to endorse or promote products    //
+//     derived from this software without specific prior written permission.                                          //
+//                                                                                                                    //
+//THIS SOFTWARE IS PROVIDED BY THE AUTHORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED  //
+//TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL//
+//THE AUTHORS BE HELD LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES       //
+//(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR      //
+//BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT//
+//(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE      //
+//POSSIBILITY OF SUCH DAMAGE.                                                                                         //
+//                                                                                                                    //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//This is a TEST ONLY board support package.
+//The pinout described here is COMPLETELY ARBITRARY and not backed by actual hardware!!!!!!
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Global stuff
+
+//The target device
+target	xc7a200t-1fbg484 scanpos 0
+
+//100 MHz clock input
+clock	clkin			input	H3 std LVCMOS25	freq 100M
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Gigabit Ethernet
+
+//Receive clock from PHY
+clock	eth0_rxc		input	K4	std LVCMOS25	freq 125M
+
+//No pullups needed, everything is on the PCB
+signal	eth0_rx_ctl		input	A1	std LVCMOS25
+signal	eth0_rxd[0]		input	B1	std LVCMOS25
+signal	eth0_rxd[1]		input	B2	std LVCMOS25
+signal	eth0_rxd[2]		input	C2	std LVCMOS25
+signal	eth0_rxd[3]		input	D1	std LVCMOS25
+
+signal	eth0_txc		output	D2	std LVCMOS25	fast
+signal	eth0_tx_ctl		output	E1	std LVCMOS25	fast
+signal	eth0_txd[0]		output	E2	std LVCMOS25	fast
+signal	eth0_txd[1]		output	E3	std LVCMOS25	fast
+signal	eth0_txd[2]		output	F1	std LVCMOS25	fast
+signal	eth0_txd[3]		output	F3	std LVCMOS25	fast
+
+signal	eth0_mdio		inout	F4	std LVCMOS25	pullup
+signal	eth0_mdc		output	G1	std LVCMOS25
+
+signal	eth0_reset_n	output	G2	std LVCMOS25
+//no clock out
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// JTAG signals
+
+signal	target0_tms[0]	output	P4	std LVCMOS25
+signal	target0_tdo[0]	input	P5	std LVCMOS25	pullup
+signal	target0_tdi[0]	output	H2	std LVCMOS25
+signal	target0_tck[0]	output	G3	std LVCMOS25
+
+signal	target0_tms[1]	output	H4	std LVCMOS25
+signal	target0_tdo[1]	input	H5	std LVCMOS25	pullup
+signal	target0_tdi[1]	output	J1	std LVCMOS25
+signal	target0_tck[1]	output	J2	std LVCMOS25
+
+signal	target0_tms[2]	output	J4	std LVCMOS25
+signal	target0_tdo[2]	input	J5	std LVCMOS25	pullup
+signal	target0_tdi[2]	output	J6	std LVCMOS25
+signal	target0_tck[2]	output	K1	std LVCMOS25
+
+signal	target0_tms[3]	output	K2	std LVCMOS25
+signal	target0_tdo[3]	input	K3	std LVCMOS25	pullup
+signal	target0_tdi[3]	output	G4	std LVCMOS25
+signal	target0_tck[3]	output	K6	std LVCMOS25
+
+signal	target0_tms[4]	output	L1	std LVCMOS25
+signal	target0_tdo[4]	input	L3	std LVCMOS25	pullup
+signal	target0_tdi[4]	output	L4	std LVCMOS25
+signal	target0_tck[4]	output	L5	std LVCMOS25
+
+signal	target0_tms[5]	output	L6	std LVCMOS25
+signal	target0_tdo[5]	input	M1	std LVCMOS25	pullup
+signal	target0_tdi[5]	output	M2	std LVCMOS25
+signal	target0_tck[5]	output	M3	std LVCMOS25
+
+signal	target0_tms[6]	output	M5	std LVCMOS25
+signal	target0_tdo[6]	input	M6	std LVCMOS25	pullup
+signal	target0_tdi[6]	output	N2	std LVCMOS25
+signal	target0_tck[6]	output	N3	std LVCMOS25
+
+signal	target0_tms[7]	output	N4	std LVCMOS25
+signal	target0_tdo[7]	input	N5	std LVCMOS25	pullup
+signal	target0_tdi[7]	output	P1	std LVCMOS25
+signal	target0_tck[7]	output	P2	std LVCMOS25
+
+signal	target1_tms[0]	output	P6	std LVCMOS25
+signal	target1_tdo[0]	input	R1	std LVCMOS25	pullup
+signal	target1_tdi[0]	output	R2	std LVCMOS25
+signal	target1_tck[0]	output	R3	std LVCMOS25
+
+signal	target1_tms[1]	output	R4	std LVCMOS25
+signal	target1_tdo[1]	input	R6	std LVCMOS25	pullup
+signal	target1_tdi[1]	output	T1	std LVCMOS25
+signal	target1_tck[1]	output	T3	std LVCMOS25
+
+signal	target1_tms[2]	output	T4	std LVCMOS25
+signal	target1_tdo[2]	input	T5	std LVCMOS25	pullup
+signal	target1_tdi[2]	output	T6	std LVCMOS25
+signal	target1_tck[2]	output	U1	std LVCMOS25
+
+signal	target1_tms[3]	output	U2	std LVCMOS25
+signal	target1_tdo[3]	input	U3	std LVCMOS25	pullup
+signal	target1_tdi[3]	output	U5	std LVCMOS25
+signal	target1_tck[3]	output	U6	std LVCMOS25
+
+signal	target1_tms[4]	output	U7	std LVCMOS25
+signal	target1_tdo[4]	input	V2	std LVCMOS25	pullup
+signal	target1_tdi[4]	output	V3	std LVCMOS25
+signal	target1_tck[4]	output	V4	std LVCMOS25
+
+signal	target1_tms[5]	output	V5	std LVCMOS25
+signal	target1_tdo[5]	input	V7	std LVCMOS25	pullup
+signal	target1_tdi[5]	output	V8	std LVCMOS25
+signal	target1_tck[5]	output	V9	std LVCMOS25
+
+signal	target1_tms[6]	output	W1	std LVCMOS25
+signal	target1_tdo[6]	input	W2	std LVCMOS25	pullup
+signal	target1_tdi[6]	output	W4	std LVCMOS25
+signal	target1_tck[6]	output	W5	std LVCMOS25
+
+signal	target1_tms[7]	output	W6	std LVCMOS25
+signal	target1_tdo[7]	input	W7	std LVCMOS25	pullup
+signal	target1_tdi[7]	output	W9	std LVCMOS25
+signal	target1_tck[7]	output	Y1	std LVCMOS25
+
+signal	target2_tms[0]	output	Y2	std LVCMOS25
+signal	target2_tdo[0]	input	Y3	std LVCMOS25	pullup
+signal	target2_tdi[0]	output	Y4	std LVCMOS25
+signal	target2_tck[0]	output	Y6	std LVCMOS25
+
+signal	target2_tms[1]	output	Y7	std LVCMOS25
+signal	target2_tdo[1]	input	Y8	std LVCMOS25	pullup
+signal	target2_tdi[1]	output	Y9	std LVCMOS25
+signal	target2_tck[1]	output	AA1	std LVCMOS25
+
+signal	target2_tms[2]	output	AA3	std LVCMOS25
+signal	target2_tdo[2]	input	AA6	std LVCMOS25	pullup
+signal	target2_tdi[2]	output	AA8	std LVCMOS25
+signal	target2_tck[2]	output	AB1	std LVCMOS25
+
+signal	target2_tms[3]	output	AB2	std LVCMOS25
+signal	target2_tdo[3]	input	AB3	std LVCMOS25	pullup
+signal	target2_tdi[3]	output	AB5	std LVCMOS25
+signal	target2_tck[3]	output	AB6	std LVCMOS25
+
+signal	target2_tms[4]	output	AB7	std LVCMOS25
+signal	target2_tdo[4]	input	AB8	std LVCMOS25	pullup
+signal	target2_tdi[4]	output	T14	std LVCMOS25
+signal	target2_tck[4]	output	T15	std LVCMOS25
+
+signal	target2_tms[5]	output	T16	std LVCMOS25
+signal	target2_tdo[5]	input	U15	std LVCMOS25	pullup
+signal	target2_tdi[5]	output	U16	std LVCMOS25
+signal	target2_tck[5]	output	V10	std LVCMOS25
+
+signal	target2_tms[6]	output	V13	std LVCMOS25
+signal	target2_tdo[6]	input	V14	std LVCMOS25	pullup
+signal	target2_tdi[6]	output	V15	std LVCMOS25
+signal	target2_tck[6]	output	W10	std LVCMOS25
+
+signal	target2_tms[7]	output	W11	std LVCMOS25
+signal	target2_tdo[7]	input	W12	std LVCMOS25	pullup
+signal	target2_tdi[7]	output	W14	std LVCMOS25
+signal	target2_tck[7]	output	W15	std LVCMOS25
+
+signal	target3_tms[0]	output	W16	std LVCMOS25
+signal	target3_tdo[0]	input	Y11	std LVCMOS25	pullup
+signal	target3_tdi[0]	output	Y12	std LVCMOS25
+signal	target3_tck[0]	output	Y13	std LVCMOS25
+
+signal	target3_tms[1]	output	Y14	std LVCMOS25
+signal	target3_tdo[1]	input	Y16	std LVCMOS25	pullup
+signal	target3_tdi[1]	output	Y17	std LVCMOS25
+signal	target3_tck[1]	output	AA9	std LVCMOS25
+
+signal	target3_tms[2]	output	AA10	std LVCMOS25
+signal	target3_tdo[2]	input	AA11	std LVCMOS25	pullup
+signal	target3_tdi[2]	output	AA13	std LVCMOS25
+signal	target3_tck[2]	output	AA14	std LVCMOS25
+
+signal	target3_tms[3]	output	AA15	std LVCMOS25
+signal	target3_tdo[3]	input	AA16	std LVCMOS25	pullup
+signal	target3_tdi[3]	output	AB10	std LVCMOS25
+signal	target3_tck[3]	output	AB11	std LVCMOS25
+
+signal	target3_tms[4]	output	AB12	std LVCMOS25
+signal	target3_tdo[4]	input	AB13	std LVCMOS25	pullup
+signal	target3_tdi[4]	output	AB15	std LVCMOS25
+signal	target3_tck[4]	output	AB16	std LVCMOS25
+
+signal	target3_tms[5]	output	AB17	std LVCMOS25
+signal	target3_tdo[5]	input	N13	std LVCMOS25	pullup
+signal	target3_tdi[5]	output	N14	std LVCMOS25
+signal	target3_tck[5]	output	N15	std LVCMOS25
+
+signal	target3_tms[6]	output	N17	std LVCMOS25
+signal	target3_tdo[6]	input	P14	std LVCMOS25	pullup
+signal	target3_tdi[6]	output	P15	std LVCMOS25
+signal	target3_tck[6]	output	P16	std LVCMOS25
+
+signal	target3_tms[7]	output	P17	std LVCMOS25
+signal	target3_tdo[7]	input	P19	std LVCMOS25	pullup
+signal	target3_tdi[7]	output	P20	std LVCMOS25
+signal	target3_tck[7]	output	P21	std LVCMOS25

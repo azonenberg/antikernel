@@ -1,0 +1,2793 @@
+EESchema Schematic File Version 2
+LIBS:power
+LIBS:device
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:special
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:cmos
+LIBS:cypress-azonenberg
+LIBS:hirose-azonenberg
+LIBS:memory-azonenberg
+LIBS:microchip-azonenberg
+LIBS:osc-azonenberg
+LIBS:passive-azonenberg
+LIBS:power-azonenberg
+LIBS:special-azonenberg
+LIBS:xilinx-azonenberg
+LIBS:analog-azonenberg
+LIBS:cat5-tdr-cache
+EELAYER 25 0
+EELAYER END
+$Descr A3 11693 16535 portrait
+encoding utf-8
+Sheet 10 11
+Title "TDR Analog Front End"
+Date "Fri 16 Jan 2015"
+Rev "$Rev: 1703 $"
+Comp "Andrew Zonenberg"
+Comment1 "Quad-Channel 1.25 GSa/s 12-bit Time-Domain Reflectometer"
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+Text HLabel 2250 600  0    60   Input ~ 0
+A5V0
+Text HLabel 2250 1800 0    60   Input ~ 0
+GND
+Text HLabel 1150 1000 0    60   Input ~ 0
+CAT5_CH1_P
+Text HLabel 1150 1300 0    60   Input ~ 0
+CAT5_CH1_N
+$Comp
+L C C43
+U 1 1 54A44CDB
+P 1450 1000
+F 0 "C43" V 1500 1100 50  0000 L CNN
+F 1 "0.1 uF" V 1300 800 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1450 1000 60  0001 C CNN
+F 3 "" H 1450 1000 60  0000 C CNN
+	1    1450 1000
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C C44
+U 1 1 54A44E25
+P 1450 1300
+F 0 "C44" V 1500 1400 50  0000 L CNN
+F 1 "0.1 uF" V 1300 1100 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1450 1300 60  0001 C CNN
+F 3 "" H 1450 1300 60  0000 C CNN
+	1    1450 1300
+	0    -1   -1   0   
+$EndComp
+Text Label 1650 1000 0    60   ~ 0
+CH1_AC_P
+Text Label 1650 1300 0    60   ~ 0
+CH1_AC_N
+Text Label 2250 2000 2    60   ~ 0
+GND
+Text Label 2250 800  2    60   ~ 0
+A5V0
+NoConn ~ 2400 1400
+NoConn ~ 2400 1500
+Text Label 4200 1100 0    60   ~ 0
+CH1_BUF_P
+Text Label 4200 1200 0    60   ~ 0
+CH1_BUF_N
+Text Notes 3500 13600 0    60   ~ 0
+1.25V reference generator
+Text Label 4200 1500 0    60   ~ 0
+AVREF_1V25
+Text Label 4200 1400 0    60   ~ 0
+GND
+Text Label 4200 1700 0    60   ~ 0
+A5V0
+Text HLabel 4200 1800 2    60   Output ~ 0
+CH1_SPI_MISO
+Text HLabel 4200 1900 2    60   Input ~ 0
+CH1_SPI_MOSI
+Text HLabel 4200 2000 2    60   Input ~ 0
+CH1_SPI_SCK
+Text HLabel 4200 2100 2    60   Input ~ 0
+CH1_SPI_CS_N
+$Comp
+L LMH6881 U8
+U 1 1 54A4B290
+P 3150 1150
+F 0 "U8" H 2600 100 60  0000 L CNN
+F 1 "LMH6881" H 3750 100 60  0000 R CNN
+F 2 "azonenberg:QFN_24_0.5MM_4x4MM" H 5000 1200 60  0001 C CNN
+F 3 "" H 5000 1200 60  0000 C CNN
+	1    3150 1150
+	1    0    0    -1  
+$EndComp
+$Comp
+L AD8045 U9
+U 1 1 54A52CDD
+P 6250 1400
+F 0 "U9" H 6300 1300 60  0000 L CNN
+F 1 "AD8045" H 7100 1300 60  0000 R CNN
+F 2 "azonenberg:DFN_8_0.5MM_3x3MM" H 6250 1400 60  0001 C CNN
+F 3 "" H 6250 1400 60  0000 C CNN
+	1    6250 1400
+	1    0    0    -1  
+$EndComp
+Text Label 5850 700  2    60   ~ 0
+A5V0
+Text Label 5850 800  2    60   ~ 0
+GND
+$Comp
+L R R18
+U 1 1 54A53EBE
+P 5600 1100
+F 0 "R18" V 5550 900 50  0000 C CNN
+F 1 "100K" V 5600 1100 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 1100 60  0001 C CNN
+F 3 "" H 5600 1100 60  0000 C CNN
+	1    5600 1100
+	0    1    1    0   
+$EndComp
+$Comp
+L R R17
+U 1 1 54A5406A
+P 5600 1000
+F 0 "R17" V 5550 800 50  0000 C CNN
+F 1 "100K" V 5600 1000 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 1000 60  0001 C CNN
+F 3 "" H 5600 1000 60  0000 C CNN
+	1    5600 1000
+	0    1    1    0   
+$EndComp
+$Comp
+L R R19
+U 1 1 54A5411A
+P 5600 1200
+F 0 "R19" V 5550 1000 50  0000 C CNN
+F 1 "100K" V 5600 1200 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 1200 60  0001 C CNN
+F 3 "" H 5600 1200 60  0000 C CNN
+	1    5600 1200
+	0    1    1    0   
+$EndComp
+$Comp
+L R R20
+U 1 1 54A5415F
+P 5600 1300
+F 0 "R20" V 5550 1100 50  0000 C CNN
+F 1 "100K" V 5600 1300 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 1300 60  0001 C CNN
+F 3 "" H 5600 1300 60  0000 C CNN
+	1    5600 1300
+	0    1    1    0   
+$EndComp
+$Comp
+L R R16
+U 1 1 54A544A6
+P 5600 900
+F 0 "R16" V 5550 700 50  0000 C CNN
+F 1 "100K" V 5600 900 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 900 60  0001 C CNN
+F 3 "" H 5600 900 60  0000 C CNN
+	1    5600 900 
+	0    1    1    0   
+$EndComp
+Text Label 5250 900  2    60   ~ 0
+GND
+Text Label 5250 1000 2    60   ~ 0
+AVREF_2V5
+Text Label 2950 12000 0    60   ~ 0
+AVREF_2V5
+Text Notes 900  12500 0    60   ~ 0
+2.5V reference generator
+Text Label 5250 1300 2    60   ~ 0
+GND
+$Comp
+L R R21
+U 1 1 54A54D32
+P 5600 1400
+F 0 "R21" V 5550 1200 50  0000 C CNN
+F 1 "100K" V 5600 1400 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 1400 60  0001 C CNN
+F 3 "" H 5600 1400 60  0000 C CNN
+	1    5600 1400
+	0    1    1    0   
+$EndComp
+Text Label 7450 1100 0    60   ~ 0
+CH1_VDIFF
+Text Notes 2600 2350 0    60   ~ 0
+Programmable-gain preamplifier
+Text Notes 5350 1750 0    60   ~ 0
+Convert differential voltage to single-ended\ncentered at +2.5V virtual ground
+Text HLabel 9650 700  2    60   Input ~ 0
+2V5
+$Comp
+L LMH7322 U10
+U 1 1 54A577C7
+P 8950 1500
+F 0 "U10" H 8450 1400 60  0000 L CNN
+F 1 "LMH7322" H 9300 1400 60  0000 R CNN
+F 2 "azonenberg:QFN_24_0.5MM_4x4MM" H 8450 1450 60  0001 C CNN
+F 3 "" H 8450 1450 60  0000 C CNN
+	1    8950 1500
+	1    0    0    -1  
+$EndComp
+Text Label 7900 1200 2    60   ~ 0
+AFE_VREF
+$Comp
+L R R23
+U 1 1 54A579EE
+P 9900 1400
+F 0 "R23" V 9850 1200 50  0000 C CNN
+F 1 "100K" V 9900 1400 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 9900 1400 60  0001 C CNN
+F 3 "" H 9900 1400 60  0000 C CNN
+	1    9900 1400
+	0    1    1    0   
+$EndComp
+Text Label 10250 1400 0    60   ~ 0
+GND
+$Comp
+L R R24
+U 1 1 54A57BEA
+P 9900 1500
+F 0 "R24" V 9850 1300 50  0000 C CNN
+F 1 "100K" V 9900 1500 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 9900 1500 60  0001 C CNN
+F 3 "" H 9900 1500 60  0000 C CNN
+	1    9900 1500
+	0    1    1    0   
+$EndComp
+Text Label 10250 1500 0    60   ~ 0
+2V5
+Text Label 9650 600  0    60   ~ 0
+2V5
+Text HLabel 9650 1100 2    60   Output ~ 0
+CH1_SAMPLE_P
+Text HLabel 9650 1200 2    60   Output ~ 0
+CH1_SAMPLE_N
+Text Notes 7750 14100 0    60   ~ 0
+DAC for reference generation
+Text Label 8100 600  2    60   ~ 0
+A5V0
+Text Label 8100 700  2    60   ~ 0
+GND
+$Comp
+L R R22
+U 1 1 54A5845B
+P 8000 1500
+F 0 "R22" V 7950 1300 50  0000 C CNN
+F 1 "20K" V 8000 1500 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 8000 1500 60  0001 C CNN
+F 3 "" H 8000 1500 60  0000 C CNN
+	1    8000 1500
+	0    1    1    0   
+$EndComp
+Text Label 9100 12350 0    60   ~ 0
+AFE_VREF
+Text Notes 8450 1750 0    60   ~ 0
+Digitize analog voltage
+Text Notes 11100 3150 2    157  ~ 31
+CHANNEL 1
+Text Notes 750  3100 0    60   ~ 0
+PGA decoupling
+$Comp
+L C C38
+U 1 1 54A5BEF6
+P 750 2800
+F 0 "C38" H 800 2900 50  0000 L CNN
+F 1 "0.1 uF" H 800 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 750 2800 60  0001 C CNN
+F 3 "" H 750 2800 60  0000 C CNN
+	1    750  2800
+	1    0    0    -1  
+$EndComp
+Text Label 750  2600 2    60   ~ 0
+A5V0
+Text Label 750  3000 2    60   ~ 0
+GND
+$Comp
+L C C39
+U 1 1 54A5C3AD
+P 1050 2800
+F 0 "C39" H 1100 2900 50  0000 L CNN
+F 1 "0.1 uF" H 1100 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1050 2800 60  0001 C CNN
+F 3 "" H 1050 2800 60  0000 C CNN
+	1    1050 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C41
+U 1 1 54A5C3FA
+P 1350 2800
+F 0 "C41" H 1400 2900 50  0000 L CNN
+F 1 "0.1 uF" H 1400 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1350 2800 60  0001 C CNN
+F 3 "" H 1350 2800 60  0000 C CNN
+	1    1350 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C45
+U 1 1 54A5C432
+P 1650 2800
+F 0 "C45" H 1700 2900 50  0000 L CNN
+F 1 "0.1 uF" H 1700 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1650 2800 60  0001 C CNN
+F 3 "" H 1650 2800 60  0000 C CNN
+	1    1650 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C50
+U 1 1 54A5C46F
+P 1950 2800
+F 0 "C50" H 2000 2900 50  0000 L CNN
+F 1 "4.7 uF" H 2000 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 1950 2800 60  0001 C CNN
+F 3 "" H 1950 2800 60  0000 C CNN
+	1    1950 2800
+	1    0    0    -1  
+$EndComp
+Text Notes 5350 3100 0    60   ~ 0
+D2S decoupling
+$Comp
+L C C40
+U 1 1 54A5D240
+P 5350 2800
+F 0 "C40" H 5400 2900 50  0000 L CNN
+F 1 "0.1 uF" H 5400 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 5350 2800 60  0001 C CNN
+F 3 "" H 5350 2800 60  0000 C CNN
+	1    5350 2800
+	1    0    0    -1  
+$EndComp
+Text Label 5350 2600 2    60   ~ 0
+A5V0
+Text Label 5350 3000 2    60   ~ 0
+GND
+$Comp
+L C C42
+U 1 1 54A5D248
+P 5650 2800
+F 0 "C42" H 5700 2900 50  0000 L CNN
+F 1 "0.1 uF" H 5700 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 5650 2800 60  0001 C CNN
+F 3 "" H 5650 2800 60  0000 C CNN
+	1    5650 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C46
+U 1 1 54A5D25A
+P 6000 2800
+F 0 "C46" H 6050 2900 50  0000 L CNN
+F 1 "4.7 uF" H 6050 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 6000 2800 60  0001 C CNN
+F 3 "" H 6000 2800 60  0000 C CNN
+	1    6000 2800
+	1    0    0    -1  
+$EndComp
+Text Notes 7850 3100 0    60   ~ 0
+Comparator decoupling
+$Comp
+L C C49
+U 1 1 54A5D8CD
+P 7850 2800
+F 0 "C49" H 7900 2900 50  0000 L CNN
+F 1 "0.1 uF" H 7900 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 7850 2800 60  0001 C CNN
+F 3 "" H 7850 2800 60  0000 C CNN
+	1    7850 2800
+	1    0    0    -1  
+$EndComp
+Text Label 7850 2600 2    60   ~ 0
+A5V0
+Text Label 7850 3000 2    60   ~ 0
+GND
+$Comp
+L C C51
+U 1 1 54A5D8DB
+P 8200 2800
+F 0 "C51" H 8250 2900 50  0000 L CNN
+F 1 "4.7 uF" H 8250 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 8200 2800 60  0001 C CNN
+F 3 "" H 8200 2800 60  0000 C CNN
+	1    8200 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C52
+U 1 1 54A5DB8F
+P 8550 2800
+F 0 "C52" H 8600 2900 50  0000 L CNN
+F 1 "0.1 uF" H 8600 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 8550 2800 60  0001 C CNN
+F 3 "" H 8550 2800 60  0000 C CNN
+	1    8550 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C53
+U 1 1 54A5DC2B
+P 8900 2800
+F 0 "C53" H 8950 2900 50  0000 L CNN
+F 1 "0.1 uF" H 8950 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 8900 2800 60  0001 C CNN
+F 3 "" H 8900 2800 60  0000 C CNN
+	1    8900 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C54
+U 1 1 54A5DC69
+P 9250 2800
+F 0 "C54" H 9300 2900 50  0000 L CNN
+F 1 "4.7 uF" H 9300 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 9250 2800 60  0001 C CNN
+F 3 "" H 9250 2800 60  0000 C CNN
+	1    9250 2800
+	1    0    0    -1  
+$EndComp
+Text Label 9450 2600 0    60   ~ 0
+2V5
+$Comp
+L C C48
+U 1 1 54A5E0D8
+P 7150 2800
+F 0 "C48" H 7200 2900 50  0000 L CNN
+F 1 "0.1 uF" H 7200 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 7150 2800 60  0001 C CNN
+F 3 "" H 7150 2800 60  0000 C CNN
+	1    7150 2800
+	1    0    0    -1  
+$EndComp
+Text Label 7150 2600 2    60   ~ 0
+AFE_VREF
+Text Label 7150 3000 2    60   ~ 0
+GND
+$Comp
+L C C47
+U 1 1 54A5E1BE
+P 6600 2800
+F 0 "C47" H 6650 2900 50  0000 L CNN
+F 1 "0.1 uF" H 6650 2700 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 6600 2800 60  0001 C CNN
+F 3 "" H 6600 2800 60  0000 C CNN
+	1    6600 2800
+	1    0    0    -1  
+$EndComp
+Text Label 6600 2600 2    60   ~ 0
+AVREF_2V5
+Text Label 6600 3000 2    60   ~ 0
+GND
+Text Label 3750 3050 2    60   ~ 0
+CH1_AC_N
+Text Label 3750 2550 2    60   ~ 0
+CH1_AC_P
+$Comp
+L R R25
+U 1 1 54A659F9
+P 3750 2800
+F 0 "R25" V 3830 2800 50  0000 C CNN
+F 1 "100" V 3750 2800 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 3750 2800 60  0001 C CNN
+F 3 "" H 3750 2800 60  0000 C CNN
+	1    3750 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L R R26
+U 1 1 54A65F41
+P 4400 2800
+F 0 "R26" V 4480 2800 50  0000 C CNN
+F 1 "100" V 4400 2800 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 4400 2800 60  0001 C CNN
+F 3 "" H 4400 2800 60  0000 C CNN
+	1    4400 2800
+	1    0    0    -1  
+$EndComp
+Text Label 4400 2550 2    60   ~ 0
+CH1_BUF_P
+Text Label 4400 3050 2    60   ~ 0
+CH1_BUF_N
+Text Notes 3300 3150 0    60   ~ 0
+Optional terminations (TODO spice)
+Text HLabel 2250 3400 0    60   Input ~ 0
+A5V0
+Text HLabel 2250 4600 0    60   Input ~ 0
+GND
+Text HLabel 1150 3800 0    60   Input ~ 0
+CAT5_CH2_P
+Text HLabel 1150 4100 0    60   Input ~ 0
+CAT5_CH2_N
+$Comp
+L C C59
+U 1 1 54A67CBE
+P 1450 3800
+F 0 "C59" V 1500 3900 50  0000 L CNN
+F 1 "0.1 uF" V 1300 3600 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1450 3800 60  0001 C CNN
+F 3 "" H 1450 3800 60  0000 C CNN
+	1    1450 3800
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C C60
+U 1 1 54A67CC4
+P 1450 4100
+F 0 "C60" V 1500 4200 50  0000 L CNN
+F 1 "0.1 uF" V 1300 3900 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1450 4100 60  0001 C CNN
+F 3 "" H 1450 4100 60  0000 C CNN
+	1    1450 4100
+	0    -1   -1   0   
+$EndComp
+Text Label 1650 3800 0    60   ~ 0
+CH2_AC_P
+Text Label 1650 4100 0    60   ~ 0
+CH2_AC_N
+Text Label 2250 4800 2    60   ~ 0
+GND
+Text Label 2250 3600 2    60   ~ 0
+A5V0
+NoConn ~ 2400 4200
+NoConn ~ 2400 4300
+Text Label 4200 3900 0    60   ~ 0
+CH2_BUF_P
+Text Label 4200 4000 0    60   ~ 0
+CH2_BUF_N
+Text Label 4200 4300 0    60   ~ 0
+AVREF_1V25
+Text Label 4200 4200 0    60   ~ 0
+GND
+Text Label 4200 4500 0    60   ~ 0
+A5V0
+Text HLabel 4200 4600 2    60   Output ~ 0
+CH2_SPI_MISO
+Text HLabel 4200 4700 2    60   Input ~ 0
+CH2_SPI_MOSI
+Text HLabel 4200 4800 2    60   Input ~ 0
+CH2_SPI_SCK
+Text HLabel 4200 4900 2    60   Input ~ 0
+CH2_SPI_CS_N
+$Comp
+L LMH6881 U11
+U 1 1 54A67CD9
+P 3150 3950
+F 0 "U11" H 2600 2900 60  0000 L CNN
+F 1 "LMH6881" H 3750 2900 60  0000 R CNN
+F 2 "azonenberg:QFN_24_0.5MM_4x4MM" H 5000 4000 60  0001 C CNN
+F 3 "" H 5000 4000 60  0000 C CNN
+	1    3150 3950
+	1    0    0    -1  
+$EndComp
+$Comp
+L AD8045 U12
+U 1 1 54A67CDF
+P 6250 4200
+F 0 "U12" H 6300 4100 60  0000 L CNN
+F 1 "AD8045" H 7100 4100 60  0000 R CNN
+F 2 "azonenberg:DFN_8_0.5MM_3x3MM" H 6250 4200 60  0001 C CNN
+F 3 "" H 6250 4200 60  0000 C CNN
+	1    6250 4200
+	1    0    0    -1  
+$EndComp
+Text Label 5850 3500 2    60   ~ 0
+A5V0
+Text Label 5850 3600 2    60   ~ 0
+GND
+$Comp
+L R R31
+U 1 1 54A67CE7
+P 5600 3900
+F 0 "R31" V 5550 3700 50  0000 C CNN
+F 1 "100K" V 5600 3900 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 3900 60  0001 C CNN
+F 3 "" H 5600 3900 60  0000 C CNN
+	1    5600 3900
+	0    1    1    0   
+$EndComp
+$Comp
+L R R30
+U 1 1 54A67CED
+P 5600 3800
+F 0 "R30" V 5550 3600 50  0000 C CNN
+F 1 "100K" V 5600 3800 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 3800 60  0001 C CNN
+F 3 "" H 5600 3800 60  0000 C CNN
+	1    5600 3800
+	0    1    1    0   
+$EndComp
+$Comp
+L R R32
+U 1 1 54A67CF3
+P 5600 4000
+F 0 "R32" V 5550 3800 50  0000 C CNN
+F 1 "100K" V 5600 4000 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 4000 60  0001 C CNN
+F 3 "" H 5600 4000 60  0000 C CNN
+	1    5600 4000
+	0    1    1    0   
+$EndComp
+$Comp
+L R R33
+U 1 1 54A67CF9
+P 5600 4100
+F 0 "R33" V 5550 3900 50  0000 C CNN
+F 1 "100K" V 5600 4100 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 4100 60  0001 C CNN
+F 3 "" H 5600 4100 60  0000 C CNN
+	1    5600 4100
+	0    1    1    0   
+$EndComp
+$Comp
+L R R29
+U 1 1 54A67CFF
+P 5600 3700
+F 0 "R29" V 5550 3500 50  0000 C CNN
+F 1 "100K" V 5600 3700 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 3700 60  0001 C CNN
+F 3 "" H 5600 3700 60  0000 C CNN
+	1    5600 3700
+	0    1    1    0   
+$EndComp
+Text Label 5250 3700 2    60   ~ 0
+GND
+Text Label 5250 3800 2    60   ~ 0
+AVREF_2V5
+Text Label 5250 4100 2    60   ~ 0
+GND
+$Comp
+L R R34
+U 1 1 54A67D08
+P 5600 4200
+F 0 "R34" V 5550 4000 50  0000 C CNN
+F 1 "100K" V 5600 4200 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 4200 60  0001 C CNN
+F 3 "" H 5600 4200 60  0000 C CNN
+	1    5600 4200
+	0    1    1    0   
+$EndComp
+Text Label 7450 3900 0    60   ~ 0
+CH2_VDIFF
+Text Notes 2600 5150 0    60   ~ 0
+Programmable-gain preamplifier
+Text Notes 5350 4550 0    60   ~ 0
+Convert differential voltage to single-ended\ncentered at +2.5V virtual ground
+Text HLabel 9650 3500 2    60   Input ~ 0
+2V5
+$Comp
+L LMH7322 U10
+U 2 1 54A67D12
+P 8950 4300
+F 0 "U10" H 8450 4200 60  0000 L CNN
+F 1 "LMH7322" H 9300 4200 60  0000 R CNN
+F 2 "azonenberg:QFN_24_0.5MM_4x4MM" H 8450 4250 60  0001 C CNN
+F 3 "" H 8450 4250 60  0000 C CNN
+	2    8950 4300
+	1    0    0    -1  
+$EndComp
+Text Label 7900 4000 2    60   ~ 0
+AFE_VREF
+$Comp
+L R R36
+U 1 1 54A67D19
+P 9900 4200
+F 0 "R36" V 9850 4000 50  0000 C CNN
+F 1 "100K" V 9900 4200 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 9900 4200 60  0001 C CNN
+F 3 "" H 9900 4200 60  0000 C CNN
+	1    9900 4200
+	0    1    1    0   
+$EndComp
+Text Label 10250 4200 0    60   ~ 0
+GND
+$Comp
+L R R37
+U 1 1 54A67D20
+P 9900 4300
+F 0 "R37" V 9850 4100 50  0000 C CNN
+F 1 "100K" V 9900 4300 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 9900 4300 60  0001 C CNN
+F 3 "" H 9900 4300 60  0000 C CNN
+	1    9900 4300
+	0    1    1    0   
+$EndComp
+Text Label 10250 4300 0    60   ~ 0
+2V5
+Text Label 9650 3400 0    60   ~ 0
+2V5
+Text HLabel 9650 3900 2    60   Output ~ 0
+CH2_SAMPLE_P
+Text HLabel 9650 4000 2    60   Output ~ 0
+CH2_SAMPLE_N
+Text Label 8100 3400 2    60   ~ 0
+A5V0
+Text Label 8100 3500 2    60   ~ 0
+GND
+$Comp
+L R R35
+U 1 1 54A67D2C
+P 8000 4300
+F 0 "R35" V 7950 4100 50  0000 C CNN
+F 1 "20K" V 8000 4300 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 8000 4300 60  0001 C CNN
+F 3 "" H 8000 4300 60  0000 C CNN
+	1    8000 4300
+	0    1    1    0   
+$EndComp
+Text Notes 8450 4550 0    60   ~ 0
+Digitize analog voltage
+Text Notes 11100 5950 2    157  ~ 31
+CHANNEL 2
+Text Notes 750  5900 0    60   ~ 0
+PGA decoupling
+$Comp
+L C C56
+U 1 1 54A67D35
+P 750 5600
+F 0 "C56" H 800 5700 50  0000 L CNN
+F 1 "0.1 uF" H 800 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 750 5600 60  0001 C CNN
+F 3 "" H 750 5600 60  0000 C CNN
+	1    750  5600
+	1    0    0    -1  
+$EndComp
+Text Label 750  5400 2    60   ~ 0
+A5V0
+Text Label 750  5800 2    60   ~ 0
+GND
+$Comp
+L C C57
+U 1 1 54A67D3D
+P 1050 5600
+F 0 "C57" H 1100 5700 50  0000 L CNN
+F 1 "0.1 uF" H 1100 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1050 5600 60  0001 C CNN
+F 3 "" H 1050 5600 60  0000 C CNN
+	1    1050 5600
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C58
+U 1 1 54A67D43
+P 1350 5600
+F 0 "C58" H 1400 5700 50  0000 L CNN
+F 1 "0.1 uF" H 1400 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1350 5600 60  0001 C CNN
+F 3 "" H 1350 5600 60  0000 C CNN
+	1    1350 5600
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C61
+U 1 1 54A67D49
+P 1650 5600
+F 0 "C61" H 1700 5700 50  0000 L CNN
+F 1 "0.1 uF" H 1700 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1650 5600 60  0001 C CNN
+F 3 "" H 1650 5600 60  0000 C CNN
+	1    1650 5600
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C62
+U 1 1 54A67D4F
+P 1950 5600
+F 0 "C62" H 2000 5700 50  0000 L CNN
+F 1 "4.7 uF" H 2000 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 1950 5600 60  0001 C CNN
+F 3 "" H 1950 5600 60  0000 C CNN
+	1    1950 5600
+	1    0    0    -1  
+$EndComp
+Text Notes 5350 5900 0    60   ~ 0
+D2S decoupling
+$Comp
+L C C63
+U 1 1 54A67D56
+P 5350 5600
+F 0 "C63" H 5400 5700 50  0000 L CNN
+F 1 "0.1 uF" H 5400 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 5350 5600 60  0001 C CNN
+F 3 "" H 5350 5600 60  0000 C CNN
+	1    5350 5600
+	1    0    0    -1  
+$EndComp
+Text Label 5350 5400 2    60   ~ 0
+A5V0
+Text Label 5350 5800 2    60   ~ 0
+GND
+$Comp
+L C C64
+U 1 1 54A67D5E
+P 5650 5600
+F 0 "C64" H 5700 5700 50  0000 L CNN
+F 1 "0.1 uF" H 5700 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 5650 5600 60  0001 C CNN
+F 3 "" H 5650 5600 60  0000 C CNN
+	1    5650 5600
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C65
+U 1 1 54A67D64
+P 6000 5600
+F 0 "C65" H 6050 5700 50  0000 L CNN
+F 1 "4.7 uF" H 6050 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 6000 5600 60  0001 C CNN
+F 3 "" H 6000 5600 60  0000 C CNN
+	1    6000 5600
+	1    0    0    -1  
+$EndComp
+Text Notes 7850 5900 0    60   ~ 0
+Comparator decoupling
+$Comp
+L C C68
+U 1 1 54A67D6B
+P 7850 5600
+F 0 "C68" H 7900 5700 50  0000 L CNN
+F 1 "0.1 uF" H 7900 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 7850 5600 60  0001 C CNN
+F 3 "" H 7850 5600 60  0000 C CNN
+	1    7850 5600
+	1    0    0    -1  
+$EndComp
+Text Label 7850 5400 2    60   ~ 0
+A5V0
+Text Label 7850 5800 2    60   ~ 0
+GND
+$Comp
+L C C69
+U 1 1 54A67D73
+P 8200 5600
+F 0 "C69" H 8250 5700 50  0000 L CNN
+F 1 "4.7 uF" H 8250 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 8200 5600 60  0001 C CNN
+F 3 "" H 8200 5600 60  0000 C CNN
+	1    8200 5600
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C70
+U 1 1 54A67D79
+P 8550 5600
+F 0 "C70" H 8600 5700 50  0000 L CNN
+F 1 "0.1 uF" H 8600 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 8550 5600 60  0001 C CNN
+F 3 "" H 8550 5600 60  0000 C CNN
+	1    8550 5600
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C71
+U 1 1 54A67D7F
+P 8900 5600
+F 0 "C71" H 8950 5700 50  0000 L CNN
+F 1 "0.1 uF" H 8950 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 8900 5600 60  0001 C CNN
+F 3 "" H 8900 5600 60  0000 C CNN
+	1    8900 5600
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C72
+U 1 1 54A67D85
+P 9250 5600
+F 0 "C72" H 9300 5700 50  0000 L CNN
+F 1 "4.7 uF" H 9300 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 9250 5600 60  0001 C CNN
+F 3 "" H 9250 5600 60  0000 C CNN
+	1    9250 5600
+	1    0    0    -1  
+$EndComp
+Text Label 9450 5400 0    60   ~ 0
+2V5
+$Comp
+L C C67
+U 1 1 54A67DDD
+P 7150 5600
+F 0 "C67" H 7200 5700 50  0000 L CNN
+F 1 "0.1 uF" H 7200 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 7150 5600 60  0001 C CNN
+F 3 "" H 7150 5600 60  0000 C CNN
+	1    7150 5600
+	1    0    0    -1  
+$EndComp
+Text Label 7150 5400 2    60   ~ 0
+AFE_VREF
+Text Label 7150 5800 2    60   ~ 0
+GND
+$Comp
+L C C66
+U 1 1 54A67DE5
+P 6600 5600
+F 0 "C66" H 6650 5700 50  0000 L CNN
+F 1 "0.1 uF" H 6650 5500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 6600 5600 60  0001 C CNN
+F 3 "" H 6600 5600 60  0000 C CNN
+	1    6600 5600
+	1    0    0    -1  
+$EndComp
+Text Label 6600 5400 2    60   ~ 0
+AVREF_2V5
+Text Label 6600 5800 2    60   ~ 0
+GND
+Text Label 3750 5850 2    60   ~ 0
+CH2_AC_N
+Text Label 3750 5350 2    60   ~ 0
+CH2_AC_P
+$Comp
+L R R27
+U 1 1 54A67DEF
+P 3750 5600
+F 0 "R27" V 3830 5600 50  0000 C CNN
+F 1 "100" V 3750 5600 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 3750 5600 60  0001 C CNN
+F 3 "" H 3750 5600 60  0000 C CNN
+	1    3750 5600
+	1    0    0    -1  
+$EndComp
+$Comp
+L R R28
+U 1 1 54A67DF5
+P 4400 5600
+F 0 "R28" V 4480 5600 50  0000 C CNN
+F 1 "100" V 4400 5600 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 4400 5600 60  0001 C CNN
+F 3 "" H 4400 5600 60  0000 C CNN
+	1    4400 5600
+	1    0    0    -1  
+$EndComp
+Text Label 4400 5350 2    60   ~ 0
+CH2_BUF_P
+Text Label 4400 5850 2    60   ~ 0
+CH2_BUF_N
+Text Notes 3300 5950 0    60   ~ 0
+Optional terminations (TODO spice)
+Text HLabel 2250 6200 0    60   Input ~ 0
+A5V0
+Text HLabel 2250 7400 0    60   Input ~ 0
+GND
+Text HLabel 1150 6600 0    60   Input ~ 0
+CAT5_CH3_P
+Text HLabel 1150 6900 0    60   Input ~ 0
+CAT5_CH3_N
+$Comp
+L C C79
+U 1 1 54A6BFBA
+P 1450 6600
+F 0 "C79" V 1500 6700 50  0000 L CNN
+F 1 "0.1 uF" V 1300 6400 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1450 6600 60  0001 C CNN
+F 3 "" H 1450 6600 60  0000 C CNN
+	1    1450 6600
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C C80
+U 1 1 54A6BFC0
+P 1450 6900
+F 0 "C80" V 1500 7000 50  0000 L CNN
+F 1 "0.1 uF" V 1300 6700 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1450 6900 60  0001 C CNN
+F 3 "" H 1450 6900 60  0000 C CNN
+	1    1450 6900
+	0    -1   -1   0   
+$EndComp
+Text Label 1650 6600 0    60   ~ 0
+CH3_AC_P
+Text Label 1650 6900 0    60   ~ 0
+CH3_AC_N
+Text Label 2250 7600 2    60   ~ 0
+GND
+Text Label 2250 6400 2    60   ~ 0
+A5V0
+NoConn ~ 2400 7000
+NoConn ~ 2400 7100
+Text Label 4200 6700 0    60   ~ 0
+CH3_BUF_P
+Text Label 4200 6800 0    60   ~ 0
+CH3_BUF_N
+Text Label 4200 7100 0    60   ~ 0
+AVREF_1V25
+Text Label 4200 7000 0    60   ~ 0
+GND
+Text Label 4200 7300 0    60   ~ 0
+A5V0
+Text HLabel 4200 7400 2    60   Output ~ 0
+CH3_SPI_MISO
+Text HLabel 4200 7500 2    60   Input ~ 0
+CH3_SPI_MOSI
+Text HLabel 4200 7600 2    60   Input ~ 0
+CH3_SPI_SCK
+Text HLabel 4200 7700 2    60   Input ~ 0
+CH3_SPI_CS_N
+$Comp
+L LMH6881 U14
+U 1 1 54A6BFD5
+P 3150 6750
+F 0 "U14" H 2600 5700 60  0000 L CNN
+F 1 "LMH6881" H 3750 5700 60  0000 R CNN
+F 2 "azonenberg:QFN_24_0.5MM_4x4MM" H 5000 6800 60  0001 C CNN
+F 3 "" H 5000 6800 60  0000 C CNN
+	1    3150 6750
+	1    0    0    -1  
+$EndComp
+$Comp
+L AD8045 U16
+U 1 1 54A6BFDB
+P 6250 7000
+F 0 "U16" H 6300 6900 60  0000 L CNN
+F 1 "AD8045" H 7100 6900 60  0000 R CNN
+F 2 "azonenberg:DFN_8_0.5MM_3x3MM" H 6250 7000 60  0001 C CNN
+F 3 "" H 6250 7000 60  0000 C CNN
+	1    6250 7000
+	1    0    0    -1  
+$EndComp
+Text Label 5850 6300 2    60   ~ 0
+A5V0
+Text Label 5850 6400 2    60   ~ 0
+GND
+$Comp
+L R R44
+U 1 1 54A6BFE3
+P 5600 6700
+F 0 "R44" V 5550 6500 50  0000 C CNN
+F 1 "100K" V 5600 6700 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 6700 60  0001 C CNN
+F 3 "" H 5600 6700 60  0000 C CNN
+	1    5600 6700
+	0    1    1    0   
+$EndComp
+$Comp
+L R R43
+U 1 1 54A6BFE9
+P 5600 6600
+F 0 "R43" V 5550 6400 50  0000 C CNN
+F 1 "100K" V 5600 6600 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 6600 60  0001 C CNN
+F 3 "" H 5600 6600 60  0000 C CNN
+	1    5600 6600
+	0    1    1    0   
+$EndComp
+$Comp
+L R R45
+U 1 1 54A6BFEF
+P 5600 6800
+F 0 "R45" V 5550 6600 50  0000 C CNN
+F 1 "100K" V 5600 6800 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 6800 60  0001 C CNN
+F 3 "" H 5600 6800 60  0000 C CNN
+	1    5600 6800
+	0    1    1    0   
+$EndComp
+$Comp
+L R R46
+U 1 1 54A6BFF5
+P 5600 6900
+F 0 "R46" V 5550 6700 50  0000 C CNN
+F 1 "100K" V 5600 6900 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 6900 60  0001 C CNN
+F 3 "" H 5600 6900 60  0000 C CNN
+	1    5600 6900
+	0    1    1    0   
+$EndComp
+$Comp
+L R R42
+U 1 1 54A6BFFB
+P 5600 6500
+F 0 "R42" V 5550 6300 50  0000 C CNN
+F 1 "100K" V 5600 6500 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 6500 60  0001 C CNN
+F 3 "" H 5600 6500 60  0000 C CNN
+	1    5600 6500
+	0    1    1    0   
+$EndComp
+Text Label 5250 6500 2    60   ~ 0
+GND
+Text Label 5250 6600 2    60   ~ 0
+AVREF_2V5
+Text Label 5250 6900 2    60   ~ 0
+GND
+$Comp
+L R R47
+U 1 1 54A6C004
+P 5600 7000
+F 0 "R47" V 5550 6800 50  0000 C CNN
+F 1 "100K" V 5600 7000 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 7000 60  0001 C CNN
+F 3 "" H 5600 7000 60  0000 C CNN
+	1    5600 7000
+	0    1    1    0   
+$EndComp
+Text Label 7450 6700 0    60   ~ 0
+CH3_VDIFF
+Text Notes 2600 7950 0    60   ~ 0
+Programmable-gain preamplifier
+Text Notes 5350 7350 0    60   ~ 0
+Convert differential voltage to single-ended\ncentered at +2.5V virtual ground
+Text HLabel 9650 6300 2    60   Input ~ 0
+2V5
+$Comp
+L LMH7322 U18
+U 1 1 54A6C00E
+P 8950 7100
+F 0 "U18" H 8450 7000 60  0000 L CNN
+F 1 "LMH7322" H 9300 7000 60  0000 R CNN
+F 2 "azonenberg:QFN_24_0.5MM_4x4MM" H 8450 7050 60  0001 C CNN
+F 3 "" H 8450 7050 60  0000 C CNN
+	1    8950 7100
+	1    0    0    -1  
+$EndComp
+Text Label 7900 6800 2    60   ~ 0
+AFE_VREF
+$Comp
+L R R56
+U 1 1 54A6C015
+P 9900 7000
+F 0 "R56" V 9850 6800 50  0000 C CNN
+F 1 "100K" V 9900 7000 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 9900 7000 60  0001 C CNN
+F 3 "" H 9900 7000 60  0000 C CNN
+	1    9900 7000
+	0    1    1    0   
+$EndComp
+Text Label 10250 7000 0    60   ~ 0
+GND
+$Comp
+L R R57
+U 1 1 54A6C01C
+P 9900 7100
+F 0 "R57" V 9850 6900 50  0000 C CNN
+F 1 "100K" V 9900 7100 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 9900 7100 60  0001 C CNN
+F 3 "" H 9900 7100 60  0000 C CNN
+	1    9900 7100
+	0    1    1    0   
+$EndComp
+Text Label 10250 7100 0    60   ~ 0
+2V5
+Text Label 9650 6200 0    60   ~ 0
+2V5
+Text HLabel 9650 6700 2    60   Output ~ 0
+CH3_SAMPLE_P
+Text HLabel 9650 6800 2    60   Output ~ 0
+CH3_SAMPLE_N
+Text Label 8100 6200 2    60   ~ 0
+A5V0
+Text Label 8100 6300 2    60   ~ 0
+GND
+$Comp
+L R R54
+U 1 1 54A6C028
+P 8000 7100
+F 0 "R54" V 7950 6900 50  0000 C CNN
+F 1 "20K" V 8000 7100 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 8000 7100 60  0001 C CNN
+F 3 "" H 8000 7100 60  0000 C CNN
+	1    8000 7100
+	0    1    1    0   
+$EndComp
+Text Notes 8450 7350 0    60   ~ 0
+Digitize analog voltage
+Text Notes 11100 8750 2    157  ~ 31
+CHANNEL 3
+Text Notes 750  8700 0    60   ~ 0
+PGA decoupling
+$Comp
+L C C73
+U 1 1 54A6C031
+P 750 8400
+F 0 "C73" H 800 8500 50  0000 L CNN
+F 1 "0.1 uF" H 800 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 750 8400 60  0001 C CNN
+F 3 "" H 750 8400 60  0000 C CNN
+	1    750  8400
+	1    0    0    -1  
+$EndComp
+Text Label 750  8200 2    60   ~ 0
+A5V0
+Text Label 750  8600 2    60   ~ 0
+GND
+$Comp
+L C C75
+U 1 1 54A6C039
+P 1050 8400
+F 0 "C75" H 1100 8500 50  0000 L CNN
+F 1 "0.1 uF" H 1100 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1050 8400 60  0001 C CNN
+F 3 "" H 1050 8400 60  0000 C CNN
+	1    1050 8400
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C77
+U 1 1 54A6C03F
+P 1350 8400
+F 0 "C77" H 1400 8500 50  0000 L CNN
+F 1 "0.1 uF" H 1400 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1350 8400 60  0001 C CNN
+F 3 "" H 1350 8400 60  0000 C CNN
+	1    1350 8400
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C83
+U 1 1 54A6C045
+P 1650 8400
+F 0 "C83" H 1700 8500 50  0000 L CNN
+F 1 "0.1 uF" H 1700 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1650 8400 60  0001 C CNN
+F 3 "" H 1650 8400 60  0000 C CNN
+	1    1650 8400
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C85
+U 1 1 54A6C04B
+P 1950 8400
+F 0 "C85" H 2000 8500 50  0000 L CNN
+F 1 "4.7 uF" H 2000 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 1950 8400 60  0001 C CNN
+F 3 "" H 1950 8400 60  0000 C CNN
+	1    1950 8400
+	1    0    0    -1  
+$EndComp
+Text Notes 5350 8700 0    60   ~ 0
+D2S decoupling
+$Comp
+L C C87
+U 1 1 54A6C052
+P 5350 8400
+F 0 "C87" H 5400 8500 50  0000 L CNN
+F 1 "0.1 uF" H 5400 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 5350 8400 60  0001 C CNN
+F 3 "" H 5350 8400 60  0000 C CNN
+	1    5350 8400
+	1    0    0    -1  
+$EndComp
+Text Label 5350 8200 2    60   ~ 0
+A5V0
+Text Label 5350 8600 2    60   ~ 0
+GND
+$Comp
+L C C89
+U 1 1 54A6C05A
+P 5650 8400
+F 0 "C89" H 5700 8500 50  0000 L CNN
+F 1 "0.1 uF" H 5700 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 5650 8400 60  0001 C CNN
+F 3 "" H 5650 8400 60  0000 C CNN
+	1    5650 8400
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C91
+U 1 1 54A6C060
+P 6000 8400
+F 0 "C91" H 6050 8500 50  0000 L CNN
+F 1 "4.7 uF" H 6050 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 6000 8400 60  0001 C CNN
+F 3 "" H 6000 8400 60  0000 C CNN
+	1    6000 8400
+	1    0    0    -1  
+$EndComp
+Text Notes 7850 8700 0    60   ~ 0
+Comparator decoupling
+$Comp
+L C C97
+U 1 1 54A6C067
+P 7850 8400
+F 0 "C97" H 7900 8500 50  0000 L CNN
+F 1 "0.1 uF" H 7900 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 7850 8400 60  0001 C CNN
+F 3 "" H 7850 8400 60  0000 C CNN
+	1    7850 8400
+	1    0    0    -1  
+$EndComp
+Text Label 7850 8200 2    60   ~ 0
+A5V0
+Text Label 7850 8600 2    60   ~ 0
+GND
+$Comp
+L C C99
+U 1 1 54A6C06F
+P 8200 8400
+F 0 "C99" H 8250 8500 50  0000 L CNN
+F 1 "4.7 uF" H 8250 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 8200 8400 60  0001 C CNN
+F 3 "" H 8200 8400 60  0000 C CNN
+	1    8200 8400
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C101
+U 1 1 54A6C075
+P 8550 8400
+F 0 "C101" H 8600 8500 50  0000 L CNN
+F 1 "0.1 uF" H 8600 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 8550 8400 60  0001 C CNN
+F 3 "" H 8550 8400 60  0000 C CNN
+	1    8550 8400
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C103
+U 1 1 54A6C07B
+P 8900 8400
+F 0 "C103" H 8950 8500 50  0000 L CNN
+F 1 "0.1 uF" H 8950 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 8900 8400 60  0001 C CNN
+F 3 "" H 8900 8400 60  0000 C CNN
+	1    8900 8400
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C105
+U 1 1 54A6C081
+P 9250 8400
+F 0 "C105" H 9300 8500 50  0000 L CNN
+F 1 "4.7 uF" H 9300 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 9250 8400 60  0001 C CNN
+F 3 "" H 9250 8400 60  0000 C CNN
+	1    9250 8400
+	1    0    0    -1  
+$EndComp
+Text Label 9450 8200 0    60   ~ 0
+2V5
+$Comp
+L C C95
+U 1 1 54A6C0D9
+P 7150 8400
+F 0 "C95" H 7200 8500 50  0000 L CNN
+F 1 "0.1 uF" H 7200 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 7150 8400 60  0001 C CNN
+F 3 "" H 7150 8400 60  0000 C CNN
+	1    7150 8400
+	1    0    0    -1  
+$EndComp
+Text Label 7150 8200 2    60   ~ 0
+AFE_VREF
+Text Label 7150 8600 2    60   ~ 0
+GND
+$Comp
+L C C93
+U 1 1 54A6C0E1
+P 6600 8400
+F 0 "C93" H 6650 8500 50  0000 L CNN
+F 1 "0.1 uF" H 6650 8300 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 6600 8400 60  0001 C CNN
+F 3 "" H 6600 8400 60  0000 C CNN
+	1    6600 8400
+	1    0    0    -1  
+$EndComp
+Text Label 6600 8200 2    60   ~ 0
+AVREF_2V5
+Text Label 6600 8600 2    60   ~ 0
+GND
+Text Label 3750 8650 2    60   ~ 0
+CH3_AC_N
+Text Label 3750 8150 2    60   ~ 0
+CH3_AC_P
+$Comp
+L R R38
+U 1 1 54A6C0EB
+P 3750 8400
+F 0 "R38" V 3830 8400 50  0000 C CNN
+F 1 "100" V 3750 8400 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 3750 8400 60  0001 C CNN
+F 3 "" H 3750 8400 60  0000 C CNN
+	1    3750 8400
+	1    0    0    -1  
+$EndComp
+$Comp
+L R R40
+U 1 1 54A6C0F1
+P 4400 8400
+F 0 "R40" V 4480 8400 50  0000 C CNN
+F 1 "100" V 4400 8400 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 4400 8400 60  0001 C CNN
+F 3 "" H 4400 8400 60  0000 C CNN
+	1    4400 8400
+	1    0    0    -1  
+$EndComp
+Text Label 4400 8150 2    60   ~ 0
+CH3_BUF_P
+Text Label 4400 8650 2    60   ~ 0
+CH3_BUF_N
+Text Notes 3300 8750 0    60   ~ 0
+Optional terminations (TODO spice)
+Text HLabel 2250 9000 0    60   Input ~ 0
+A5V0
+Text HLabel 2250 10200 0    60   Input ~ 0
+GND
+Text HLabel 1150 9400 0    60   Input ~ 0
+CAT5_CH4_P
+Text HLabel 1150 9700 0    60   Input ~ 0
+CAT5_CH4_N
+$Comp
+L C C81
+U 1 1 54A6F5B1
+P 1450 9400
+F 0 "C81" V 1500 9500 50  0000 L CNN
+F 1 "0.1 uF" V 1300 9200 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1450 9400 60  0001 C CNN
+F 3 "" H 1450 9400 60  0000 C CNN
+	1    1450 9400
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C C82
+U 1 1 54A6F5B7
+P 1450 9700
+F 0 "C82" V 1500 9800 50  0000 L CNN
+F 1 "0.1 uF" V 1300 9500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1450 9700 60  0001 C CNN
+F 3 "" H 1450 9700 60  0000 C CNN
+	1    1450 9700
+	0    -1   -1   0   
+$EndComp
+Text Label 1650 9400 0    60   ~ 0
+CH4_AC_P
+Text Label 1650 9700 0    60   ~ 0
+CH4_AC_N
+Text Label 2250 10400 2    60   ~ 0
+GND
+Text Label 2250 9200 2    60   ~ 0
+A5V0
+NoConn ~ 2400 9800
+NoConn ~ 2400 9900
+Text Label 4200 9500 0    60   ~ 0
+CH4_BUF_P
+Text Label 4200 9600 0    60   ~ 0
+CH4_BUF_N
+Text Label 4200 9900 0    60   ~ 0
+AVREF_1V25
+Text Label 4200 9800 0    60   ~ 0
+GND
+Text Label 4200 10100 0    60   ~ 0
+A5V0
+Text HLabel 4200 10200 2    60   Output ~ 0
+CH4_SPI_MISO
+Text HLabel 4200 10300 2    60   Input ~ 0
+CH4_SPI_MOSI
+Text HLabel 4200 10400 2    60   Input ~ 0
+CH4_SPI_SCK
+Text HLabel 4200 10500 2    60   Input ~ 0
+CH4_SPI_CS_N
+$Comp
+L LMH6881 U15
+U 1 1 54A6F5CC
+P 3150 9550
+F 0 "U15" H 2600 8500 60  0000 L CNN
+F 1 "LMH6881" H 3750 8500 60  0000 R CNN
+F 2 "azonenberg:QFN_24_0.5MM_4x4MM" H 5000 9600 60  0001 C CNN
+F 3 "" H 5000 9600 60  0000 C CNN
+	1    3150 9550
+	1    0    0    -1  
+$EndComp
+$Comp
+L AD8045 U17
+U 1 1 54A6F5D2
+P 6250 9800
+F 0 "U17" H 6300 9700 60  0000 L CNN
+F 1 "AD8045" H 7100 9700 60  0000 R CNN
+F 2 "azonenberg:DFN_8_0.5MM_3x3MM" H 6250 9800 60  0001 C CNN
+F 3 "" H 6250 9800 60  0000 C CNN
+	1    6250 9800
+	1    0    0    -1  
+$EndComp
+Text Label 5850 9100 2    60   ~ 0
+A5V0
+Text Label 5850 9200 2    60   ~ 0
+GND
+$Comp
+L R R50
+U 1 1 54A6F5DA
+P 5600 9500
+F 0 "R50" V 5550 9300 50  0000 C CNN
+F 1 "100K" V 5600 9500 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 9500 60  0001 C CNN
+F 3 "" H 5600 9500 60  0000 C CNN
+	1    5600 9500
+	0    1    1    0   
+$EndComp
+$Comp
+L R R49
+U 1 1 54A6F5E0
+P 5600 9400
+F 0 "R49" V 5550 9200 50  0000 C CNN
+F 1 "100K" V 5600 9400 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 9400 60  0001 C CNN
+F 3 "" H 5600 9400 60  0000 C CNN
+	1    5600 9400
+	0    1    1    0   
+$EndComp
+$Comp
+L R R51
+U 1 1 54A6F5E6
+P 5600 9600
+F 0 "R51" V 5550 9400 50  0000 C CNN
+F 1 "100K" V 5600 9600 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 9600 60  0001 C CNN
+F 3 "" H 5600 9600 60  0000 C CNN
+	1    5600 9600
+	0    1    1    0   
+$EndComp
+$Comp
+L R R52
+U 1 1 54A6F5EC
+P 5600 9700
+F 0 "R52" V 5550 9500 50  0000 C CNN
+F 1 "100K" V 5600 9700 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 9700 60  0001 C CNN
+F 3 "" H 5600 9700 60  0000 C CNN
+	1    5600 9700
+	0    1    1    0   
+$EndComp
+$Comp
+L R R48
+U 1 1 54A6F5F2
+P 5600 9300
+F 0 "R48" V 5550 9100 50  0000 C CNN
+F 1 "100K" V 5600 9300 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 9300 60  0001 C CNN
+F 3 "" H 5600 9300 60  0000 C CNN
+	1    5600 9300
+	0    1    1    0   
+$EndComp
+Text Label 5250 9300 2    60   ~ 0
+GND
+Text Label 5250 9400 2    60   ~ 0
+AVREF_2V5
+Text Label 5250 9700 2    60   ~ 0
+GND
+$Comp
+L R R53
+U 1 1 54A6F5FB
+P 5600 9800
+F 0 "R53" V 5550 9600 50  0000 C CNN
+F 1 "100K" V 5600 9800 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5600 9800 60  0001 C CNN
+F 3 "" H 5600 9800 60  0000 C CNN
+	1    5600 9800
+	0    1    1    0   
+$EndComp
+Text Label 7450 9500 0    60   ~ 0
+CH4_VDIFF
+Text Notes 2600 10750 0    60   ~ 0
+Programmable-gain preamplifier
+Text Notes 5350 10150 0    60   ~ 0
+Convert differential voltage to single-ended\ncentered at +2.5V virtual ground
+Text HLabel 9650 9100 2    60   Input ~ 0
+2V5
+$Comp
+L LMH7322 U18
+U 2 1 54A6F605
+P 8950 9900
+F 0 "U18" H 8450 9800 60  0000 L CNN
+F 1 "LMH7322" H 9300 9800 60  0000 R CNN
+F 2 "azonenberg:QFN_24_0.5MM_4x4MM" H 8450 9850 60  0001 C CNN
+F 3 "" H 8450 9850 60  0000 C CNN
+	2    8950 9900
+	1    0    0    -1  
+$EndComp
+Text Label 7900 9600 2    60   ~ 0
+AFE_VREF
+$Comp
+L R R58
+U 1 1 54A6F60C
+P 9900 9800
+F 0 "R58" V 9850 9600 50  0000 C CNN
+F 1 "100K" V 9900 9800 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 9900 9800 60  0001 C CNN
+F 3 "" H 9900 9800 60  0000 C CNN
+	1    9900 9800
+	0    1    1    0   
+$EndComp
+Text Label 10250 9800 0    60   ~ 0
+GND
+$Comp
+L R R59
+U 1 1 54A6F613
+P 9900 9900
+F 0 "R59" V 9850 9700 50  0000 C CNN
+F 1 "100K" V 9900 9900 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 9900 9900 60  0001 C CNN
+F 3 "" H 9900 9900 60  0000 C CNN
+	1    9900 9900
+	0    1    1    0   
+$EndComp
+Text Label 10250 9900 0    60   ~ 0
+2V5
+Text Label 9650 9000 0    60   ~ 0
+2V5
+Text HLabel 9650 9500 2    60   Output ~ 0
+CH4_SAMPLE_P
+Text HLabel 9650 9600 2    60   Output ~ 0
+CH4_SAMPLE_N
+Text Label 8100 9000 2    60   ~ 0
+A5V0
+Text Label 8100 9100 2    60   ~ 0
+GND
+$Comp
+L R R55
+U 1 1 54A6F61F
+P 8000 9900
+F 0 "R55" V 7950 9700 50  0000 C CNN
+F 1 "20K" V 8000 9900 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 8000 9900 60  0001 C CNN
+F 3 "" H 8000 9900 60  0000 C CNN
+	1    8000 9900
+	0    1    1    0   
+$EndComp
+Text Notes 8450 10150 0    60   ~ 0
+Digitize analog voltage
+Text Notes 11100 11550 2    157  ~ 31
+CHANNEL 4
+Text Notes 750  11500 0    60   ~ 0
+PGA decoupling
+$Comp
+L C C74
+U 1 1 54A6F628
+P 750 11200
+F 0 "C74" H 800 11300 50  0000 L CNN
+F 1 "0.1 uF" H 800 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 750 11200 60  0001 C CNN
+F 3 "" H 750 11200 60  0000 C CNN
+	1    750  11200
+	1    0    0    -1  
+$EndComp
+Text Label 750  11000 2    60   ~ 0
+A5V0
+Text Label 750  11400 2    60   ~ 0
+GND
+$Comp
+L C C76
+U 1 1 54A6F630
+P 1050 11200
+F 0 "C76" H 1100 11300 50  0000 L CNN
+F 1 "0.1 uF" H 1100 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1050 11200 60  0001 C CNN
+F 3 "" H 1050 11200 60  0000 C CNN
+	1    1050 11200
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C78
+U 1 1 54A6F636
+P 1350 11200
+F 0 "C78" H 1400 11300 50  0000 L CNN
+F 1 "0.1 uF" H 1400 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1350 11200 60  0001 C CNN
+F 3 "" H 1350 11200 60  0000 C CNN
+	1    1350 11200
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C84
+U 1 1 54A6F63C
+P 1650 11200
+F 0 "C84" H 1700 11300 50  0000 L CNN
+F 1 "0.1 uF" H 1700 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 1650 11200 60  0001 C CNN
+F 3 "" H 1650 11200 60  0000 C CNN
+	1    1650 11200
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C86
+U 1 1 54A6F642
+P 1950 11200
+F 0 "C86" H 2000 11300 50  0000 L CNN
+F 1 "4.7 uF" H 2000 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 1950 11200 60  0001 C CNN
+F 3 "" H 1950 11200 60  0000 C CNN
+	1    1950 11200
+	1    0    0    -1  
+$EndComp
+Text Notes 5350 11500 0    60   ~ 0
+D2S decoupling
+$Comp
+L C C88
+U 1 1 54A6F649
+P 5350 11200
+F 0 "C88" H 5400 11300 50  0000 L CNN
+F 1 "0.1 uF" H 5400 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 5350 11200 60  0001 C CNN
+F 3 "" H 5350 11200 60  0000 C CNN
+	1    5350 11200
+	1    0    0    -1  
+$EndComp
+Text Label 5350 11000 2    60   ~ 0
+A5V0
+Text Label 5350 11400 2    60   ~ 0
+GND
+$Comp
+L C C90
+U 1 1 54A6F651
+P 5650 11200
+F 0 "C90" H 5700 11300 50  0000 L CNN
+F 1 "0.1 uF" H 5700 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 5650 11200 60  0001 C CNN
+F 3 "" H 5650 11200 60  0000 C CNN
+	1    5650 11200
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C92
+U 1 1 54A6F657
+P 6000 11200
+F 0 "C92" H 6050 11300 50  0000 L CNN
+F 1 "4.7 uF" H 6050 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 6000 11200 60  0001 C CNN
+F 3 "" H 6000 11200 60  0000 C CNN
+	1    6000 11200
+	1    0    0    -1  
+$EndComp
+Text Notes 7850 11500 0    60   ~ 0
+Comparator decoupling
+$Comp
+L C C98
+U 1 1 54A6F65E
+P 7850 11200
+F 0 "C98" H 7900 11300 50  0000 L CNN
+F 1 "0.1 uF" H 7900 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 7850 11200 60  0001 C CNN
+F 3 "" H 7850 11200 60  0000 C CNN
+	1    7850 11200
+	1    0    0    -1  
+$EndComp
+Text Label 7850 11000 2    60   ~ 0
+A5V0
+Text Label 7850 11400 2    60   ~ 0
+GND
+$Comp
+L C C100
+U 1 1 54A6F666
+P 8200 11200
+F 0 "C100" H 8250 11300 50  0000 L CNN
+F 1 "4.7 uF" H 8250 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 8200 11200 60  0001 C CNN
+F 3 "" H 8200 11200 60  0000 C CNN
+	1    8200 11200
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C102
+U 1 1 54A6F66C
+P 8550 11200
+F 0 "C102" H 8600 11300 50  0000 L CNN
+F 1 "0.1 uF" H 8600 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 8550 11200 60  0001 C CNN
+F 3 "" H 8550 11200 60  0000 C CNN
+	1    8550 11200
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C104
+U 1 1 54A6F672
+P 8900 11200
+F 0 "C104" H 8950 11300 50  0000 L CNN
+F 1 "0.1 uF" H 8950 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 8900 11200 60  0001 C CNN
+F 3 "" H 8900 11200 60  0000 C CNN
+	1    8900 11200
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C106
+U 1 1 54A6F678
+P 9250 11200
+F 0 "C106" H 9300 11300 50  0000 L CNN
+F 1 "4.7 uF" H 9300 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 9250 11200 60  0001 C CNN
+F 3 "" H 9250 11200 60  0000 C CNN
+	1    9250 11200
+	1    0    0    -1  
+$EndComp
+Text Label 9450 11000 0    60   ~ 0
+2V5
+$Comp
+L C C96
+U 1 1 54A6F6D0
+P 7150 11200
+F 0 "C96" H 7200 11300 50  0000 L CNN
+F 1 "0.1 uF" H 7200 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 7150 11200 60  0001 C CNN
+F 3 "" H 7150 11200 60  0000 C CNN
+	1    7150 11200
+	1    0    0    -1  
+$EndComp
+Text Label 7150 11000 2    60   ~ 0
+AFE_VREF
+Text Label 7150 11400 2    60   ~ 0
+GND
+$Comp
+L C C94
+U 1 1 54A6F6D8
+P 6600 11200
+F 0 "C94" H 6650 11300 50  0000 L CNN
+F 1 "0.1 uF" H 6650 11100 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 6600 11200 60  0001 C CNN
+F 3 "" H 6600 11200 60  0000 C CNN
+	1    6600 11200
+	1    0    0    -1  
+$EndComp
+Text Label 6600 11000 2    60   ~ 0
+AVREF_2V5
+Text Label 6600 11400 2    60   ~ 0
+GND
+Text Label 3750 11450 2    60   ~ 0
+CH4_AC_N
+Text Label 3750 10950 2    60   ~ 0
+CH4_AC_P
+$Comp
+L R R39
+U 1 1 54A6F6E2
+P 3750 11200
+F 0 "R39" V 3830 11200 50  0000 C CNN
+F 1 "100" V 3750 11200 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 3750 11200 60  0001 C CNN
+F 3 "" H 3750 11200 60  0000 C CNN
+	1    3750 11200
+	1    0    0    -1  
+$EndComp
+$Comp
+L R R41
+U 1 1 54A6F6E8
+P 4400 11200
+F 0 "R41" V 4480 11200 50  0000 C CNN
+F 1 "100" V 4400 11200 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 4400 11200 60  0001 C CNN
+F 3 "" H 4400 11200 60  0000 C CNN
+	1    4400 11200
+	1    0    0    -1  
+$EndComp
+Text Label 4400 10950 2    60   ~ 0
+CH4_BUF_P
+Text Label 4400 11450 2    60   ~ 0
+CH4_BUF_N
+Text Notes 3300 11550 0    60   ~ 0
+Optional terminations (TODO spice)
+Text HLabel 5400 12500 2    60   Output ~ 0
+AVREF_1V25
+$Comp
+L LT6660 U21
+U 1 1 54B4C164
+P 1400 12200
+F 0 "U21" H 1400 12100 60  0000 L CNN
+F 1 "LT6660 2.5V" H 2200 12100 60  0000 R CNN
+F 2 "azonenberg:DFN_3_0.5MM_2x2MM" H 1800 12000 60  0001 C CNN
+F 3 "" H 1800 12000 60  0000 C CNN
+	1    1400 12200
+	1    0    0    -1  
+$EndComp
+Text Label 800  12400 2    60   ~ 0
+GND
+Text Label 800  12000 2    60   ~ 0
+A5V0
+$Comp
+L C C130
+U 1 1 54B4DF50
+P 900 12200
+F 0 "C130" H 950 12300 50  0000 L CNN
+F 1 "0.1 uF" H 950 12100 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 900 12200 60  0001 C CNN
+F 3 "" H 900 12200 60  0000 C CNN
+	1    900  12200
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C132
+U 1 1 54B4EDD5
+P 2400 12200
+F 0 "C132" H 2450 12300 50  0000 L CNN
+F 1 "0.1 uF" H 2450 12100 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 2400 12200 60  0001 C CNN
+F 3 "" H 2400 12200 60  0000 C CNN
+	1    2400 12200
+	1    0    0    -1  
+$EndComp
+$Comp
+L MCP6402-DFN U22
+U 1 1 54B544D9
+P 4250 13300
+F 0 "U22" H 4250 13200 60  0000 L CNN
+F 1 "MCP6402-DFN" H 5200 13200 60  0000 R CNN
+F 2 "azonenberg:DFN_8_0.5MM_2x3MM" H 4250 13250 60  0001 C CNN
+F 3 "" H 4250 13250 60  0000 C CNN
+	1    4250 13300
+	1    0    0    -1  
+$EndComp
+Text Label 3900 13100 2    60   ~ 0
+A5V0
+Text Label 3900 13200 2    60   ~ 0
+GND
+$Comp
+L C C133
+U 1 1 54B567D4
+P 2750 12200
+F 0 "C133" H 2800 12300 50  0000 L CNN
+F 1 "4.7 uF" H 2800 12100 50  0000 L CNN
+F 2 "azonenberg:EIA_0603_CAP_NOSILK" H 2750 12200 60  0001 C CNN
+F 3 "" H 2750 12200 60  0000 C CNN
+	1    2750 12200
+	1    0    0    -1  
+$EndComp
+$Comp
+L R R61
+U 1 1 54B57722
+P 3200 12250
+F 0 "R61" V 3280 12250 50  0000 C CNN
+F 1 "100K" V 3200 12250 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 3200 12250 60  0001 C CNN
+F 3 "" H 3200 12250 60  0000 C CNN
+	1    3200 12250
+	1    0    0    -1  
+$EndComp
+$Comp
+L R R62
+U 1 1 54B57C49
+P 2950 12500
+F 0 "R62" V 3030 12500 50  0000 C CNN
+F 1 "100K" V 2950 12500 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 2950 12500 60  0001 C CNN
+F 3 "" H 2950 12500 60  0000 C CNN
+	1    2950 12500
+	0    1    1    0   
+$EndComp
+Text Label 3900 12350 0    60   ~ 0
+AVREF_1V25_UNBUF
+Wire Wire Line
+	1150 1000 1250 1000
+Wire Wire Line
+	1150 1300 1250 1300
+Wire Wire Line
+	1650 1000 2200 1000
+Wire Wire Line
+	2200 1000 2200 1100
+Wire Wire Line
+	2200 1100 2400 1100
+Wire Wire Line
+	1650 1300 2200 1300
+Wire Wire Line
+	2200 1300 2200 1200
+Wire Wire Line
+	2200 1200 2400 1200
+Wire Wire Line
+	2400 600  2400 900 
+Connection ~ 2400 700 
+Connection ~ 2400 800 
+Wire Wire Line
+	2400 1700 2400 2100
+Connection ~ 2400 2000
+Connection ~ 2400 1800
+Connection ~ 2400 1900
+Wire Wire Line
+	2250 2000 2400 2000
+Wire Wire Line
+	2250 600  2400 600 
+Wire Wire Line
+	2250 800  2400 800 
+Wire Wire Line
+	4200 1500 3950 1500
+Wire Wire Line
+	4200 1400 3950 1400
+Wire Wire Line
+	4200 1700 3950 1700
+Wire Wire Line
+	4200 1800 3950 1800
+Wire Wire Line
+	4200 1900 3950 1900
+Wire Wire Line
+	4200 2000 3950 2000
+Wire Wire Line
+	4200 2100 3950 2100
+Wire Wire Line
+	6050 800  6050 900 
+Wire Wire Line
+	5850 700  6050 700 
+Wire Wire Line
+	5850 800  6050 800 
+Wire Wire Line
+	2250 1800 2400 1800
+Wire Wire Line
+	5850 900  5850 1100
+Wire Wire Line
+	5850 1100 6050 1100
+Connection ~ 5850 1000
+Wire Wire Line
+	5250 900  5350 900 
+Wire Wire Line
+	5250 1000 5350 1000
+Wire Wire Line
+	5850 1200 6050 1200
+Wire Wire Line
+	5250 1300 5350 1300
+Wire Wire Line
+	5850 1200 5850 1400
+Connection ~ 5850 1300
+Wire Wire Line
+	5350 1400 5350 1500
+Wire Wire Line
+	5350 1500 6050 1500
+Wire Wire Line
+	6050 1500 6050 1400
+Wire Wire Line
+	7300 1100 8250 1100
+Wire Wire Line
+	3950 1100 5350 1100
+Wire Wire Line
+	3950 1200 5350 1200
+Wire Wire Line
+	7900 1200 8250 1200
+Wire Wire Line
+	10250 1400 10150 1400
+Wire Wire Line
+	9650 1400 9500 1400
+Wire Wire Line
+	9650 1500 9500 1500
+Wire Wire Line
+	10250 1500 10150 1500
+Wire Wire Line
+	9500 600  9650 600 
+Wire Wire Line
+	9500 600  9500 700 
+Wire Wire Line
+	9500 700  9650 700 
+Wire Wire Line
+	9650 1100 9500 1100
+Wire Wire Line
+	9500 1200 9650 1200
+Wire Wire Line
+	8100 600  8250 600 
+Wire Wire Line
+	8100 700  8250 700 
+Wire Wire Line
+	8250 700  8250 800 
+Wire Wire Line
+	8250 1400 7650 1400
+Wire Wire Line
+	7650 1400 7650 1500
+Wire Wire Line
+	7650 1500 7750 1500
+Wire Notes Line
+	500  3200 11150 3200
+Wire Wire Line
+	750  2600 1950 2600
+Connection ~ 1050 2600
+Connection ~ 1350 2600
+Connection ~ 1650 2600
+Wire Wire Line
+	750  3000 1950 3000
+Connection ~ 1650 3000
+Connection ~ 1350 3000
+Connection ~ 1050 3000
+Connection ~ 5650 2600
+Connection ~ 5650 3000
+Wire Wire Line
+	5350 2600 6000 2600
+Wire Wire Line
+	5350 3000 6000 3000
+Wire Wire Line
+	7850 2600 8200 2600
+Wire Wire Line
+	7850 3000 9250 3000
+Wire Wire Line
+	8550 2600 9450 2600
+Connection ~ 9250 2600
+Connection ~ 8900 2600
+Connection ~ 8900 3000
+Connection ~ 8200 3000
+Connection ~ 8550 3000
+Wire Wire Line
+	1150 3800 1250 3800
+Wire Wire Line
+	1150 4100 1250 4100
+Wire Wire Line
+	1650 3800 2200 3800
+Wire Wire Line
+	2200 3800 2200 3900
+Wire Wire Line
+	2200 3900 2400 3900
+Wire Wire Line
+	1650 4100 2200 4100
+Wire Wire Line
+	2200 4100 2200 4000
+Wire Wire Line
+	2200 4000 2400 4000
+Wire Wire Line
+	2400 3400 2400 3700
+Connection ~ 2400 3500
+Connection ~ 2400 3600
+Wire Wire Line
+	2400 4500 2400 4900
+Connection ~ 2400 4800
+Connection ~ 2400 4600
+Connection ~ 2400 4700
+Wire Wire Line
+	2250 4800 2400 4800
+Wire Wire Line
+	2250 3400 2400 3400
+Wire Wire Line
+	2250 3600 2400 3600
+Wire Wire Line
+	4200 4300 3950 4300
+Wire Wire Line
+	4200 4200 3950 4200
+Wire Wire Line
+	4200 4500 3950 4500
+Wire Wire Line
+	4200 4600 3950 4600
+Wire Wire Line
+	4200 4700 3950 4700
+Wire Wire Line
+	4200 4800 3950 4800
+Wire Wire Line
+	4200 4900 3950 4900
+Wire Wire Line
+	6050 3600 6050 3700
+Wire Wire Line
+	5850 3500 6050 3500
+Wire Wire Line
+	5850 3600 6050 3600
+Wire Wire Line
+	2250 4600 2400 4600
+Wire Wire Line
+	5850 3700 5850 3900
+Wire Wire Line
+	5850 3900 6050 3900
+Connection ~ 5850 3800
+Wire Wire Line
+	5250 3700 5350 3700
+Wire Wire Line
+	5250 3800 5350 3800
+Wire Wire Line
+	5850 4000 6050 4000
+Wire Wire Line
+	5250 4100 5350 4100
+Wire Wire Line
+	5850 4000 5850 4200
+Connection ~ 5850 4100
+Wire Wire Line
+	5350 4200 5350 4300
+Wire Wire Line
+	5350 4300 6050 4300
+Wire Wire Line
+	6050 4300 6050 4200
+Wire Wire Line
+	7300 3900 8250 3900
+Wire Wire Line
+	3950 3900 5350 3900
+Wire Wire Line
+	3950 4000 5350 4000
+Wire Wire Line
+	7900 4000 8250 4000
+Wire Wire Line
+	10250 4200 10150 4200
+Wire Wire Line
+	9650 4200 9500 4200
+Wire Wire Line
+	9650 4300 9500 4300
+Wire Wire Line
+	10250 4300 10150 4300
+Wire Wire Line
+	9500 3400 9650 3400
+Wire Wire Line
+	9500 3400 9500 3500
+Wire Wire Line
+	9500 3500 9650 3500
+Wire Wire Line
+	9650 3900 9500 3900
+Wire Wire Line
+	9500 4000 9650 4000
+Wire Wire Line
+	8100 3400 8250 3400
+Wire Wire Line
+	8100 3500 8250 3500
+Wire Wire Line
+	8250 4200 7650 4200
+Wire Wire Line
+	7650 4200 7650 4300
+Wire Wire Line
+	7650 4300 7750 4300
+Wire Notes Line
+	500  6000 11150 6000
+Wire Wire Line
+	750  5400 1950 5400
+Connection ~ 1050 5400
+Connection ~ 1350 5400
+Connection ~ 1650 5400
+Wire Wire Line
+	750  5800 1950 5800
+Connection ~ 1650 5800
+Connection ~ 1350 5800
+Connection ~ 1050 5800
+Connection ~ 5650 5400
+Connection ~ 5650 5800
+Wire Wire Line
+	5350 5400 6000 5400
+Wire Wire Line
+	5350 5800 6000 5800
+Wire Wire Line
+	7850 5400 8200 5400
+Wire Wire Line
+	7850 5800 9250 5800
+Wire Wire Line
+	8550 5400 9450 5400
+Connection ~ 9250 5400
+Connection ~ 8900 5400
+Connection ~ 8900 5800
+Connection ~ 8200 5800
+Connection ~ 8550 5800
+Wire Wire Line
+	1150 6600 1250 6600
+Wire Wire Line
+	1150 6900 1250 6900
+Wire Wire Line
+	1650 6600 2200 6600
+Wire Wire Line
+	2200 6600 2200 6700
+Wire Wire Line
+	2200 6700 2400 6700
+Wire Wire Line
+	1650 6900 2200 6900
+Wire Wire Line
+	2200 6900 2200 6800
+Wire Wire Line
+	2200 6800 2400 6800
+Wire Wire Line
+	2400 6200 2400 6500
+Connection ~ 2400 6300
+Connection ~ 2400 6400
+Wire Wire Line
+	2400 7300 2400 7700
+Connection ~ 2400 7600
+Connection ~ 2400 7400
+Connection ~ 2400 7500
+Wire Wire Line
+	2250 7600 2400 7600
+Wire Wire Line
+	2250 6200 2400 6200
+Wire Wire Line
+	2250 6400 2400 6400
+Wire Wire Line
+	4200 7100 3950 7100
+Wire Wire Line
+	4200 7000 3950 7000
+Wire Wire Line
+	4200 7300 3950 7300
+Wire Wire Line
+	4200 7400 3950 7400
+Wire Wire Line
+	4200 7500 3950 7500
+Wire Wire Line
+	4200 7600 3950 7600
+Wire Wire Line
+	4200 7700 3950 7700
+Wire Wire Line
+	6050 6400 6050 6500
+Wire Wire Line
+	5850 6300 6050 6300
+Wire Wire Line
+	5850 6400 6050 6400
+Wire Wire Line
+	2250 7400 2400 7400
+Wire Wire Line
+	5850 6500 5850 6700
+Wire Wire Line
+	5850 6700 6050 6700
+Connection ~ 5850 6600
+Wire Wire Line
+	5250 6500 5350 6500
+Wire Wire Line
+	5250 6600 5350 6600
+Wire Wire Line
+	5850 6800 6050 6800
+Wire Wire Line
+	5250 6900 5350 6900
+Wire Wire Line
+	5850 6800 5850 7000
+Connection ~ 5850 6900
+Wire Wire Line
+	5350 7000 5350 7100
+Wire Wire Line
+	5350 7100 6050 7100
+Wire Wire Line
+	6050 7100 6050 7000
+Wire Wire Line
+	7300 6700 8250 6700
+Wire Wire Line
+	3950 6700 5350 6700
+Wire Wire Line
+	3950 6800 5350 6800
+Wire Wire Line
+	7900 6800 8250 6800
+Wire Wire Line
+	10250 7000 10150 7000
+Wire Wire Line
+	9650 7000 9500 7000
+Wire Wire Line
+	9650 7100 9500 7100
+Wire Wire Line
+	10250 7100 10150 7100
+Wire Wire Line
+	9500 6200 9650 6200
+Wire Wire Line
+	9500 6200 9500 6300
+Wire Wire Line
+	9500 6300 9650 6300
+Wire Wire Line
+	9650 6700 9500 6700
+Wire Wire Line
+	9500 6800 9650 6800
+Wire Wire Line
+	8100 6200 8250 6200
+Wire Wire Line
+	8100 6300 8250 6300
+Wire Wire Line
+	8250 6300 8250 6400
+Wire Wire Line
+	8250 7000 7650 7000
+Wire Wire Line
+	7650 7000 7650 7100
+Wire Wire Line
+	7650 7100 7750 7100
+Wire Notes Line
+	500  8800 11150 8800
+Wire Wire Line
+	750  8200 1950 8200
+Connection ~ 1050 8200
+Connection ~ 1350 8200
+Connection ~ 1650 8200
+Wire Wire Line
+	750  8600 1950 8600
+Connection ~ 1650 8600
+Connection ~ 1350 8600
+Connection ~ 1050 8600
+Connection ~ 5650 8200
+Connection ~ 5650 8600
+Wire Wire Line
+	5350 8200 6000 8200
+Wire Wire Line
+	5350 8600 6000 8600
+Wire Wire Line
+	7850 8200 8200 8200
+Wire Wire Line
+	7850 8600 9250 8600
+Wire Wire Line
+	8550 8200 9450 8200
+Connection ~ 9250 8200
+Connection ~ 8900 8200
+Connection ~ 8900 8600
+Connection ~ 8200 8600
+Connection ~ 8550 8600
+Wire Wire Line
+	1150 9400 1250 9400
+Wire Wire Line
+	1150 9700 1250 9700
+Wire Wire Line
+	1650 9400 2200 9400
+Wire Wire Line
+	2200 9400 2200 9500
+Wire Wire Line
+	2200 9500 2400 9500
+Wire Wire Line
+	1650 9700 2200 9700
+Wire Wire Line
+	2200 9700 2200 9600
+Wire Wire Line
+	2200 9600 2400 9600
+Wire Wire Line
+	2400 9000 2400 9300
+Connection ~ 2400 9100
+Connection ~ 2400 9200
+Wire Wire Line
+	2400 10100 2400 10500
+Connection ~ 2400 10400
+Connection ~ 2400 10200
+Connection ~ 2400 10300
+Wire Wire Line
+	2250 10400 2400 10400
+Wire Wire Line
+	2250 9000 2400 9000
+Wire Wire Line
+	2250 9200 2400 9200
+Wire Wire Line
+	4200 9900 3950 9900
+Wire Wire Line
+	4200 9800 3950 9800
+Wire Wire Line
+	4200 10100 3950 10100
+Wire Wire Line
+	4200 10200 3950 10200
+Wire Wire Line
+	4200 10300 3950 10300
+Wire Wire Line
+	4200 10400 3950 10400
+Wire Wire Line
+	4200 10500 3950 10500
+Wire Wire Line
+	6050 9200 6050 9300
+Wire Wire Line
+	5850 9100 6050 9100
+Wire Wire Line
+	5850 9200 6050 9200
+Wire Wire Line
+	2250 10200 2400 10200
+Wire Wire Line
+	5850 9300 5850 9500
+Wire Wire Line
+	5850 9500 6050 9500
+Connection ~ 5850 9400
+Wire Wire Line
+	5250 9300 5350 9300
+Wire Wire Line
+	5250 9400 5350 9400
+Wire Wire Line
+	5850 9600 6050 9600
+Wire Wire Line
+	5250 9700 5350 9700
+Wire Wire Line
+	5850 9600 5850 9800
+Connection ~ 5850 9700
+Wire Wire Line
+	5350 9800 5350 9900
+Wire Wire Line
+	5350 9900 6050 9900
+Wire Wire Line
+	6050 9900 6050 9800
+Wire Wire Line
+	7300 9500 8250 9500
+Wire Wire Line
+	3950 9500 5350 9500
+Wire Wire Line
+	3950 9600 5350 9600
+Wire Wire Line
+	7900 9600 8250 9600
+Wire Wire Line
+	10250 9800 10150 9800
+Wire Wire Line
+	9650 9800 9500 9800
+Wire Wire Line
+	9650 9900 9500 9900
+Wire Wire Line
+	10250 9900 10150 9900
+Wire Wire Line
+	9500 9000 9650 9000
+Wire Wire Line
+	9500 9000 9500 9100
+Wire Wire Line
+	9500 9100 9650 9100
+Wire Wire Line
+	9650 9500 9500 9500
+Wire Wire Line
+	9500 9600 9650 9600
+Wire Wire Line
+	8100 9000 8250 9000
+Wire Wire Line
+	8100 9100 8250 9100
+Wire Wire Line
+	8250 9800 7650 9800
+Wire Wire Line
+	7650 9800 7650 9900
+Wire Wire Line
+	7650 9900 7750 9900
+Wire Notes Line
+	500  11600 11150 11600
+Wire Wire Line
+	750  11000 1950 11000
+Connection ~ 1050 11000
+Connection ~ 1350 11000
+Connection ~ 1650 11000
+Wire Wire Line
+	750  11400 1950 11400
+Connection ~ 1650 11400
+Connection ~ 1350 11400
+Connection ~ 1050 11400
+Connection ~ 5650 11000
+Connection ~ 5650 11400
+Wire Wire Line
+	5350 11000 6000 11000
+Wire Wire Line
+	5350 11400 6000 11400
+Wire Wire Line
+	7850 11000 8200 11000
+Wire Wire Line
+	7850 11400 9250 11400
+Wire Wire Line
+	8550 11000 9450 11000
+Connection ~ 9250 11000
+Connection ~ 8900 11000
+Connection ~ 8900 11400
+Connection ~ 8200 11400
+Connection ~ 8550 11400
+Wire Wire Line
+	1200 12100 1200 12400
+Wire Wire Line
+	800  12000 1200 12000
+Wire Wire Line
+	800  12400 2750 12400
+Connection ~ 900  12000
+Connection ~ 900  12400
+Wire Wire Line
+	2150 12000 3200 12000
+Wire Wire Line
+	3500 13100 4050 13100
+Wire Wire Line
+	3900 13200 4050 13200
+Wire Wire Line
+	4050 13200 4050 13500
+Connection ~ 2400 12000
+Connection ~ 2400 12400
+Connection ~ 2750 12000
+Wire Wire Line
+	3200 12500 4050 12500
+Connection ~ 4050 13300
+Wire Wire Line
+	5400 12800 5300 12800
+Text Label 5400 12350 0    60   ~ 0
+AVREF_1V25_RAW
+Text Label 3900 12600 2    60   ~ 0
+AVREF_1V25
+Wire Wire Line
+	3900 12600 4050 12600
+$Comp
+L C C131
+U 1 1 54B5CB96
+P 3500 13300
+F 0 "C131" H 3550 13400 50  0000 L CNN
+F 1 "0.1 uF" H 3550 13200 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 3500 13300 60  0001 C CNN
+F 3 "" H 3500 13300 60  0000 C CNN
+	1    3500 13300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4050 13500 3500 13500
+Wire Wire Line
+	5400 12500 5400 12350
+Wire Wire Line
+	5400 12500 5300 12500
+Wire Wire Line
+	3900 12350 3900 12500
+Connection ~ 3900 12500
+Wire Wire Line
+	2700 12500 2700 12400
+Connection ~ 2700 12400
+Text Notes 5400 13100 0    60   ~ 0
+Multiply temperature voltage by 3\nfor better fit to XADC range
+Text HLabel 3900 12800 0    60   Input ~ 0
+PTMP
+Text HLabel 7350 13550 0    60   Output ~ 0
+DAC_SPI_MISO
+Text HLabel 7350 13850 0    60   Input ~ 0
+DAC_SPI_MOSI
+Text HLabel 7350 13750 0    60   Input ~ 0
+DAC_SPI_SCK
+Text HLabel 7350 13650 0    60   Input ~ 0
+DAC_SPI_CS_N
+$Comp
+L DAC7752 U23
+U 1 1 54B83ADC
+P 7750 13850
+F 0 "U23" H 7750 13750 60  0000 L CNN
+F 1 "DAC7752" H 8750 13750 60  0000 R CNN
+F 2 "azonenberg:QFN_16_0.5MM_3x3MM" H 7750 13800 60  0001 C CNN
+F 3 "" H 7750 13800 60  0000 C CNN
+	1    7750 13850
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7350 13850 7550 13850
+Wire Wire Line
+	7550 13750 7350 13750
+Wire Wire Line
+	7350 13650 7550 13650
+Wire Wire Line
+	7550 13550 7350 13550
+Wire Wire Line
+	7350 12350 7550 12350
+Text Label 7350 12450 2    60   ~ 0
+A5V0
+Wire Wire Line
+	7350 12450 7550 12450
+Text HLabel 7350 12350 0    60   Input ~ 0
+1V8
+$Comp
+L C C134
+U 1 1 54B8D321
+P 7550 12000
+F 0 "C134" H 7600 12100 50  0000 L CNN
+F 1 "0.1 uF" H 7600 11900 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 7550 12000 60  0001 C CNN
+F 3 "" H 7550 12000 60  0000 C CNN
+	1    7550 12000
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7550 12350 7550 12200
+$Comp
+L C C135
+U 1 1 54B8DE61
+P 7950 12000
+F 0 "C135" H 8000 12100 50  0000 L CNN
+F 1 "0.1 uF" H 8000 11900 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 7950 12000 60  0001 C CNN
+F 3 "" H 7950 12000 60  0000 C CNN
+	1    7950 12000
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7350 11800 7950 11800
+Text Label 8300 12200 0    60   ~ 0
+A5V0
+Wire Wire Line
+	8300 12200 7950 12200
+Text Label 7350 11800 2    60   ~ 0
+GND
+Connection ~ 7550 11800
+Wire Wire Line
+	8950 12650 8950 12750
+Text Label 9100 12650 0    60   ~ 0
+UNUSED_DACOUT
+Wire Wire Line
+	9100 12650 8950 12650
+Wire Wire Line
+	9100 12350 8950 12350
+Wire Wire Line
+	8950 12350 8950 12450
+Text Label 7350 12850 2    60   ~ 0
+A5V0
+Text Label 7350 12550 2    60   ~ 0
+GND
+Wire Wire Line
+	7350 12550 7550 12550
+Wire Wire Line
+	7350 12850 7550 12850
+Wire Wire Line
+	7550 12850 7550 12950
+Wire Wire Line
+	7550 12550 7550 12650
+Text Label 7350 13150 2    60   ~ 0
+1V8
+Wire Wire Line
+	7350 13150 7550 13150
+Text Label 7350 13250 2    60   ~ 0
+GND
+Wire Wire Line
+	7350 13250 7550 13250
+Text Label 7350 13350 2    60   ~ 0
+1V8
+Wire Wire Line
+	7350 13350 7550 13350
+Text HLabel 5400 12800 2    60   Output ~ 0
+PTMP_BUF
+Connection ~ 1200 12400
+Connection ~ 1200 12200
+Wire Wire Line
+	3900 12800 4050 12800
+$Comp
+L R R104
+U 1 1 54ABA3F9
+P 5300 13050
+F 0 "R104" V 5380 13050 50  0000 C CNN
+F 1 "200K" V 5300 13050 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5300 13050 60  0001 C CNN
+F 3 "" H 5300 13050 60  0000 C CNN
+	1    5300 13050
+	-1   0    0    1   
+$EndComp
+$Comp
+L R R105
+U 1 1 54ABB66A
+P 5300 13550
+F 0 "R105" V 5380 13550 50  0000 C CNN
+F 1 "100K" V 5300 13550 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 5300 13550 60  0001 C CNN
+F 3 "" H 5300 13550 60  0000 C CNN
+	1    5300 13550
+	-1   0    0    1   
+$EndComp
+Text Label 5450 13300 0    60   ~ 0
+PTMP_FB
+Wire Wire Line
+	5450 13300 5300 13300
+Text Label 5450 13800 0    60   ~ 0
+GND
+Wire Wire Line
+	5450 13800 5300 13800
+Text Label 4050 13000 2    60   ~ 0
+PTMP_FB
+Wire Wire Line
+	4050 13000 4050 12900
+Text Notes 950  14550 0    60   ~ 0
+Level selection for SPI buses: 2.4V
+$Comp
+L R R106
+U 1 1 54ABCBDF
+P 1500 15000
+F 0 "R106" V 1580 15000 50  0000 C CNN
+F 1 "240" V 1500 15000 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 1500 15000 60  0001 C CNN
+F 3 "" H 1500 15000 60  0000 C CNN
+	1    1500 15000
+	-1   0    0    1   
+$EndComp
+Text Label 1500 14750 2    60   ~ 0
+CH1_SPI_MISO
+Text Label 1300 15250 2    60   ~ 0
+GND
+Wire Wire Line
+	1300 15250 3800 15250
+$Comp
+L R R107
+U 1 1 54AC44A4
+P 2250 15000
+F 0 "R107" V 2330 15000 50  0000 C CNN
+F 1 "240" V 2250 15000 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 2250 15000 60  0001 C CNN
+F 3 "" H 2250 15000 60  0000 C CNN
+	1    2250 15000
+	-1   0    0    1   
+$EndComp
+Text Label 2250 14750 2    60   ~ 0
+CH2_SPI_MISO
+Connection ~ 1500 15250
+$Comp
+L R R108
+U 1 1 54AC4B7A
+P 3000 15000
+F 0 "R108" V 3080 15000 50  0000 C CNN
+F 1 "240" V 3000 15000 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 3000 15000 60  0001 C CNN
+F 3 "" H 3000 15000 60  0000 C CNN
+	1    3000 15000
+	-1   0    0    1   
+$EndComp
+Text Label 3000 14750 2    60   ~ 0
+CH3_SPI_MISO
+Connection ~ 2250 15250
+$Comp
+L R R109
+U 1 1 54AC5926
+P 3800 15000
+F 0 "R109" V 3880 15000 50  0000 C CNN
+F 1 "240" V 3800 15000 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 3800 15000 60  0001 C CNN
+F 3 "" H 3800 15000 60  0000 C CNN
+	1    3800 15000
+	-1   0    0    1   
+$EndComp
+Text Label 3800 14750 2    60   ~ 0
+CH4_SPI_MISO
+Connection ~ 3000 15250
+$EndSCHEMATC

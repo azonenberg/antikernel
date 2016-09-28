@@ -1,0 +1,84 @@
+PDU-MIB DEFINITIONS ::= BEGIN
+
+--
+-- @file
+-- @author Andrew D. Zonenberg
+-- @brief SNMPv2 MIB for PDU
+-- 
+
+	IMPORTS
+		MODULE-IDENTITY, OBJECT-TYPE, OBJECT-GROUP FROM SNMPv2-SMI
+		
+		drawersteak, devids FROM DRAWERSTEAK-MIB;
+		
+		-- DisplayString, TruthValue
+		--	FROM SNMPv2-TC
+	
+	-- Root of the PDU MIB		
+	pdu MODULE-IDENTITY
+		LAST-UPDATED "201310021200Z"
+		ORGANIZATION "Andrew Zonenberg"
+		CONTACT-INFO "azonenberg@drawersteak.com"
+		DESCRIPTION "This is the MIB for azonenberg's low voltage DC power distribution unit."
+	::= { drawersteak 2}
+	
+	-- Device ID of the PDU
+	pdu-id OBJECT IDENTIFIER ::= {devids 1}
+	
+	-- Temperature sensors
+	tempSensors OBJECT-TYPE
+		SYNTAX SEQUENCE OF INTEGER
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION "This table contains the readings (in degrees Celsius) from temperature sensors located on the PDU. Refer to the manual of your unit for physical locations of each sensor."
+		::= {pdu 1}
+		
+	-- Current sensors
+	currentMeters OBJECT-TYPE
+		SYNTAX SEQUENCE OF INTEGER
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION "This table contains the readings (in milliamps) for each channel's current sensor."
+		::= {pdu 2}
+	 
+	 -- Line voltage sensors
+	 voltageMeters OBJECT-TYPE
+		SYNTAX SEQUENCE OF INTEGER
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION "This table contains the readings (in millivolts) for each voltage sensor on the main power rail."
+		::= {pdu 3}	 
+	 	
+	 -- Power switches
+	powerSwitches OBJECT-TYPE
+		SYNTAX SEQUENCE OF INTEGER
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "This table contains the power switch values for each channel (0=off, 1=on, 2=breaker tripped). If the circuit breaker trips, it can be reset by turning the channel off and on again. Note that it is not possible to manually place a channel in the tripped state."
+		::= {pdu 4}
+		
+	-- Current limits
+	currentLimits OBJECT-TYPE
+		SYNTAX SEQUENCE OF INTEGER
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "This table contains the current limit values for each channel (in milliamps). Values written to this table are rounded to the nearest legal step value in hardware."
+		::= {pdu 5}
+		
+	-- Inrush timers
+	inrushTimers OBJECT-TYPE
+		SYNTAX SEQUENCE OF INTEGER
+		MAX-ACCESS read-write
+		STATUS current
+		DESCRIPTION "This table contains the slow-blow timer values for each channel (in milliseconds). When a channel is first switched on, the soft circuit breakers are disabled until the timer runs out to prevent false triggering from inrush. Note that the passive fusing on the board cannot be disabled."
+		::= {pdu 6}
+		
+	-- Nominal voltage
+	vnom OBJECT-TYPE
+		SYNTAX SEQUENCE OF INTEGER
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION "This table contains the nominal operating voltage (in millivolts). For the current hardware revision, all channels must run at the same voltage and only one entry is implemented."
+		::= {pdu 7}
+	
+END
