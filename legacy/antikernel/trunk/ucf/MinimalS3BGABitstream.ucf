@@ -1,2 +1,0 @@
-NET "led0" IOSTANDARD = LVCMOS33;
-NET "led0" LOC = C13;

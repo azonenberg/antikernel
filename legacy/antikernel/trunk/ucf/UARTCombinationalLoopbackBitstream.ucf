@@ -1,5 +1,0 @@
-NET "uart_rx" LOC = P39;
-NET "uart_tx" LOC = P40;
-
-NET "uart_rx" IOSTANDARD = LVCMOS33;
-NET "uart_tx" IOSTANDARD = LVCMOS33;

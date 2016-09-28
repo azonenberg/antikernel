@@ -1,2 +1,0 @@
-TIMESPEC TS_[[clkas]]_[[clkbs]] = FROM "[[clka]]" TO "[[clkb]]" [[delay]]ns DATAPATHONLY;
-TIMESPEC TS_[[clkbs]]_[[clkas]] = FROM "[[clkb]]" TO "[[clka]]" [[delay]]ns DATAPATHONLY;
