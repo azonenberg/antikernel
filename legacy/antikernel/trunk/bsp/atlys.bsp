@@ -1,0 +1,149 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                                    //
+//ANTIKERNEL v0.1                                                                                                     //
+//                                                                                                                    //
+//Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                         //
+//All rights reserved.                                                                                                //
+//                                                                                                                    //
+//Redistribution and use in source and binary forms, with or without modification, are permitted provided that the    //
+//following conditions are met:                                                                                       //
+//                                                                                                                    //
+//   * Redistributions of source code must retain the above copyright notice, this list of conditions, and the        //
+//     following disclaimer.                                                                                          //
+//                                                                                                                    //
+//   * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the      //
+//     following disclaimer in the documentation and/or other materials provided with the distribution.               //
+//                                                                                                                    //
+//   * Neither the name of the author nor the names of any contributors may be used to endorse or promote products    //
+//     derived from this software without specific prior written permission.                                          //
+//                                                                                                                    //
+//THIS SOFTWARE IS PROVIDED BY THE AUTHORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED  //
+//TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL//
+//THE AUTHORS BE HELD LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES       //
+//(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR      //
+//BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT//
+//(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE      //
+//POSSIBILITY OF SUCH DAMAGE.                                                                                         //
+//                                                                                                                    //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Global stuff
+
+//The target device
+target	xc6slx45-3csg324 scanpos 0
+
+//100 MHz clock input
+clock	clkin			input	L15 std LVCMOS33	freq 100M
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SPI flash
+
+signal	spi_cs_n	output	V3	std LVCMOS33
+signal	spi_sck		output	R15	std LVCMOS33
+signal	spi_data[0]	inout	T13	std LVCMOS33
+signal	spi_data[1]	inout	R13	std LVCMOS33
+signal	spi_data[2]	inout	T14	std LVCMOS33	pullup
+signal	spi_data[3]	inout	V14	std LVCMOS33	pullup
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Gigabit Ethernet
+
+//Receive clock from PHY
+clock	eth0_rxc		input	K15	std LVCMOS25	freq 125M
+
+//No pullups needed, everything is on the PCB
+signal	eth0_rx_ctl		input	F17	std LVCMOS25
+signal	eth0_rxd[0]		input	G16	std LVCMOS25
+signal	eth0_rxd[1]		input	H14	std LVCMOS25
+signal	eth0_rxd[2]		input	E16	std LVCMOS25
+signal	eth0_rxd[3]		input	F15	std LVCMOS25
+
+signal	eth0_txc		output	L12	std LVCMOS25	fast
+signal	eth0_tx_ctl		output	H15	std LVCMOS25	fast
+signal	eth0_txd[0]		output	H16	std LVCMOS25	fast
+signal	eth0_txd[1]		output	H13	std LVCMOS25	fast
+signal	eth0_txd[2]		output	K14	std LVCMOS25	fast
+signal	eth0_txd[3]		output	K13	std LVCMOS25	fast
+
+signal	eth0_mdio		inout	N17	std LVCMOS25	pullup
+signal	eth0_mdc		output	F16	std LVCMOS25
+
+signal	eth0_reset_n	output	G13	std LVCMOS25
+//no clock out
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// PMOD connector, currently wired to CPLD JTAG test board
+
+//for x1
+signal	cpld_jtag_tms		output	R3	std LVCMOS25
+signal	cpld_jtag_tdo		input	T3	std LVCMOS25	pullup
+signal	cpld_jtag_tdi		output	T9	std LVCMOS25
+signal	cpld_jtag_tck		output	V9	std LVCMOS25
+
+//for x2 CPLD
+signal	cpld_jtag_tms[0]	output	R3	std LVCMOS25
+signal	cpld_jtag_tdo[0]	input	T3	std LVCMOS25	pullup
+signal	cpld_jtag_tdi[0]	output	T9	std LVCMOS25
+signal	cpld_jtag_tck[0]	output	V9	std LVCMOS25
+
+//for x2 passthrough
+signal	cpld_jtag_tms[1]	output	P6	std LVCMOS25
+signal	cpld_jtag_tdo[1]	input	V4	std LVCMOS25	pullup
+signal	cpld_jtag_tdi[1]	output	N5	std LVCMOS25
+signal	cpld_jtag_tck[1]	output	T4	std LVCMOS25
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// DDR2 RAM
+
+signal	ddr2_ras_n		output	L5	std SSTL18_II
+signal	ddr2_cas_n		output	K5	std SSTL18_II
+signal	ddr2_we_n		output	E3	std SSTL18_II
+
+signal	ddr2_odt		output	K6	std SSTL18_II
+signal	ddr2_cke		output	H7	std SSTL18_II
+signal	ddr2_ck_p		output	G3	std DIFF_SSTL18_II
+signal	ddr2_ck_n		output	G1	std DIFF_SSTL18_II
+
+signal	ddr2_udqs_p		inout	P2	std DIFF_SSTL18_II
+signal	ddr2_udqs_n		inout	P1	std DIFF_SSTL18_II
+signal	ddr2_ldqs_p		inout	L4	std DIFF_SSTL18_II
+signal	ddr2_ldqs_n		inout	L3	std DIFF_SSTL18_II
+
+signal	ddr2_udm		output	K4	std SSTL18_II
+signal	ddr2_ldm		output	K3	std SSTL18_II
+
+signal	ddr2_ba[0]		output	F2	std SSTL18_II
+signal	ddr2_ba[1]		output	F1	std SSTL18_II
+signal	ddr2_ba[2]		output	E1	std SSTL18_II
+
+signal	ddr2_addr[0]	output	J7	std SSTL18_II
+signal	ddr2_addr[1]	output	J6	std SSTL18_II
+signal	ddr2_addr[2]	output	H5	std SSTL18_II
+signal	ddr2_addr[3]	output	L7	std SSTL18_II
+signal	ddr2_addr[4]	output	F3	std SSTL18_II
+signal	ddr2_addr[5]	output	H4	std SSTL18_II
+signal	ddr2_addr[6]	output	H3	std SSTL18_II
+signal	ddr2_addr[7]	output	H6	std SSTL18_II
+signal	ddr2_addr[8]	output	D2	std SSTL18_II
+signal	ddr2_addr[9]	output	D1	std SSTL18_II
+signal	ddr2_addr[10]	output	F4	std SSTL18_II
+signal	ddr2_addr[11]	output	D3	std SSTL18_II
+signal	ddr2_addr[12]	output	G6	std SSTL18_II
+
+signal	ddr2_dq[0]		inout	L2	std SSTL18_II
+signal	ddr2_dq[1]		inout	L1	std SSTL18_II
+signal	ddr2_dq[2]		inout	K2	std SSTL18_II
+signal	ddr2_dq[3]		inout	K1	std SSTL18_II
+signal	ddr2_dq[4]		inout	H2	std SSTL18_II
+signal	ddr2_dq[5]		inout	H1	std SSTL18_II
+signal	ddr2_dq[6]		inout	J3	std SSTL18_II
+signal	ddr2_dq[7]		inout	J1	std SSTL18_II
+signal	ddr2_dq[8]		inout	M3	std SSTL18_II
+signal	ddr2_dq[9]		inout	M1	std SSTL18_II
+signal	ddr2_dq[10]		inout	N2	std SSTL18_II
+signal	ddr2_dq[11]		inout	N1	std SSTL18_II
+signal	ddr2_dq[12]		inout	T2	std SSTL18_II
+signal	ddr2_dq[13]		inout	T1	std SSTL18_II
+signal	ddr2_dq[14]		inout	U2	std SSTL18_II
+signal	ddr2_dq[15]		inout	U1	std SSTL18_II

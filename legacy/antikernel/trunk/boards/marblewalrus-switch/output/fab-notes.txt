@@ -1,0 +1,95 @@
+Identification
+	Part number:		MARBLEWALRUS Ethernet switch v0.1
+	Design engineer:	Andrew D. Zonenberg 
+						azonenberg@drawersteak.com
+						518-334-2432
+General fabrication notes
+
+	Boards should be individually routed. Total order is ten boards.
+	
+	Dielectric is standard FR4 with a minimum Tg of 180C.
+
+	The Multech logo and date code should be placed on the BACK side of the board
+
+	Blue LPI solder mask on both sides of board. Mask clearance 50 μm around all NSMD pads.
+	
+	White LPI legend on both sides of board. Resolution should be sufficient to ensure readability of the smallest text.
+	
+	Pad finish is ENIG.
+	
+	All vias should be filled with non-conductive epoxy and plated over.
+	
+	Manufacture should be compliant with IPC class 2 standards.
+	
+	DEBUG NOTES:
+	139 um/ps for outer
+	159 um/ps for inner
+	
+Impedances
+
+	Control to within 10%.
+
+	Layer 1 microstrip (ref to layer 2 ground)
+		127 μm					  = 50 ohms single ended
+		100 μm trace / 150 μm gap = 100 ohms differential
+
+	Layer 3 stripline (ref to layer 2 ground)
+		127 μm					  = 50 ohms single ended
+		100 μm trace / 150 μm gap = 100 ohms differential
+
+	Layer 6 stripline (ref to layer 7 ground)
+		127 μm					  = 50 ohms single ended
+		100 μm trace / 150 μm gap = 100 ohms differential
+		
+	Layer 8 microstrip (ref to layer 7 ground)
+		127 μm					  = 50 ohms single ended
+		100 μm trace / 150 μm gap = 100 ohms differential
+
+Design rules
+
+	Minimum trace/space
+		127 μm clearance / 100 μm trace
+
+	Minimum through-board via
+		450 μm pad, 250 μm drill
+
+Stackup
+	Prepreg thicknesses between layers 3/4 and 5/6 may be adjusted to obtain 1.6mm finished thickness.
+
+	Layer	Thickness (μm)	Desc
+	1		35				Signal
+			90				Prepreg
+	2		35				Ground
+			125				Core
+	3		35				Signal
+			400				Prepreg
+	4		35				Power
+			90				Core
+	5		35				Power
+			400				Prepreg
+	6		35				Signal
+			125				Core
+	7		35				Ground
+			90				Prepreg
+	8		35				Signal
+	
+File naming
+	FIXME HERE
+	marblewalrus-switch.d356				IPC D-356 electrical test netlist
+	marblewalrus-switch-Edge_Cuts.gbr		Board outline
+	marblewalrus-switch.drl					Through-board plated holes
+	marblewalrus-switch-NPTH.drl			Through-board non-plated holes
+	marblewalrus-switch-F_Paste.gbr			Front solder paste
+	marblewalrus-switch-F_SilkS.gbr			Front silkscreen
+	marblewalrus-switch-F_Mask.gbr			Front solder mask
+	marblewalrus-switch-F_Cu.gbr			Layer 1 copper
+	marblewalrus-switch-In1_Cu.gbr			Layer 2 copper
+	marblewalrus-switch-In2_Cu.gbr			Layer 3 copper
+	marblewalrus-switch-In3_Cu.gbr			Layer 4 copper
+	marblewalrus-switch-In4_Cu.gbr			Layer 5 copper
+	marblewalrus-switch-In5_Cu.gbr			Layer 6 copper
+	marblewalrus-switch-In6_Cu.gbr			Layer 7 copper
+	marblewalrus-switch-B_Cu.gbr			Layer 8 copper
+	marblewalrus-switch-B_Mask.gbr			Back solder mask
+	marblewalrus-switch-B_SilkS.gbr			Back silkscreen
+	marblewalrus-switch-B_Paste.gbr			Back solder paste

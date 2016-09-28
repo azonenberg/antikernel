@@ -1,0 +1,173 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                                    //
+//ANTIKERNEL v0.1                                                                                                     //
+//                                                                                                                    //
+//Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                         //
+//All rights reserved.                                                                                                //
+//                                                                                                                    //
+//Redistribution and use in source and binary forms, with or without modification, are permitted provided that the    //
+//following conditions are met:                                                                                       //
+//                                                                                                                    //
+//   * Redistributions of source code must retain the above copyright notice, this list of conditions, and the        //
+//     following disclaimer.                                                                                          //
+//                                                                                                                    //
+//   * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the      //
+//     following disclaimer in the documentation and/or other materials provided with the distribution.               //
+//                                                                                                                    //
+//   * Neither the name of the author nor the names of any contributors may be used to endorse or promote products    //
+//     derived from this software without specific prior written permission.                                          //
+//                                                                                                                    //
+//THIS SOFTWARE IS PROVIDED BY THE AUTHORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED  //
+//TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL//
+//THE AUTHORS BE HELD LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES       //
+//(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR      //
+//BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT//
+//(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE      //
+//POSSIBILITY OF SUCH DAMAGE.                                                                                         //
+//                                                                                                                    //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Global stuff
+
+//The target device
+target	xc6slx25-2ftg256 scanpos 0
+
+//20 MHz clock input
+clock	clkin			input	J6	std LVCMOS33	freq 25M
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Quad SPI NOR flash
+
+signal	flash_spi_cs_n		output	T3	std LVCMOS33
+signal	flash_spi_sck		output	R11	std LVCMOS33
+signal	flash_spi_data[0]	inout	T10	std LVCMOS33
+signal	flash_spi_data[1]	inout	P10	std LVCMOS33
+signal	flash_spi_data[2]	inout	N12	std LVCMOS33	pullup
+signal	flash_spi_data[3]	inout	P12	std LVCMOS33	pullup
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// GPIOs
+
+signal	gpio[0]			inout	T8	std LVCMOS33	pulldown
+signal	gpio[1]			inout	T7	std LVCMOS33	pulldown
+signal	gpio[2]			inout	R7	std LVCMOS33	pulldown
+signal	gpio[3]			inout	P6	std LVCMOS33	pulldown
+signal	gpio[4]			inout	T6	std LVCMOS33	pulldown
+signal	gpio[5]			inout	R5	std LVCMOS33	pulldown
+signal	gpio[6]			inout	T4	std LVCMOS33	pulldown
+signal	gpio[7]			inout	N5	std LVCMOS33	pulldown
+signal	gpio[8]			inout	P4	std LVCMOS33	pulldown
+signal	gpio[9]			inout	R3	std LVCMOS33	pulldown
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Error indicator LED
+
+signal	fault_led		output	T15	std LVCMOS25
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Voltage selectors
+
+signal	voltage_mode_5	input	R9	std LVCMOS33
+signal	voltage_mode_12	input	T9	std LVCMOS33
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// I2C bus
+
+signal	i2c_sda			inout	B14	std LVCMOS33
+signal	i2c_scl			output	A14	std LVCMOS33
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SPI buses
+
+signal	spi_cs_n[0]		output	A11	std LVCMOS33
+signal	spi_mosi[0]		output	A10	std LVCMOS33
+signal	spi_miso[0]		input	B10	std LVCMOS33	pulldown
+signal	spi_sck[0]		output	A9	std LVCMOS33
+
+signal	spi_cs_n[1]		output	A6	std LVCMOS33
+signal	spi_mosi[1]		output	B6	std LVCMOS33
+signal	spi_miso[1]		input	C6	std LVCMOS33	pulldown
+signal	spi_sck[1]		output	D6	std LVCMOS33
+
+signal	spi_cs_n[2]		output	A2	std LVCMOS33
+signal	spi_mosi[2]		output	B2	std LVCMOS33
+signal	spi_miso[2]		input	C2	std LVCMOS33	pulldown
+signal	spi_sck[2]		output	C1	std LVCMOS33
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Output stage I/Os
+
+signal	pwr_oe[0]		output	A13	std LVCMOS33
+signal	pwr_oe[1]		output	D9	std LVCMOS33
+signal	pwr_oe[2]		output	A8	std LVCMOS33
+signal	pwr_oe[3]		output	D8	std LVCMOS33
+signal	pwr_oe[4]		output	C5	std LVCMOS33
+signal	pwr_oe[5]		output	A5	std LVCMOS33
+signal	pwr_oe[6]		output	A4	std LVCMOS33
+signal	pwr_oe[7]		output	B3	std LVCMOS33
+signal	pwr_oe[8]		output	F3	std LVCMOS33
+signal	pwr_oe[9]		output	F2	std LVCMOS33
+
+signal	oc_alert[0]		input	A12	std LVCMOS33
+signal	oc_alert[1]		input	C8	std LVCMOS33
+signal	oc_alert[2]		input	B8	std LVCMOS33
+signal	oc_alert[3]		input	A7	std LVCMOS33
+signal	oc_alert[4]		input	D5	std LVCMOS33
+signal	oc_alert[5]		input	B5	std LVCMOS33
+signal	oc_alert[6]		input	A3	std LVCMOS33
+signal	oc_alert[7]		input	E1	std LVCMOS33
+signal	oc_alert[8]		input	F4	std LVCMOS33
+signal	oc_alert[9]		input	F1	std LVCMOS33
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Indicator LEDs
+
+signal	pwr_leds[0]		output	R2	std LVCMOS33
+signal	pwr_leds[1]		output	P2	std LVCMOS33
+signal	pwr_leds[2]		output	N1	std LVCMOS33
+signal	pwr_leds[3]		output	M3	std LVCMOS33
+signal	pwr_leds[4]		output	M2	std LVCMOS33
+signal	pwr_leds[5]		output	K3	std LVCMOS33
+signal	pwr_leds[6]		output	H3	std LVCMOS33
+signal	pwr_leds[7]		output	J3	std LVCMOS33
+signal	pwr_leds[8]		output	H1	std LVCMOS33
+signal	pwr_leds[9]		output	G3	std LVCMOS33
+
+signal	error_leds[0]	output	R1	std LVCMOS33
+signal	error_leds[1]	output	P1	std LVCMOS33
+signal	error_leds[2]	output	N4	std LVCMOS33
+signal	error_leds[3]	output	N3	std LVCMOS33
+signal	error_leds[4]	output	M1	std LVCMOS33
+signal	error_leds[5]	output	L1	std LVCMOS33
+signal	error_leds[6]	output	H4	std LVCMOS33
+signal	error_leds[7]	output	K1	std LVCMOS33
+signal	error_leds[8]	output	J1	std LVCMOS33
+signal	error_leds[9]	output	H2	std LVCMOS33
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Gigabit Ethernet
+
+//Receive clock from PHY
+clock	eth0_rxc		input	J14	std LVCMOS25	freq 125M
+
+//Pullups on rxd[] required for proper PHY initialization during reset
+signal	eth0_rx_ctl		input	H16	std LVCMOS25
+signal	eth0_rxd[0]		input	H15	std LVCMOS25	pullup
+signal	eth0_rxd[1]		input	G16	std LVCMOS25	pullup
+signal	eth0_rxd[2]		input	F16	std LVCMOS25	pullup
+signal	eth0_rxd[3]		input	F15	std LVCMOS25	pullup
+
+signal	eth0_txc		output	E15	std LVCMOS25	fast
+signal	eth0_tx_ctl		output	E16	std LVCMOS25	fast
+signal	eth0_txd[0]		output	B16	std LVCMOS25	fast
+signal	eth0_txd[1]		output	C15	std LVCMOS25	fast
+signal	eth0_txd[2]		output	C16	std LVCMOS25	fast
+signal	eth0_txd[3]		output	D16	std LVCMOS25	fast
+
+signal	eth0_mdio		inout	K15	std LVCMOS25	pullup
+signal	eth0_mdc		output	J16	std LVCMOS25
+
+signal	eth0_reset_n	output	L16	std LVCMOS25
+signal	eth0_clk_25mhz	output	M16	std LVCMOS25
+

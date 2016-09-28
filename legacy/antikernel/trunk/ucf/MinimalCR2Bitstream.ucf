@@ -1,0 +1,7 @@
+# data in = button 0
+NET "din" IOSTANDARD = LVCMOS33;
+NET "din" LOC = P28;
+
+# data out = LED 1
+NET "dout" IOSTANDARD = LVCMOS33;
+NET "dout" LOC = P38;

@@ -1,0 +1,13 @@
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Node: [[node_name]]
+	
+	[[node_type]] #(
+[[node_params]]
+		.NOC_ADDR([[node_addr]])
+	) [[node_name]] (
+	
+		//Top-level ports
+[[node_ports]]
+		.clk(clk_noc)
+	);
+
