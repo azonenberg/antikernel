@@ -1,0 +1,6 @@
+[submodule "src/jtaghal"]
+	path = src/jtaghal
+	url = git@github.com:azonenberg/jtaghal.git
+[submodule "src/log"]
+	path = src/log
+	url = git@github.com:azonenberg/logtools.git
