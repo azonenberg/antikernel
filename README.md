@@ -10,8 +10,7 @@ In no particular order...
 Eventually some of these TODOs will be broken down into tickets on the issue tracker. Need to work out some finer 
 details on design first.
 
-* We're presenting the first peer-reviewed paper on the project at CHES 2016 in late August.
-* The legacy Splash build system is being completely rewritten over the summer of 2016.
+* The legacy Splash build system is being completely rewritten and replaced.
 * We'd love to write some developer documentation and formally specify the APIs for various existing components, as 
 well as writing specifications for not-yet-implemented peripherals/drivers/services
 * The NoC cores need to be rewritten to have parameterizable bus width - 32 bits is great for size optimizing but can't 
@@ -26,12 +25,11 @@ keep up with higher speed memories and CPUs.
 * Project IRC channel: #antikernel on Freenode
 * Original PhD thesis: http://gradworks.umi.com/37/05/3705663.html
 * CHES 2016 paper: https://eprint.iacr.org/2016/550
-* CHES 2016 slides: _will be posted after the conference_
-* The old SVN project on my private server: http://redmine.drawersteak.com/projects/achd-soc/
-* The new build system repository: https://github.com/azonenberg/splash-build-system/
-* The old build system repository: http://redmine.drawersteak.com/projects/splash-build-system/
+* CHES 2016 slides: http://www.chesworkshop.org/ches2016/presentations/0918%20Session%205/CHES2016_Session5_2.pdf
+* CHES 2016 video: https://www.iacr.org/cryptodb/data/paper.php?pubkey=27850
+* Build system: https://github.com/azonenberg/splash-build-system/
 
 ## NOTES
 
-The "legacy" directory contains a raw export of the old Subversion repository. This will all get moved elsewhere,
+The "legacy-*" directories contain a raw export of the old Subversion repository. This will all get moved elsewhere,
 possibly to separate repositories, during the upcoming restructuring.
