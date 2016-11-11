@@ -1,7 +1,6 @@
 # Antikernel
 
-This is the new development repository for the Antikernel OS. Not much is here for yet, we're still working on 
-migrating files over from the old internal repo.
+This is the new development repository for the Antikernel OS.
 
 ## Project Roadmap:
 
