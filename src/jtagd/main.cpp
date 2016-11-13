@@ -60,12 +60,12 @@ int main(int argc, char* argv[])
 		string adapter_serial = "";
 		unsigned short port = 0;		//random default port
 		bool nobanner = false;
-		
+
 		//Parse command-line arguments
 		for(int i=1; i<argc; i++)
 		{
 			string s(argv[i]);
-			
+
 			if(s == "--api")
 			{
 				if(i+1 >= argc)
@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 						"",
 						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 				}
-				
+
 				string sapi = argv[++i];
 				if(sapi == "digilent")
 					api_type = API_DIGILENT;
@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
 						"",
 						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 				}
-				
+
 				port = atoi(argv[++i]);
 			}
 			else if(s == "--nobanner")
@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
 						"",
 						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 				}
-				
+
 				adapter_serial = argv[++i];
 			}
 			else if(s == "--version")
@@ -134,18 +134,18 @@ int main(int argc, char* argv[])
 				return 1;
 			}
 		}
-		
+
 		//Print version number by default
 		if(!nobanner)
 			ShowVersion();
-		
+
 		//Sanity check
 		if( (api_type == API_UNSPECIFIED) || (adapter_serial == "") )
 		{
 			printf("ERROR: --api and --serial are required\n");
 			return 1;
 		}
-		
+
 		//Start up the requested API
 		JtagInterface* iface = NULL;
 		switch(api_type)
@@ -158,7 +158,7 @@ int main(int argc, char* argv[])
 					return 1;
 				#endif
 				break;
-			
+
 			case API_DIGILENT:
 				#ifdef HAVE_DJTG
 				{
@@ -181,7 +181,7 @@ int main(int argc, char* argv[])
 							//just write off this adapter - maybe someone else is using it!
 						}
 					}
-					
+
 					//Sanity check
 					if(nif < 0)
 					{
@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
 							"Use --list to see currently connected adapters\n",
 							adapter_serial.c_str());
 					}
-					
+
 					//Create the interface
 					iface = new DigilentJtagInterface(nif);
 				}
@@ -198,23 +198,23 @@ int main(int argc, char* argv[])
 					printf("This jtagd was compiled without Digilent API support\n");
 				#endif
 				break;
-				
+
 			default:
 				printf("Unrecognized API\n");
 				return 1;
 		}
-		
+
 		//TODO: adjustable verbosity levels
 		printf("Connected to interface \"%s\" (serial number \"%s\")\n",
 			iface->GetName().c_str(), iface->GetSerial().c_str());
-		
+
 		//Install signal handler
 		signal(SIGINT, sig_handler);
 		signal(SIGPIPE, sig_handler);
-		
+
 		//Create the socket server
 		g_socket.Bind(port);
-		
+
 		//Figure out the port number
 		if(port == 0)
 		{
@@ -239,7 +239,7 @@ int main(int argc, char* argv[])
 			fprintf(fp, "%us\n", port);
 			fclose(fp);
 		}
-		
+
 		//Wait for connections
 		g_socket.Listen();
 		while(true)
@@ -254,9 +254,9 @@ int main(int argc, char* argv[])
 			catch(const JtagException& ex)
 			{
 				break;
-			}			
+			}
 		}
-		
+
 		//Print interface statistics
 		printf("Total number of shift operations:       %zu\n", iface->GetShiftOpCount());
 		printf("Total number of recoverable errors:     %zu\n", iface->GetRecoverableErrorCount());
@@ -271,17 +271,17 @@ int main(int argc, char* argv[])
 		double latency = iface->GetShiftTime() - boardtime;
 		printf("Calculated total latency:               %.2f ms\n", latency * 1000);
 		printf("Calculated average latency:             %.2f ms\n", (latency * 1000) / iface->GetShiftOpCount());
-		
+
 		//Clean up
 		delete iface;
 	}
-	
+
 	catch(const JtagException& ex)
 	{
 		printf("%s\n", ex.GetDescription().c_str());
 		return 1;
 	}
-	
+
 	return 0;
 }
 
@@ -295,7 +295,7 @@ void sig_handler(int sig)
 			g_socket = -1;
 			printf("Quitting...\n");
 			break;
-			
+
 		case SIGPIPE:
 			//ignore
 			break;
@@ -344,13 +344,13 @@ void ListAdapters()
 	try
 	{
 		ShowVersion();
-			
+
 		//disable warnings if nothing is found
 		#if( defined(HAVE_DJTG) || defined(HAVE_FTD2XX) )
 			string ver;
 			int ndev = 0;
 		#endif
-		
+
 		#ifdef HAVE_DJTG
 			ver = DigilentJtagInterface::GetAPIVersion();
 			printf("Digilent API version: %s\n", ver.c_str());
@@ -379,7 +379,7 @@ void ListAdapters()
 		#else	//#ifdef HAVE_DJTG
 			printf("Digilent API version: not supported\n");
 		#endif
-		
+
 		printf("\n");
 		#ifdef HAVE_FTD2XX
 			ver = FTDIJtagInterface::GetAPIVersion();
@@ -414,7 +414,7 @@ void ListAdapters()
 			printf("FTDI API version: not supported\n");
 		#endif
 	}
-	
+
 	catch(const JtagException& ex)
 	{
 		printf("%s\n", ex.GetDescription().c_str());

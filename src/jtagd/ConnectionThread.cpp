@@ -42,7 +42,7 @@ using namespace std;
 	@brief Main function for handling connections
  */
 void ProcessConnection(JtagInterface* iface, int socket)
-{	
+{
 	try
 	{
 		//Set no-delay flag
@@ -54,15 +54,15 @@ void ProcessConnection(JtagInterface* iface, int socket)
 				"",
 				JtagException::EXCEPTION_TYPE_NETWORK);
 		}
-		
+
 		vector<unsigned char> recv_buf;
-		
+
 		//Sit around and wait for messages
 		uint8_t opcode;
 		while(1 == NetworkedJtagInterface::read_looped(socket, (unsigned char*)&opcode, 1))
 		{
 			bool quit = false;
-			
+
 			switch(opcode)
 			{
 				//No mutex locking needed for stuff that just queries constant member vars
@@ -81,18 +81,18 @@ void ProcessConnection(JtagInterface* iface, int socket)
 						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&freq, 4);
 					}
 					break;
-					
+
 				//Deferred write processing
 				case JTAGD_OP_COMMIT:
 					{
 						iface->Commit();
-						
+
 						//Send an ACK once the commit has occurred
 						uint8_t dummy = 0;
 						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&dummy, 1);
 					}
 					break;
-				
+
 				case JTAGD_OP_SHIFT_DATA:
 				case JTAGD_OP_SHIFT_DATA_WO:
 					{
@@ -103,24 +103,24 @@ void ProcessConnection(JtagInterface* iface, int socket)
 
 						//JTAGD_OP_SHIFT_DATA_WO is write only, so no response
 						bool want_response = (opcode == JTAGD_OP_SHIFT_DATA);
-						
+
 						int bytesize =  ceil(count / 8.0f);
-						
+
 						//Allocate buffer if we want a response
 						unsigned char* recv_data = NULL;
 						if(want_response)
 							recv_data = new unsigned char[bytesize];
-							
+
 						//Allocate buffer for data
 						unsigned char* send_data = new unsigned char[bytesize];
-							
+
 						//Receive data and send it
 						NetworkedJtagInterface::read_looped(socket, send_data, bytesize);
-						
+
 						try
 						{
 							iface->ShiftData(last_tms, send_data, recv_data, count);
-												
+
 							//Send response back, if desired
 							if(want_response)
 								NetworkedJtagInterface::write_looped(socket, recv_data, bytesize);
@@ -132,17 +132,17 @@ void ProcessConnection(JtagInterface* iface, int socket)
 							{
 								uint8_t status = 1;
 								NetworkedJtagInterface::write_looped(socket, &status, 1);
-								
+
 								//Print error anyway
 								printf("Non-fatal exception, passed to client\n");
 								printf("%s\n", ex.GetDescription().c_str());
 							}
-							
+
 							//otherwise re-throw and abort
 							else
 								throw;
 						}
-							
+
 						//Clean up
 						delete[] send_data;
 						if(want_response)
@@ -152,36 +152,36 @@ void ProcessConnection(JtagInterface* iface, int socket)
 						}
 					}
 					break;
-					
+
 				case JTAGD_OP_SHIFT_DATA_WRITE_ONLY:
-					{						
+					{
 						uint8_t last_tms;
 						uint32_t count;
 						uint8_t want_response;
 						NetworkedJtagInterface::read_looped(socket, (unsigned char*)&last_tms, 1);
 						NetworkedJtagInterface::read_looped(socket, (unsigned char*)&count, 4);
 						NetworkedJtagInterface::read_looped(socket, (unsigned char*)&want_response, 1);
-						
+
 						int bytesize =  ceil(count / 8.0f);
-							
+
 						//Allocate buffer for data
 						unsigned char* send_data = new unsigned char[bytesize];
-							
+
 						//Receive data and send it
 						NetworkedJtagInterface::read_looped(socket, send_data, bytesize);
-						
+
 						try
 						{
 							//Send status byte back
 							recv_buf.push_back(0);
-							
+
 							//Preallocate buffer space
 							if(want_response)
 								recv_buf.resize(bytesize + 1);
-							
+
 							//Do the shift
 							recv_buf[0] = iface->ShiftDataWriteOnly(last_tms, send_data, &recv_buf[1], count);
-							
+
 							//Send back status
 							NetworkedJtagInterface::write_looped(socket, &recv_buf[0], recv_buf[0] ? 1 : recv_buf.size());
 							recv_buf.clear();
@@ -193,12 +193,12 @@ void ProcessConnection(JtagInterface* iface, int socket)
 							{
 								uint8_t status = -1;
 								NetworkedJtagInterface::write_looped(socket, &status, 1);
-								
+
 								//Print error anyway
 								printf("Non-fatal exception, passed to client\n");
 								printf("%s\n", ex.GetDescription().c_str());
 							}
-							
+
 							//otherwise re-throw and abort
 							else
 								throw;
@@ -208,9 +208,9 @@ void ProcessConnection(JtagInterface* iface, int socket)
 						delete[] send_data;
 					}
 					break;
-				
+
 				case JTAGD_OP_SHIFT_DATA_READ_ONLY:
-					{						
+					{
 						uint32_t count;
 						NetworkedJtagInterface::read_looped(socket, (unsigned char*)&count, 4);
 						if(count == 0)
@@ -220,20 +220,20 @@ void ProcessConnection(JtagInterface* iface, int socket)
 								"",
 								JtagException::EXCEPTION_TYPE_GIGO);
 						}
-						
+
 						int bytesize =  ceil(count / 8.0f);
-						
+
 						//Allocate buffer
 						unsigned char* recv_data = new unsigned char[bytesize];
-						
+
 						try
 						{
 							bool deferred = iface->ShiftDataReadOnly(recv_data, count);
-							
+
 							//Send status byte back
 							uint8_t status = deferred ? 1 : 0;
 							NetworkedJtagInterface::write_looped(socket, &status, 1);
-												
+
 							//Send response back, if meaningful
 							if(deferred)
 								NetworkedJtagInterface::write_looped(socket, recv_data, bytesize);
@@ -245,12 +245,12 @@ void ProcessConnection(JtagInterface* iface, int socket)
 							{
 								uint8_t status = -1;
 								NetworkedJtagInterface::write_looped(socket, &status, 1);
-								
+
 								//Print error anyway
 								printf("Non-fatal exception, passed to client\n");
 								printf("%s\n", ex.GetDescription().c_str());
 							}
-							
+
 							//otherwise re-throw and abort
 							else
 								throw;
@@ -261,14 +261,14 @@ void ProcessConnection(JtagInterface* iface, int socket)
 						recv_data = NULL;
 					}
 					break;
-					
+
 				case JTAGD_OP_SPLIT_SUPPORTED:
 					{
 						uint8_t val = (iface->IsSplitScanSupported() ? 1 : 0);
 						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&val, 1);
 					}
 					break;
-				
+
 				case JTAGD_OP_DUMMY_CLOCK:
 					{
 						uint32_t count;
@@ -276,7 +276,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 						iface->SendDummyClocks(count);
 					}
 					break;
-					
+
 				case JTAGD_OP_DUMMY_CLOCK_DEFERRED:
 					{
 						uint32_t count;
@@ -284,42 +284,42 @@ void ProcessConnection(JtagInterface* iface, int socket)
 						iface->SendDummyClocksDeferred(count);
 					}
 					break;
-					
+
 				case JTAGD_OP_PERF_SHIFT:
 					{
 						uint64_t n = iface->GetShiftOpCount();
 						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&n, 8);
 					}
 					break;
-					
+
 				case JTAGD_OP_PERF_RECOV:
 					{
 						uint64_t n = iface->GetRecoverableErrorCount();
 						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&n, 8);
 					}
 					break;
-					
+
 				case JTAGD_OP_PERF_DATA:
 					{
 						uint64_t n = iface->GetDataBitCount();
 						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&n, 8);
 					}
 					break;
-					
+
 				case JTAGD_OP_PERF_MODE:
 					{
 						uint64_t n = iface->GetModeBitCount();
 						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&n, 8);
 					}
 					break;
-					
+
 				case JTAGD_OP_PERF_DUMMY:
 					{
 						uint64_t n = iface->GetDummyClockCount();
 						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&n, 8);
 					}
 					break;
-					
+
 				case JTAGD_OP_HAS_GPIO:
 					{
 						GPIOInterface* gpio = dynamic_cast<GPIOInterface*>(iface);
@@ -338,14 +338,14 @@ void ProcessConnection(JtagInterface* iface, int socket)
 						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&n, 1);
 					}
 					break;
-					
+
 				case JTAGD_OP_READ_GPIO_STATE:
 					{
 						GPIOInterface* gpio = dynamic_cast<GPIOInterface*>(iface);
 						if(gpio != NULL)
 						{
 							gpio->ReadGpioState();
-							
+
 							int count = gpio->GetGpioCount();
 							vector<uint8_t> pinstates;
 							for(int i=0; i<count; i++)
@@ -359,7 +359,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 						}
 					}
 					break;
-					
+
 				case JTAGD_OP_WRITE_GPIO_STATE:
 					{
 						GPIOInterface* gpio = dynamic_cast<GPIOInterface*>(iface);
@@ -379,15 +379,15 @@ void ProcessConnection(JtagInterface* iface, int socket)
 						}
 					};
 					break;
-					
+
 				case JTAGD_OP_ENTER_SIR:
 					iface->EnterShiftIR();
 					break;
-					
+
 				case JTAGD_OP_LEAVE_E1IR:
 					iface->LeaveExit1IR();
 					break;
-				
+
 				case JTAGD_OP_ENTER_SDR:
 					iface->EnterShiftDR();
 					break;
@@ -395,16 +395,16 @@ void ProcessConnection(JtagInterface* iface, int socket)
 				case JTAGD_OP_LEAVE_E1DR:
 					iface->LeaveExit1DR();
 					break;
-					
+
 				case JTAGD_OP_RESET_IDLE:
 					iface->ResetToIdle();
 					break;
-					
+
 				case JTAGD_OP_QUIT:
 					printf("Normal termination requested\n");
 					quit = true;
 					break;
-					
+
 				default:
 					{
 						throw JtagExceptionWrapper(
@@ -413,7 +413,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 							JtagException::EXCEPTION_TYPE_GIGO);
 					}
 			}
-			
+
 			if(quit)
 				break;
 		}
@@ -425,7 +425,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 			printf("%s\n", ex.GetDescription().c_str());
 		fflush(stdout);
 	}
-	
+
 	//connection closed
 	close(socket);
 }

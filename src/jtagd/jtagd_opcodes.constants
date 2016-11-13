@@ -65,7 +65,7 @@ JTAGD_OP_PERF_MODE 			8'h0c	//Gets number of mode bits shifted
 									//Server responds with uint64_t
 JTAGD_OP_PERF_DUMMY 		8'h0d	//Gets number of dummy clocks sent
 									//Server responds with uint64_t
-						
+
 JTAGD_OP_QUIT				8'h0e	//Requests that the server close the connection
 JTAGD_OP_COMMIT 			8'h0f	//Commits outstanding writes
 JTAGD_OP_SPLIT_SUPPORTED	8'h10	//Checks if split scan is supported
@@ -81,10 +81,10 @@ JTAGD_OP_SHIFT_DATA_READ_ONLY 	8'h12	//Shift data
 									//uint32_t count [BITS]
 									//Server responds with a status byte indicating if the read was deferred
 									//and if so the data
-								
+
 JTAGD_OP_DUMMY_CLOCK_DEFERRED	8'h13	//Send dummy clocks without flushing the pipeline
 									//uint32_t count
-								
+
 JTAGD_OP_HAS_GPIO 	 		8'h14	//Indicates if the JTAG adapter is GPIO capable
 									//Returns a uint8_t
 JTAGD_OP_GET_GPIO_PIN_COUNT	8'h15	//Gets the number of GPIO pins the adapter has
@@ -93,7 +93,7 @@ JTAGD_OP_READ_GPIO_STATE 	8'h16	//Read GPIO pin state
 									//Returns a uint8_t for each pin bit0 	 value bit1 	 direction
 JTAGD_OP_WRITE_GPIO_STATE 	8'h17	//Write GPIO pin state
 									//Followed by a uint8_t for each pin bit0 	 value bit1 	 direction
-										
+
 JTAGD_OP_TLR 				8'h18	//Enter test-logic-reset
 JTAGD_OP_ENTER_SIR 	 		8'h19	//Enter Shift-IR
 JTAGD_OP_LEAVE_E1IR 	 	8'h1a	//Leave Exit1-IR

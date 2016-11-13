@@ -43,11 +43,11 @@ SPLASHFILE_EXPORT void CreateNodes(BuildGraph* graph)
 	string srcdir = GetDirOfFile(CanonicalizePath(__FILE__));
 	vector<string> source_files;
 	FindFilesByExtension(srcdir, ".cpp", source_files);
-	
+
 	//Build opcode headers
 	VerilogConstgenNode::CreateVerilogConstgenNode(graph, srcdir + "/jtagd_opcodes.constants");
 	CppConstgenNode::CreateCppConstgenNode(graph, srcdir + "/jtagd_opcodes.constants");
-	
+
 	//Shared compiler settings
 	CppCompileFlagList cflags;
 	cflags.push_back(new CppStandardFlag(CppStandardFlag::CPP_STANDARD_11));
@@ -60,7 +60,7 @@ SPLASHFILE_EXPORT void CreateNodes(BuildGraph* graph)
 	lflags.push_back(new CppLinkProfilingFlag);
 	lflags.push_back(new CppLinkLibraryByTargetNameFlag("jtaghal", graph));
 	lflags.push_back(new CppLinkLibraryByNameFlag("pthread"));
-	
+
 	//Build the binaries
 	string arches[]=
 	{
@@ -70,13 +70,13 @@ SPLASHFILE_EXPORT void CreateNodes(BuildGraph* graph)
 	for(size_t i=0; i<sizeof(arches)/sizeof(arches[0]); i++)
 	{
 		string arch = arches[i];
-		
+
 		//for some reason the ARM cross compiler can't recognize that jtaghal pulls in ftd2xx already
 		CppLinkFlagList lflags_arch = lflags;
 		string ftd2xx_path = FindSharedLibrary("ftd2xx", arch);
 		if(!ftd2xx_path.empty())
 			lflags_arch.push_back(new CppLinkLibraryByPathFlag(ftd2xx_path));
-		
+
 		CppExecutableNode::CreateCppExecutableNode(
 			graph,
 			source_files,
