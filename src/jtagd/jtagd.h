@@ -36,6 +36,7 @@
 #ifndef jtagd_h
 #define jtagd_h
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -44,16 +45,18 @@
 #include <signal.h>
 #include <pthread.h>
 
+/*
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 
 #include <svnversion.h>
+*/
 #include "../jtaghal/jtaghal.h"
-
+/*
 #include <jtagd_opcodes_constants.h>
 
 void ProcessConnection(JtagInterface* iface, int client_socket);
-
+*/
 #endif

@@ -43,6 +43,7 @@ using namespace std;
  */
 void ProcessConnection(JtagInterface* iface, int socket)
 {
+	/*
 	try
 	{
 		//Set no-delay flag
@@ -428,4 +429,5 @@ void ProcessConnection(JtagInterface* iface, int socket)
 
 	//connection closed
 	close(socket);
+	*/
 }

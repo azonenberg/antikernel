@@ -40,7 +40,7 @@ using namespace std;
 void sig_handler(int sig);
 
 bool g_quit = false;
-Socket g_socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+//Socket g_socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
 
 void ShowUsage();
 void ShowVersion();
@@ -103,8 +103,7 @@ int main(int argc, char* argv[])
 				{
 					throw JtagExceptionWrapper(
 						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+						"");
 				}
 
 				port = atoi(argv[++i]);
@@ -117,8 +116,7 @@ int main(int argc, char* argv[])
 				{
 					throw JtagExceptionWrapper(
 						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+						"");
 				}
 
 				adapter_serial = argv[++i];
@@ -146,6 +144,7 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 
+		/*
 		//Start up the requested API
 		JtagInterface* iface = NULL;
 		switch(api_type)
@@ -274,6 +273,7 @@ int main(int argc, char* argv[])
 
 		//Clean up
 		delete iface;
+		*/
 	}
 
 	catch(const JtagException& ex)
@@ -287,6 +287,7 @@ int main(int argc, char* argv[])
 
 void sig_handler(int sig)
 {
+	/*
 	switch(sig)
 	{
 		case SIGINT:
@@ -299,7 +300,7 @@ void sig_handler(int sig)
 		case SIGPIPE:
 			//ignore
 			break;
-	}
+	}*/
 }
 
 /**
@@ -307,6 +308,7 @@ void sig_handler(int sig)
  */
 void ShowUsage()
 {
+	/*
 	printf(
 		"Usage: jtagd [OPTION]\n"
 		"\n"
@@ -319,6 +321,7 @@ void ShowUsage()
 		"    --port PORT                                      Specifies the port number the daemon should listen on.\n"
 		"    --serial SERIAL_NUM                              Specifies the serial number of the JTAG adapter. This argument is mandatory.\n"
 		);
+	*/
 }
 
 /**
@@ -326,6 +329,7 @@ void ShowUsage()
  */
 void ShowVersion()
 {
+	/*
 	printf(
 		"JTAG server daemon [SVN rev %s] by Andrew D. Zonenberg.\n"
 		"\n"
@@ -334,6 +338,7 @@ void ShowVersion()
 		"There is NO WARRANTY, to the extent permitted by law.\n"
 		"\n"
 		, SVNVERSION);
+	*/
 }
 
 /**
@@ -343,6 +348,7 @@ void ListAdapters()
 {
 	try
 	{
+		/*
 		ShowVersion();
 
 		//disable warnings if nothing is found
@@ -413,6 +419,7 @@ void ListAdapters()
 		#else	//#ifdef HAVE_FTD2XX
 			printf("FTDI API version: not supported\n");
 		#endif
+		*/
 	}
 
 	catch(const JtagException& ex)
