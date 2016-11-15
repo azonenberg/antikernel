@@ -72,8 +72,7 @@ int main(int argc, char* argv[])
 				{
 					throw JtagExceptionWrapper(
 						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+						"");
 				}
 
 				string sapi = argv[++i];
@@ -348,15 +347,15 @@ void ListAdapters()
 {
 	try
 	{
-		/*
 		ShowVersion();
 
-		//disable warnings if nothing is found
+		//disable compiler warning if no APIs are found
 		#if( defined(HAVE_DJTG) || defined(HAVE_FTD2XX) )
 			string ver;
 			int ndev = 0;
 		#endif
 
+		/*
 		#ifdef HAVE_DJTG
 			ver = DigilentJtagInterface::GetAPIVersion();
 			printf("Digilent API version: %s\n", ver.c_str());
@@ -385,6 +384,7 @@ void ListAdapters()
 		#else	//#ifdef HAVE_DJTG
 			printf("Digilent API version: not supported\n");
 		#endif
+		*/
 
 		printf("\n");
 		#ifdef HAVE_FTD2XX
@@ -419,7 +419,6 @@ void ListAdapters()
 		#else	//#ifdef HAVE_FTD2XX
 			printf("FTDI API version: not supported\n");
 		#endif
-		*/
 	}
 
 	catch(const JtagException& ex)

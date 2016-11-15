@@ -37,3 +37,7 @@ jtagd:
     flags:
         - global
         - library/target/jtaghal
+
+        # we never call libftd2xx but need HAVE_FTD2XX available from jtaghal
+        # TODO: there should be a better way to do this?
+        - library/optional/ftd2xx
