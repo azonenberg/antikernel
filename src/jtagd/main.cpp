@@ -59,12 +59,26 @@ int main(int argc, char* argv[])
 		} api_type = API_UNSPECIFIED;
 		string adapter_serial = "";
 		unsigned short port = 0;		//random default port
-		bool nobanner = false;
+
+		Severity console_verbosity = Severity::NOTICE;
+
+		//Operations to do
+		enum
+		{
+			OP_NORMAL,
+			OP_LIST,
+			OP_HELP,
+			OP_VERSION
+		} op = OP_NORMAL;
 
 		//Parse command-line arguments
 		for(int i=1; i<argc; i++)
 		{
 			string s(argv[i]);
+
+			//Let the logger eat its args first
+			if(ParseLoggerArguments(i, argc, argv, console_verbosity))
+				continue;
 
 			if(s == "--api")
 			{
@@ -87,15 +101,9 @@ int main(int argc, char* argv[])
 				}
 			}
 			else if(s == "--help")
-			{
-				ShowUsage();
-				return 0;
-			}
+				op = OP_HELP;
 			else if(s == "--list")
-			{
-				ListAdapters();
-				return 0;
-			}
+				op = OP_LIST;
 			else if(s == "--port")
 			{
 				if(i+1 >= argc)
@@ -107,8 +115,6 @@ int main(int argc, char* argv[])
 
 				port = atoi(argv[++i]);
 			}
-			else if(s == "--nobanner")
-				nobanner = true;
 			else if(s == "--serial")
 			{
 				if(i+1 >= argc)
@@ -121,10 +127,7 @@ int main(int argc, char* argv[])
 				adapter_serial = argv[++i];
 			}
 			else if(s == "--version")
-			{
-				ShowVersion();
-				return 0;
-			}
+				op = OP_VERSION;
 			else
 			{
 				printf("Unrecognized command-line argument \"%s\", use --help\n", s.c_str());
@@ -132,14 +135,35 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		//Print version number by default
-		if(!nobanner)
-			ShowVersion();
+		//Set up logging
+		g_log_sinks.emplace(g_log_sinks.begin(), new STDLogSink(console_verbosity));
+
+		//Do special operations if requested
+		switch(op)
+		{
+			case OP_HELP:
+				ShowUsage();
+				return 0;
+
+			case OP_LIST:
+				ListAdapters();
+				return 0;
+
+			case OP_VERSION:
+				ShowVersion();
+				return 0;
+
+			default:
+				break;
+		}
+
+		//Print version number etc (if not in quiet mode)
+		ShowVersion();
 
 		//Sanity check
 		if( (api_type == API_UNSPECIFIED) || (adapter_serial == "") )
 		{
-			printf("ERROR: --api and --serial are required\n");
+			LogError("ERROR: --api and --serial are required\n");
 			return 1;
 		}
 
@@ -307,7 +331,6 @@ void sig_handler(int sig)
  */
 void ShowUsage()
 {
-	/*
 	printf(
 		"Usage: jtagd [OPTION]\n"
 		"\n"
@@ -320,7 +343,6 @@ void ShowUsage()
 		"    --port PORT                                      Specifies the port number the daemon should listen on.\n"
 		"    --serial SERIAL_NUM                              Specifies the serial number of the JTAG adapter. This argument is mandatory.\n"
 		);
-	*/
 }
 
 /**
@@ -328,16 +350,14 @@ void ShowUsage()
  */
 void ShowVersion()
 {
-	/*
 	printf(
-		"JTAG server daemon [SVN rev %s] by Andrew D. Zonenberg.\n"
+		"JTAG server daemon [git rev %s] by Andrew D. Zonenberg.\n"
 		"\n"
 		"License: 3-clause (\"new\" or \"modified\") BSD.\n"
 		"This is free software: you are free to change and redistribute it.\n"
 		"There is NO WARRANTY, to the extent permitted by law.\n"
-		"\n"
-		, SVNVERSION);
-	*/
+		"\n",
+		"TODO");
 }
 
 /**
@@ -355,7 +375,6 @@ void ListAdapters()
 			int ndev = 0;
 		#endif
 
-		/*
 		#ifdef HAVE_DJTG
 			ver = DigilentJtagInterface::GetAPIVersion();
 			printf("Digilent API version: %s\n", ver.c_str());
@@ -384,7 +403,6 @@ void ListAdapters()
 		#else	//#ifdef HAVE_DJTG
 			printf("Digilent API version: not supported\n");
 		#endif
-		*/
 
 		printf("\n");
 		#ifdef HAVE_FTD2XX

@@ -45,6 +45,8 @@
 #include <signal.h>
 #include <pthread.h>
 
+#include "../log/log.h"
+
 /*
 #include <sys/socket.h>
 #include <netinet/in.h>
