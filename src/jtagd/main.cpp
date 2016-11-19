@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
 		}
 
 		//Set up logging
-		g_log_sinks.emplace(g_log_sinks.begin(), new STDLogSink(console_verbosity));
+		g_log_sinks.emplace(g_log_sinks.begin(), new ColoredSTDLogSink(console_verbosity));
 
 		//Do special operations if requested
 		switch(op)
@@ -298,7 +298,6 @@ int main(int argc, char* argv[])
 		delete iface;
 		*/
 	}
-
 	catch(const JtagException& ex)
 	{
 		printf("%s\n", ex.GetDescription().c_str());
@@ -375,6 +374,7 @@ void ListAdapters()
 			int ndev = 0;
 		#endif
 
+		/*
 		#ifdef HAVE_DJTG
 			ver = DigilentJtagInterface::GetAPIVersion();
 			printf("Digilent API version: %s\n", ver.c_str());
@@ -403,6 +403,7 @@ void ListAdapters()
 		#else	//#ifdef HAVE_DJTG
 			printf("Digilent API version: not supported\n");
 		#endif
+		*/
 
 		printf("\n");
 		#ifdef HAVE_FTD2XX
