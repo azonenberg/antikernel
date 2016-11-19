@@ -46,6 +46,7 @@
 #include <pthread.h>
 
 #include "../log/log.h"
+#include "../xptools/Socket.h"
 
 /*
 #include <sys/socket.h>

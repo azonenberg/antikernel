@@ -40,7 +40,7 @@ using namespace std;
 void sig_handler(int sig);
 
 bool g_quit = false;
-//Socket g_socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+Socket g_socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
 
 void ShowUsage();
 void ShowVersion();
@@ -167,7 +167,6 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 
-		/*
 		//Start up the requested API
 		JtagInterface* iface = NULL;
 		switch(api_type)
@@ -176,11 +175,11 @@ int main(int argc, char* argv[])
 				#ifdef HAVE_FTD2XX
 					iface = new FTDIJtagInterface(adapter_serial);
 				#else
-					printf("This jtagd was compiled without libftd2xx support\n");
+					LogError("This jtagd was compiled without libftd2xx support\n");
 					return 1;
 				#endif
 				break;
-
+/*
 			case API_DIGILENT:
 				#ifdef HAVE_DJTG
 				{
@@ -207,8 +206,8 @@ int main(int argc, char* argv[])
 					//Sanity check
 					if(nif < 0)
 					{
-						printf(
-							"ERROR: Requested Digilent adapter with serial number \"%s\" was not found!\n"
+						LogError(
+							"Requested Digilent adapter with serial number \"%s\" was not found!\n"
 							"Use --list to see currently connected adapters\n",
 							adapter_serial.c_str());
 					}
@@ -217,17 +216,16 @@ int main(int argc, char* argv[])
 					iface = new DigilentJtagInterface(nif);
 				}
 				#else	//#ifdef HAVE_DJTG
-					printf("This jtagd was compiled without Digilent API support\n");
+					LogError("This jtagd was compiled without Digilent API support\n");
 				#endif
 				break;
-
+*/
 			default:
-				printf("Unrecognized API\n");
+				LogError("Unrecognized API\n");
 				return 1;
 		}
 
-		//TODO: adjustable verbosity levels
-		printf("Connected to interface \"%s\" (serial number \"%s\")\n",
+		LogNotice("Connected to interface \"%s\" (serial number \"%s\")\n",
 			iface->GetName().c_str(), iface->GetSerial().c_str());
 
 		//Install signal handler
@@ -236,7 +234,7 @@ int main(int argc, char* argv[])
 
 		//Create the socket server
 		g_socket.Bind(port);
-
+/*
 		//Figure out the port number
 		if(port == 0)
 		{
