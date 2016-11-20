@@ -34,6 +34,10 @@ jtagd:
     sources:
         - main.cpp
 
+    constants:
+        opcodes.yml:
+            - c/enum
+
     flags:
         - global
         - library/target/jtaghal
