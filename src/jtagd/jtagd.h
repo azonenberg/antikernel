@@ -48,13 +48,12 @@
 #include "../log/log.h"
 #include "../xptools/Socket.h"
 
-/*
-#include <svnversion.h>
-*/
-#include "../jtaghal/jtaghal.h"
-/*
-#include <jtagd_opcodes_constants.h>
+//TODO: generate git version string somehow?
+//#include <svnversion.h>
 
-void ProcessConnection(JtagInterface* iface, int client_socket);
-*/
+#include "../jtaghal/jtaghal.h"
+#include "jtagd_opcodes_enum.h"
+
+//void ProcessConnection(JtagInterface* iface, int client_socket);
+
 #endif

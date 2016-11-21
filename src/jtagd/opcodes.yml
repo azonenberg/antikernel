@@ -159,6 +159,3 @@ jtagd_opcodes:
 
         # Reset to idle
         JTAGD_OP_RESET_IDLE: 1d
-
-        # informational, number of opcodes. Must be last entry (by value) in the table.
-        JTAGD_OP_COUNT: 1e
