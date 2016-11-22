@@ -52,6 +52,8 @@ recursive_config:
     configurations:
         debug:
             - optimize/none
+            - define/_DEBUG
         release:
             - optimize/speed
+            - define/NDEBUG
 
