@@ -1,3 +1,4 @@
 legacy-trunk/boards/* linguist-documentation=true
 legacy-branches/old-pcb/* linguist-documentation=true
+legacy-trunk/3rdparty/ linguist-vendored
 *.vh linguist-language=Verilog
