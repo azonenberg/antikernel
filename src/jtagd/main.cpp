@@ -305,22 +305,20 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-void sig_handler(int sig)
+void sig_handler(int sig) //foobar
 {
-	/*
 	switch(sig)
 	{
 		case SIGINT:
 			g_quit = true;
-			close(g_socket);
-			g_socket = -1;
+			close(g_socket.Detach());	//forcibly close the socket to terminate all in-progress IO
 			printf("Quitting...\n");
 			break;
 
 		case SIGPIPE:
 			//ignore
 			break;
-	}*/
+	}
 }
 
 /**
