@@ -36,10 +36,8 @@ recursive_config:
     toolchain:      c++/generic
 
     # Target architectures (default for PC stuff, firmware will override)
-    # Temporarily disable i386 build until Debian Stretch hits release...
-    # Crypto++ is not multiarch in Jessie, so we get lots of pain in the butt!
     arches:
-        #- i386-linux-gnu
+        - i386-linux-gnu
         - x86_64-linux-gnu
 
     # Generic flags that apply everywhere
