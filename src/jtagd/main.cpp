@@ -305,7 +305,7 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-void sig_handler(int sig) //foobar
+void sig_handler(int sig)
 {
 	switch(sig)
 	{
