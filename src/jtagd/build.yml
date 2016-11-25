@@ -45,7 +45,8 @@ jtagd:
         - library/target/log
         - library/target/xptools
 
-        # we never call libftd2xx but need HAVE_FTD2XX available from jtaghal
+        # we never call these libs but need HAVE_xxx available from jtaghal
         # TODO: there should be a better way to do this?
         # Auto-generated config.h with HAVE_xx macros?
         - library/optional/ftd2xx
+        - library/optional/djtg

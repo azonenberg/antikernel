@@ -370,7 +370,6 @@ void ListAdapters()
 			int ndev = 0;
 		#endif
 
-		/*
 		#ifdef HAVE_DJTG
 			ver = DigilentJtagInterface::GetAPIVersion();
 			printf("Digilent API version: %s\n", ver.c_str());
@@ -399,7 +398,6 @@ void ListAdapters()
 		#else	//#ifdef HAVE_DJTG
 			printf("Digilent API version: not supported\n");
 		#endif
-		*/
 
 		printf("\n");
 		#ifdef HAVE_FTD2XX
