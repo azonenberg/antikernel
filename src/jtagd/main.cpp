@@ -378,19 +378,21 @@ void ListAdapters()
 				LogNotice("No interfaces found\n");
 			else
 			{
+				LogIndenter li;
 				for(int i=0; i<ndev; i++)
 				{
 					try
 					{
 						DigilentJtagInterface iface(i);
-						LogNotice("    Interface %d: %s\n", i, iface.GetName().c_str());
-						LogNotice("        Serial number:  %s\n", iface.GetSerial().c_str());
-						LogNotice("        User ID:        %s\n", iface.GetUserID().c_str());
-						LogNotice("        Default clock:  %.2f MHz\n", iface.GetFrequency()/1000000.0f);
+						LogNotice("Interface %d: %s\n", i, iface.GetName().c_str());
+						LogIndenter li;
+						LogNotice("Serial number:  %s\n", iface.GetSerial().c_str());
+						LogNotice("User ID:        %s\n", iface.GetUserID().c_str());
+						LogNotice("Default clock:  %.2f MHz\n", iface.GetFrequency()/1000000.0f);
 					}
 					catch(const JtagException& e)
 					{
-						LogNotice("    Interface %d: Could not be opened, maybe another jtagd instance is using it?\n", i);
+						LogNotice("Interface %d: Could not be opened, maybe another jtagd instance is using it?\n", i);
 					}
 				}
 			}
@@ -409,22 +411,24 @@ void ListAdapters()
 			else
 			{
 				int idev = 0;
+				LogIndenter li;
 				for(int i=0; i<ndev; i++)
 				{
 					try
 					{
 						if(FTDIJtagInterface::IsJtagCapable(i))
 						{
-							printf("    Interface %d: %s\n", idev, FTDIJtagInterface::GetDescription(i).c_str());
-							printf("        Serial number:  %s\n", FTDIJtagInterface::GetSerialNumber(i).c_str());
-							printf("        User ID:        %s\n", FTDIJtagInterface::GetSerialNumber(i).c_str());
-							printf("        Default clock:  %.2f MHz\n", FTDIJtagInterface::GetDefaultFrequency(i)/1000000.0f);
+							LogNotice("Interface %d: %s\n", idev, FTDIJtagInterface::GetDescription(i).c_str());
+							LogIndenter li;
+							LogNotice("Serial number:  %s\n", FTDIJtagInterface::GetSerialNumber(i).c_str());
+							LogNotice("User ID:        %s\n", FTDIJtagInterface::GetSerialNumber(i).c_str());
+							LogNotice("Default clock:  %.2f MHz\n", FTDIJtagInterface::GetDefaultFrequency(i)/1000000.0f);
 							idev++;
 						}
 					}
 					catch(const JtagException& e)
 					{
-						LogNotice("    Interface %d: Error getting device information\n", i);
+						LogNotice("Interface %d: Error getting device information\n", i);
 					}
 				}
 			}
