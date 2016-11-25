@@ -33,6 +33,7 @@ jtagd:
 
     sources:
         - main.cpp
+        - ConnectionThread.cpp
 
     constants:
         opcodes.yml:

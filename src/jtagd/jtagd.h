@@ -54,6 +54,6 @@
 #include "../jtaghal/jtaghal.h"
 #include "jtagd_opcodes_enum.h"
 
-//void ProcessConnection(JtagInterface* iface, int client_socket);
+void ProcessConnection(JtagInterface* iface, Socket& client);
 
 #endif

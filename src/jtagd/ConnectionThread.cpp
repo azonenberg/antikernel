@@ -33,34 +33,29 @@
 	@brief Main function for handling connections from client
  */
 #include "jtagd.h"
-#include "../jtaghal/jtaghal.h"
-#include <netinet/tcp.h>
 
 using namespace std;
 
 /**
 	@brief Main function for handling connections
  */
-void ProcessConnection(JtagInterface* iface, int socket)
+void ProcessConnection(JtagInterface* iface, Socket& client)
 {
-	/*
 	try
 	{
 		//Set no-delay flag
-		int flag = 1;
-		if(0 != setsockopt(socket, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag) ))
+		if(!client.DisableNagle())
 		{
 			throw JtagExceptionWrapper(
 				"Failed to set TCP_NODELAY",
-				"",
-				JtagException::EXCEPTION_TYPE_NETWORK);
+				"");
 		}
 
 		vector<unsigned char> recv_buf;
 
 		//Sit around and wait for messages
 		uint8_t opcode;
-		while(1 == NetworkedJtagInterface::read_looped(socket, (unsigned char*)&opcode, 1))
+		while(1 == client.RecvLooped((unsigned char*)&opcode, 1))
 		{
 			bool quit = false;
 
@@ -68,18 +63,18 @@ void ProcessConnection(JtagInterface* iface, int socket)
 			{
 				//No mutex locking needed for stuff that just queries constant member vars
 				case JTAGD_OP_GET_NAME:
-					NetworkedJtagInterface::SendString(socket, iface->GetName());
+					client.SendPascalString(iface->GetName());
 					break;
 				case JTAGD_OP_GET_SERIAL:
-					NetworkedJtagInterface::SendString(socket, iface->GetSerial());
+					client.SendPascalString(iface->GetSerial());
 					break;
 				case JTAGD_OP_GET_USERID:
-					NetworkedJtagInterface::SendString(socket, iface->GetUserID());
+					client.SendPascalString(iface->GetUserID());
 					break;
 				case JTAGD_OP_GET_FREQ:
 					{
 						uint32_t freq = iface->GetFrequency();
-						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&freq, 4);
+						client.SendLooped((unsigned char*)&freq, 4);
 					}
 					break;
 
@@ -90,10 +85,10 @@ void ProcessConnection(JtagInterface* iface, int socket)
 
 						//Send an ACK once the commit has occurred
 						uint8_t dummy = 0;
-						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&dummy, 1);
+						client.SendLooped((unsigned char*)&dummy, 1);
 					}
 					break;
-
+				/*
 				case JTAGD_OP_SHIFT_DATA:
 				case JTAGD_OP_SHIFT_DATA_WO:
 					{
@@ -124,7 +119,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 
 							//Send response back, if desired
 							if(want_response)
-								NetworkedJtagInterface::write_looped(socket, recv_data, bytesize);
+								client.SendLooped(recv_data, bytesize);
 						}
 						catch(const JtagException& ex)
 						{
@@ -132,7 +127,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 							if(ex.GetType() == JtagException::EXCEPTION_TYPE_ADAPTER)
 							{
 								uint8_t status = 1;
-								NetworkedJtagInterface::write_looped(socket, &status, 1);
+								client.SendLooped(&status, 1);
 
 								//Print error anyway
 								printf("Non-fatal exception, passed to client\n");
@@ -184,7 +179,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 							recv_buf[0] = iface->ShiftDataWriteOnly(last_tms, send_data, &recv_buf[1], count);
 
 							//Send back status
-							NetworkedJtagInterface::write_looped(socket, &recv_buf[0], recv_buf[0] ? 1 : recv_buf.size());
+							client.SendLooped(&recv_buf[0], recv_buf[0] ? 1 : recv_buf.size());
 							recv_buf.clear();
 						}
 						catch(const JtagException& ex)
@@ -193,7 +188,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 							if(ex.GetType() == JtagException::EXCEPTION_TYPE_ADAPTER)
 							{
 								uint8_t status = -1;
-								NetworkedJtagInterface::write_looped(socket, &status, 1);
+								client.SendLooped(&status, 1);
 
 								//Print error anyway
 								printf("Non-fatal exception, passed to client\n");
@@ -233,11 +228,11 @@ void ProcessConnection(JtagInterface* iface, int socket)
 
 							//Send status byte back
 							uint8_t status = deferred ? 1 : 0;
-							NetworkedJtagInterface::write_looped(socket, &status, 1);
+							client.SendLooped(&status, 1);
 
 							//Send response back, if meaningful
 							if(deferred)
-								NetworkedJtagInterface::write_looped(socket, recv_data, bytesize);
+								client.SendLooped(recv_data, bytesize);
 						}
 						catch(const JtagException& ex)
 						{
@@ -245,7 +240,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 							if(ex.GetType() == JtagException::EXCEPTION_TYPE_ADAPTER)
 							{
 								uint8_t status = -1;
-								NetworkedJtagInterface::write_looped(socket, &status, 1);
+								client.SendLooped(&status, 1);
 
 								//Print error anyway
 								printf("Non-fatal exception, passed to client\n");
@@ -266,7 +261,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 				case JTAGD_OP_SPLIT_SUPPORTED:
 					{
 						uint8_t val = (iface->IsSplitScanSupported() ? 1 : 0);
-						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&val, 1);
+						client.SendLooped((unsigned char*)&val, 1);
 					}
 					break;
 
@@ -289,35 +284,35 @@ void ProcessConnection(JtagInterface* iface, int socket)
 				case JTAGD_OP_PERF_SHIFT:
 					{
 						uint64_t n = iface->GetShiftOpCount();
-						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&n, 8);
+						client.SendLooped((unsigned char*)&n, 8);
 					}
 					break;
 
 				case JTAGD_OP_PERF_RECOV:
 					{
 						uint64_t n = iface->GetRecoverableErrorCount();
-						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&n, 8);
+						client.SendLooped((unsigned char*)&n, 8);
 					}
 					break;
 
 				case JTAGD_OP_PERF_DATA:
 					{
 						uint64_t n = iface->GetDataBitCount();
-						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&n, 8);
+						client.SendLooped((unsigned char*)&n, 8);
 					}
 					break;
 
 				case JTAGD_OP_PERF_MODE:
 					{
 						uint64_t n = iface->GetModeBitCount();
-						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&n, 8);
+						client.SendLooped((unsigned char*)&n, 8);
 					}
 					break;
 
 				case JTAGD_OP_PERF_DUMMY:
 					{
 						uint64_t n = iface->GetDummyClockCount();
-						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&n, 8);
+						client.SendLooped((unsigned char*)&n, 8);
 					}
 					break;
 
@@ -327,7 +322,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 						uint8_t n = 0;
 						if(gpio != NULL)
 							n = 1;
-						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&n, 1);
+						client.SendLooped((unsigned char*)&n, 1);
 					}
 					break;
 				case JTAGD_OP_GET_GPIO_PIN_COUNT:
@@ -336,7 +331,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 						uint8_t n = 0;
 						if(gpio != NULL)
 							n = gpio->GetGpioCount();
-						NetworkedJtagInterface::write_looped(socket, (unsigned char*)&n, 1);
+						client.SendLooped((unsigned char*)&n, 1);
 					}
 					break;
 
@@ -356,7 +351,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 									(gpio->GetGpioDirection(i) << 1)
 									);
 							}
-							NetworkedJtagInterface::write_looped(socket, (unsigned char*)&pinstates[0], count);
+							client.SendLooped((unsigned char*)&pinstates[0], count);
 						}
 					}
 					break;
@@ -380,7 +375,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 						}
 					};
 					break;
-
+				*/
 				case JTAGD_OP_ENTER_SIR:
 					iface->EnterShiftIR();
 					break;
@@ -402,7 +397,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 					break;
 
 				case JTAGD_OP_QUIT:
-					printf("Normal termination requested\n");
+					LogVerbose("Normal termination requested\n");
 					quit = true;
 					break;
 
@@ -410,8 +405,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 					{
 						throw JtagExceptionWrapper(
 							"Unrecognized opcode received from client",
-							"",
-							JtagException::EXCEPTION_TYPE_GIGO);
+							"");
 					}
 			}
 
@@ -423,11 +417,7 @@ void ProcessConnection(JtagInterface* iface, int socket)
 	{
 		//Socket closed? Don't display the message, it just spams the console
 		if(ex.GetDescription().find("Socket closed") == string::npos)
-			printf("%s\n", ex.GetDescription().c_str());
+			LogError("%s\n", ex.GetDescription().c_str());
 		fflush(stdout);
 	}
-
-	//connection closed
-	close(socket);
-	*/
 }

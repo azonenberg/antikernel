@@ -262,14 +262,14 @@ int main(int argc, char* argv[])
 
 		//Wait for connections
 		g_socket.Listen();
-		/*while(true)
+		while(true)
 		{
 			try
 			{
 				Socket client = g_socket.Accept();
-				printf("Client connected\n");
-				ProcessConnection(iface, client.Detach());
-				printf("Client disconnected\n");
+				LogNotice("Client connected\n");
+				ProcessConnection(iface, client);
+				LogNotice("Client disconnected\n");
 			}
 			catch(const JtagException& ex)
 			{
@@ -278,20 +278,20 @@ int main(int argc, char* argv[])
 		}
 
 		//Print interface statistics
-		printf("Total number of shift operations:       %zu\n", iface->GetShiftOpCount());
-		printf("Total number of recoverable errors:     %zu\n", iface->GetRecoverableErrorCount());
-		printf("Total number of data bits:              %zu\n", iface->GetDataBitCount());
-		printf("Total number of mode bits:              %zu\n", iface->GetModeBitCount());
-		printf("Total number of dummy clocks:           %zu\n", iface->GetDummyClockCount());
+		LogNotice("Total number of shift operations:       %zu\n", iface->GetShiftOpCount());
+		LogNotice("Total number of recoverable errors:     %zu\n", iface->GetRecoverableErrorCount());
+		LogNotice("Total number of data bits:              %zu\n", iface->GetDataBitCount());
+		LogNotice("Total number of mode bits:              %zu\n", iface->GetModeBitCount());
+		LogNotice("Total number of dummy clocks:           %zu\n", iface->GetDummyClockCount());
 		size_t cycles = iface->GetDataBitCount() + iface->GetModeBitCount() + iface->GetDummyClockCount();
-		printf("Total TCK cycles:                       %zu\n", cycles);
-		printf("Total host-side shift time:             %.2f ms\n", iface->GetShiftTime() * 1000);
+		LogNotice("Total TCK cycles:                       %zu\n", cycles);
+		LogNotice("Total host-side shift time:             %.2f ms\n", iface->GetShiftTime() * 1000);
 		double boardtime = cycles / static_cast<double>(iface->GetFrequency());
-		printf("Calculated board-side shift time:       %.2f ms\n", boardtime * 1000);
+		LogNotice("Calculated board-side shift time:       %.2f ms\n", boardtime * 1000);
 		double latency = iface->GetShiftTime() - boardtime;
-		printf("Calculated total latency:               %.2f ms\n", latency * 1000);
-		printf("Calculated average latency:             %.2f ms\n", (latency * 1000) / iface->GetShiftOpCount());
-		*/
+		LogNotice("Calculated total latency:               %.2f ms\n", latency * 1000);
+		LogNotice("Calculated average latency:             %.2f ms\n", (latency * 1000) / iface->GetShiftOpCount());
+
 		//Clean up
 		delete iface;
 	}
