@@ -43,7 +43,7 @@ jtagd_opcodes:
 
         # Query the serial number of the JTAG adapter
         # Server responds with a string (suitable for display, no specified format).
-        JTAGD_OP_GET_NAME: 01
+        JTAGD_OP_GET_SERIAL: 01
 
         # Query the user-assigned ID of the JTAG adapter
         # Server responds with a string (suitable for display, no specified format).
