@@ -179,7 +179,7 @@ int main(int argc, char* argv[])
 					return 1;
 				#endif
 				break;
-/*
+
 			case API_DIGILENT:
 				#ifdef HAVE_DJTG
 				{
@@ -219,7 +219,7 @@ int main(int argc, char* argv[])
 					LogError("This jtagd was compiled without Digilent API support\n");
 				#endif
 				break;
-*/
+
 			default:
 				LogError("Unrecognized API\n");
 				return 1;
@@ -234,7 +234,7 @@ int main(int argc, char* argv[])
 
 		//Create the socket server
 		g_socket.Bind(port);
-/*
+
 		//Figure out the port number
 		if(port == 0)
 		{
@@ -242,19 +242,19 @@ int main(int argc, char* argv[])
 			socklen_t len = sizeof(buf);
 			if(0 != getsockname(g_socket, reinterpret_cast<sockaddr*>(&buf), &len))
 			{
-				printf("Failed to get port number!\n");
+				LogError("Failed to get port number!\n");
 				delete iface;
 				return 1;
 			}
 			FILE* fp = fopen("jtagd-port.txt", "w");
 			if(!fp)
 			{
-				printf("Failed to open port file\n");
+				LogError("Failed to open port file\n");
 				delete iface;
 				return 1;
 			}
 			unsigned short port = ntohs(buf.sin_port);
-			printf("    Listening on port %u\n", port);
+			LogNotice("    Listening on port %u\n", port);
 			fflush(stdout);
 			fprintf(fp, "%us\n", port);
 			fclose(fp);
@@ -262,7 +262,7 @@ int main(int argc, char* argv[])
 
 		//Wait for connections
 		g_socket.Listen();
-		while(true)
+		/*while(true)
 		{
 			try
 			{
@@ -291,14 +291,13 @@ int main(int argc, char* argv[])
 		double latency = iface->GetShiftTime() - boardtime;
 		printf("Calculated total latency:               %.2f ms\n", latency * 1000);
 		printf("Calculated average latency:             %.2f ms\n", (latency * 1000) / iface->GetShiftOpCount());
-
+		*/
 		//Clean up
 		delete iface;
-		*/
 	}
 	catch(const JtagException& ex)
 	{
-		printf("%s\n", ex.GetDescription().c_str());
+		LogError("%s\n", ex.GetDescription().c_str());
 		return 1;
 	}
 
@@ -312,7 +311,7 @@ void sig_handler(int sig)
 		case SIGINT:
 			g_quit = true;
 			close(g_socket.Detach());	//forcibly close the socket to terminate all in-progress IO
-			printf("Quitting...\n");
+			LogNotice("Quitting...\n");
 			break;
 
 		case SIGPIPE:
@@ -326,7 +325,7 @@ void sig_handler(int sig)
  */
 void ShowUsage()
 {
-	printf(
+	LogNotice(
 		"Usage: jtagd [OPTION]\n"
 		"\n"
 		"Arguments:\n"
@@ -345,7 +344,7 @@ void ShowUsage()
  */
 void ShowVersion()
 {
-	printf(
+	LogNotice(
 		"JTAG server daemon [git rev %s] by Andrew D. Zonenberg.\n"
 		"\n"
 		"License: 3-clause (\"new\" or \"modified\") BSD.\n"
@@ -372,11 +371,11 @@ void ListAdapters()
 
 		#ifdef HAVE_DJTG
 			ver = DigilentJtagInterface::GetAPIVersion();
-			printf("Digilent API version: %s\n", ver.c_str());
+			LogNotice("Digilent API version: %s\n", ver.c_str());
 			ndev = DigilentJtagInterface::GetInterfaceCount();
-			printf("    Enumerating interfaces... %d found\n", ndev);
+			LogNotice("    Enumerating interfaces... %d found\n", ndev);
 			if(ndev == 0)
-				printf("No interfaces found\n");
+				LogNotice("No interfaces found\n");
 			else
 			{
 				for(int i=0; i<ndev; i++)
@@ -384,14 +383,14 @@ void ListAdapters()
 					try
 					{
 						DigilentJtagInterface iface(i);
-						printf("    Interface %d: %s\n", i, iface.GetName().c_str());
-						printf("        Serial number:  %s\n", iface.GetSerial().c_str());
-						printf("        User ID:        %s\n", iface.GetUserID().c_str());
-						printf("        Default clock:  %.2f MHz\n", iface.GetFrequency()/1000000.0f);
+						LogNotice("    Interface %d: %s\n", i, iface.GetName().c_str());
+						LogNotice("        Serial number:  %s\n", iface.GetSerial().c_str());
+						LogNotice("        User ID:        %s\n", iface.GetUserID().c_str());
+						LogNotice("        Default clock:  %.2f MHz\n", iface.GetFrequency()/1000000.0f);
 					}
 					catch(const JtagException& e)
 					{
-						printf("    Interface %d: Could not be opened, maybe another jtagd instance is using it?\n", i);
+						LogNotice("    Interface %d: Could not be opened, maybe another jtagd instance is using it?\n", i);
 					}
 				}
 			}
@@ -402,11 +401,11 @@ void ListAdapters()
 		printf("\n");
 		#ifdef HAVE_FTD2XX
 			ver = FTDIJtagInterface::GetAPIVersion();
-			printf("FTDI API version: %s\n", ver.c_str());
+			LogNotice("FTDI API version: %s\n", ver.c_str());
 			ndev = FTDIJtagInterface::GetInterfaceCount();
-			printf("    Enumerating interfaces... %d found\n", ndev);
+			LogNotice("    Enumerating interfaces... %d found\n", ndev);
 			if(ndev == 0)
-				printf("No interfaces found\n");
+				LogNotice("No interfaces found\n");
 			else
 			{
 				int idev = 0;
@@ -425,18 +424,18 @@ void ListAdapters()
 					}
 					catch(const JtagException& e)
 					{
-						printf("    Interface %d: Error getting device information\n", i);
+						LogNotice("    Interface %d: Error getting device information\n", i);
 					}
 				}
 			}
 		#else	//#ifdef HAVE_FTD2XX
-			printf("FTDI API version: not supported\n");
+			LogNotice("FTDI API version: not supported\n");
 		#endif
 	}
 
 	catch(const JtagException& ex)
 	{
-		printf("%s\n", ex.GetDescription().c_str());
+		LogError("%s\n", ex.GetDescription().c_str());
 		exit(1);
 	}
 }
