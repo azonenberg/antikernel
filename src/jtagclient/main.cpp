@@ -31,7 +31,7 @@
 	@file
 	@author Andrew D. Zonenberg
 	@brief Main source file for jtagclient
-	
+
 	\ingroup jtagclient
  */
 #include <stdio.h>
@@ -56,46 +56,46 @@ void PrintDeviceInfo(JtagDevice* pdev);
 void sig_handler(int sig);
 #endif
 
-/** 
+/**
 	\defgroup jtagclient JTAGclient: command-line client to jtagd
-	
+
 	jtagclient provides a command-line interface for performing basic scan chain operations.
-	
-	JTAGclient is released under the same permissive 3-clause BSD license as the remainder of the project.	
+
+	JTAGclient is released under the same permissive 3-clause BSD license as the remainder of the project.
  */
- 
+
 /**
 	\page jtagclient_usage Usage
 	\ingroup jtagclient
-	
+
 	General arguments:
-	
+
 	\li --port NNN<br/>
 	Specifies the TCP port that jtagclient should connect to (default 50123).
-	
+
 	\li --server HOST<br/>
 	Specifies the hostname of the server that jtagclient should connect to (default localhost)
-	
+
 	\li --nobanner<br/>
 	Run the requested operation without printing the program version/license banner.
-	
+
 	Exactly one of the following operations must be specified:
-	
+
 	\li --help<br/>
 	Displays help and exits.
-	
+
 	\li --version<br/>
 	Prints program version number and exits.
-	
+
 	\li --erase N<br/>
 	Erases the device at position N in the scan chain (zero based)
-	
+
 	\li --info N<br/>
 	Displays information about the device at position N in the scan chain (zero based)
-	
+
 	\li --program N fname
 	Programs the device at position N in the scan chain with the firmware/bitstream image in the supplied file.
-	
+
 	\li --verbose
 	Prints more debug info.
  */
@@ -110,15 +110,15 @@ int main(int argc, char* argv[])
 #ifndef _WINDOWS
 	signal(SIGPIPE, sig_handler);
 #endif
-	
+
 	try
 	{
 		Severity console_verbosity = Severity::NOTICE;
-		
+
 		//Global settings
 		unsigned short port = 0;
 		string server = "";
-		
+
 		//Mode switches
 		enum modes
 		{
@@ -131,20 +131,20 @@ int main(int argc, char* argv[])
 			MODE_REBOOT,
 			MODE_DUMP
 		} mode = MODE_NONE;
-		
+
 		//Device index
 		int devnum = 0;
-		
+
 		//Programming mode
 		string bitfile;
-		
+
 		bool noreboot = false;
 		int indirect_width = 0;
 		unsigned int base = 0;
 		bool raw = false;
 		bool profile_init_time = false;
 		string indirect_image = "";
-		
+
 		//Parse command-line arguments
 		for(int i=1; i<argc; i++)
 		{
@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
 			//Let the logger eat its args first
 			if(ParseLoggerArguments(i, argc, argv, console_verbosity))
 				continue;
-			
+
 			if(s == "--help")
 				mode = MODE_HELP;
 			else if(s == "--port")
@@ -163,7 +163,7 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Not enough arguments for --port\n");
 					return 1;
 				}
-				
+
 				port = atoi(argv[++i]);
 			}
 			else if(s == "--server")
@@ -173,7 +173,7 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Not enough arguments for --server\n");
 					return 1;
 				}
-				
+
 				server = argv[++i];
 			}
 			else if(s == "--program")
@@ -195,7 +195,7 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Not enough arguments for --dump\n");
 					return 1;
 				}
-				
+
 				//Expect device index and bitfile
 				mode = MODE_DUMP;
 				devnum = atoi(argv[++i]);
@@ -208,7 +208,7 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Not enough arguments for --indirect\n");
 					return 1;
 				}
-				
+
 				indirect_width = atoi(argv[++i]);
 			}
 			else if(s == "--indirect_image")
@@ -218,7 +218,7 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Not enough arguments for --indirect-image\n");
 					return 1;
 				}
-				
+
 				indirect_image = argv[++i];
 			}
 			else if(s == "--profile-init")
@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Not enough arguments for --info\n");
 					return 1;
 				}
-				
+
 				//Expect device index
 				mode = MODE_DEVINFO;
 				devnum = atoi(argv[++i]);
@@ -242,7 +242,7 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Not enough arguments for --erase\n");
 					return 1;
 				}
-				
+
 				//Expect device index
 				mode = MODE_ERASE;
 				devnum = atoi(argv[++i]);
@@ -254,7 +254,7 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Not enough arguments for --reboot\n");
 					return 1;
 				}
-				
+
 				//Expect device index
 				mode = MODE_REBOOT;
 				devnum = atoi(argv[++i]);
@@ -270,7 +270,7 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Not enough arguments for --base\n");
 					return 1;
 				}
-				
+
 				sscanf(argv[++i], "%8x", &base);
 			}
 			else if(s == "--version")
@@ -307,7 +307,7 @@ int main(int argc, char* argv[])
 			ShowUsage();
 			return 0;
 		}
-		
+
 		/*
 		//Connect to the server
 		NetworkedJtagInterface iface;
@@ -316,7 +316,7 @@ int main(int argc, char* argv[])
 		printf("Querying adapter...\n");
 		printf("    Remote JTAG adapter is a %s (serial number \"%s\", userid \"%s\", frequency %.2f MHz)\n",
 			iface.GetName().c_str(), iface.GetSerial().c_str(), iface.GetUserID().c_str(), iface.GetFrequency()/1E6);
-		
+
 		//Initialize the chain
 		printf("Initializing chain...\n");
 		double start = GetTime();
@@ -326,7 +326,7 @@ int main(int argc, char* argv[])
 			double dt = GetTime() - start;
 			printf("    Chain walking took %.3f ms\n", dt*1000);
 		}
-		
+
 		//Get device count and see what we've found
 		printf("Scan chain contains %d devices\n", (int)iface.GetDeviceCount());
 
@@ -337,14 +337,14 @@ int main(int argc, char* argv[])
 			for(size_t i=0; i<iface.GetDeviceCount(); i++)
 				PrintDeviceInfo(iface.GetDevice(i));
 		}
-		
+
 		//Do stuff
 		switch(mode)
 		{
 			case MODE_NONE:
 				//nothing to do
 				break;
-				
+
 			case MODE_PROGRAM:
 				{
 					if(bitfile == "")
@@ -354,7 +354,7 @@ int main(int argc, char* argv[])
 							"",
 							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 					}
-					
+
 					//Get the device
 					JtagDevice* device = iface.GetDevice(devnum);
 					if(device == NULL)
@@ -364,7 +364,7 @@ int main(int argc, char* argv[])
 							"",
 							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 					}
-					
+
 					//Make sure it's a programmable device
 					ProgrammableDevice* pdev = dynamic_cast<ProgrammableDevice*>(device);
 					if(pdev == NULL)
@@ -374,7 +374,7 @@ int main(int argc, char* argv[])
 							"",
 							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 					}
-					
+
 					//Load the firmware image and program the device
 					printf("Loading firmware image...\n");
 					FirmwareImage* img = NULL;
@@ -382,7 +382,7 @@ int main(int argc, char* argv[])
 						img = new RawBinaryFirmwareImage(bitfile, "flash");
 					else
 						img = pdev->LoadFirmwareImage(bitfile, verbose);
-					
+
 					if(indirect_width == 0)
 					{
 						printf("Programming device...\n");
@@ -406,7 +406,7 @@ int main(int argc, char* argv[])
 					delete img;
 				}
 				break;
-				
+
 			case MODE_DUMP:
 				{
 					//Get the device
@@ -418,7 +418,7 @@ int main(int argc, char* argv[])
 							"",
 							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 					}
-									
+
 					//Make sure it's a Xilinx FPGA (TODO: move this to base class)
 					XilinxFPGA* pdev = dynamic_cast<XilinxFPGA*>(device);
 					if(pdev == NULL)
@@ -428,16 +428,16 @@ int main(int argc, char* argv[])
 							"",
 							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 					}
-					
+
 					printf("Dumping flash...\n");
 					pdev->DumpIndirect(indirect_width, bitfile);
 				}
 				break;
-			
+
 			case MODE_DEVINFO:
 				PrintDeviceInfo(iface.GetDevice(devnum));
 				break;
-				
+
 			case MODE_ERASE:
 				{
 					//Get the device
@@ -449,7 +449,7 @@ int main(int argc, char* argv[])
 							"",
 							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 					}
-										
+
 					//Make sure it's a programmable device
 					ProgrammableDevice* pdev = dynamic_cast<ProgrammableDevice*>(device);
 					if(pdev == NULL)
@@ -465,7 +465,7 @@ int main(int argc, char* argv[])
 					pdev->Erase();
 				}
 				break;
-				
+
 			case MODE_REBOOT:
 				{
 					//Get the device
@@ -477,7 +477,7 @@ int main(int argc, char* argv[])
 							"",
 							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 					}
-										
+
 					//Make sure it's a Xilinx FPGA (TODO: move this to base class)
 					XilinxFPGA* pdev = dynamic_cast<XilinxFPGA*>(device);
 					if(pdev == NULL)
@@ -493,13 +493,13 @@ int main(int argc, char* argv[])
 					pdev->Reboot();
 				}
 				break;
-			
+
 			default:
 				break;
 		}
 		*/
 	}
-	
+
 	catch(const JtagException& ex)
 	{
 		LogError("%s\n", ex.GetDescription().c_str());
@@ -512,10 +512,10 @@ int main(int argc, char* argv[])
 
 /**
 	@brief Prints info about a single device in the chain
-	
+
 	@param i		Device index
 	@param pdev		The device
-	
+
 	\ingroup jtagclient
  */
 void PrintDeviceInfo(JtagDevice* pdev)
@@ -526,13 +526,13 @@ void PrintDeviceInfo(JtagDevice* pdev)
 			"Device is null, cannot continue",
 			"");
 	}
-	
+
 	pdev->PrintInfo();
 }
 
 /**
 	@brief Prints program usage
-	
+
 	\ingroup jtagclient
  */
 void ShowUsage()
@@ -560,7 +560,7 @@ void ShowUsage()
 #ifndef _WINDOWS
 /**
 	@brief SIGPIPE handler
-	
+
 	\ingroup jtagclient
  */
 void sig_handler(int sig)
@@ -576,7 +576,7 @@ void sig_handler(int sig)
 
 /**
 	@brief Prints program version number
-	
+
 	\ingroup jtagclient
  */
 void ShowVersion()
