@@ -36,9 +36,8 @@ jtagd:
         - ConnectionThread.cpp
 
     constants:
-        opcodes.yml:
+        ../jtaghal/jtagd_opcodes.yml:
             - c/enum
-            - verilog/localparam
 
     flags:
         - global

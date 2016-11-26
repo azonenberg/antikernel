@@ -308,7 +308,6 @@ int main(int argc, char* argv[])
 			return 0;
 		}
 
-		/*
 		//Connect to the server
 		NetworkedJtagInterface iface;
 		iface.Connect(server, port);
@@ -316,7 +315,7 @@ int main(int argc, char* argv[])
 		printf("Querying adapter...\n");
 		printf("    Remote JTAG adapter is a %s (serial number \"%s\", userid \"%s\", frequency %.2f MHz)\n",
 			iface.GetName().c_str(), iface.GetSerial().c_str(), iface.GetUserID().c_str(), iface.GetFrequency()/1E6);
-
+		/*
 		//Initialize the chain
 		printf("Initializing chain...\n");
 		double start = GetTime();

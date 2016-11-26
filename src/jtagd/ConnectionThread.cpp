@@ -315,7 +315,7 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 						client.SendLooped((unsigned char*)&n, 8);
 					}
 					break;
-
+				*/
 				case JTAGD_OP_HAS_GPIO:
 					{
 						GPIOInterface* gpio = dynamic_cast<GPIOInterface*>(iface);
@@ -355,7 +355,7 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 						}
 					}
 					break;
-
+				/*
 				case JTAGD_OP_WRITE_GPIO_STATE:
 					{
 						GPIOInterface* gpio = dynamic_cast<GPIOInterface*>(iface);
@@ -403,9 +403,8 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 
 				default:
 					{
-						throw JtagExceptionWrapper(
-							"Unrecognized opcode received from client",
-							"");
+						LogError("Unrecognized opcode (0x%02x) received from client\n", (int)opcode);
+						return;
 					}
 			}
 
