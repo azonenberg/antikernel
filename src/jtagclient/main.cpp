@@ -42,9 +42,7 @@
 #include <list>
 
 #include "../jtaghal/jtaghal.h"
-#include "../jtaghal/XilinxFPGA.h"
-#include "../jtaghal/RawBinaryFirmwareImage.h"
-#include <svnversion.h>
+//#include <svnversion.h>
 
 #include <signal.h>
 
@@ -54,7 +52,7 @@ void ShowUsage();
 void ShowVersion();
 void PrintDeviceInfo(JtagDevice* pdev);
 
-#ifndef _WINDOWS
+#ifndef _WIN32
 void sig_handler(int sig);
 #endif
 
@@ -115,6 +113,8 @@ int main(int argc, char* argv[])
 	
 	try
 	{
+		Severity console_verbosity = Severity::NOTICE;
+		
 		//Global settings
 		unsigned short port = 0;
 		string server = "";
@@ -123,6 +123,8 @@ int main(int argc, char* argv[])
 		enum modes
 		{
 			MODE_NONE,
+			MODE_HELP,
+			MODE_VERSION,
 			MODE_PROGRAM,
 			MODE_DEVINFO,
 			MODE_ERASE,
@@ -136,12 +138,10 @@ int main(int argc, char* argv[])
 		//Programming mode
 		string bitfile;
 		
-		bool nobanner = false;
 		bool noreboot = false;
 		int indirect_width = 0;
 		unsigned int base = 0;
 		bool raw = false;
-		bool verbose = false;
 		bool profile_init_time = false;
 		string indirect_image = "";
 		
@@ -149,20 +149,19 @@ int main(int argc, char* argv[])
 		for(int i=1; i<argc; i++)
 		{
 			string s(argv[i]);
+
+			//Let the logger eat its args first
+			if(ParseLoggerArguments(i, argc, argv, console_verbosity))
+				continue;
 			
 			if(s == "--help")
-			{
-				ShowUsage();
-				return 0;
-			}
+				mode = MODE_HELP;
 			else if(s == "--port")
 			{
 				if(i+1 >= argc)
 				{
-					throw JtagExceptionWrapper(
-						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+					fprintf(stderr, "Not enough arguments for --port\n");
+					return 1;
 				}
 				
 				port = atoi(argv[++i]);
@@ -171,10 +170,8 @@ int main(int argc, char* argv[])
 			{
 				if(i+1 >= argc)
 				{
-					throw JtagExceptionWrapper(
-						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+					fprintf(stderr, "Not enough arguments for --server\n");
+					return 1;
 				}
 				
 				server = argv[++i];
@@ -185,10 +182,8 @@ int main(int argc, char* argv[])
 				mode = MODE_PROGRAM;
 				if(i+2 >= argc)
 				{
-					throw JtagExceptionWrapper(
-						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+					fprintf(stderr, "Not enough arguments for --program\n");
+					return 1;
 				}
 				devnum = atoi(argv[++i]);
 				bitfile = argv[++i];
@@ -197,10 +192,8 @@ int main(int argc, char* argv[])
 			{
 				if(i+2 >= argc)
 				{
-					throw JtagExceptionWrapper(
-						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+					fprintf(stderr, "Not enough arguments for --dump\n");
+					return 1;
 				}
 				
 				//Expect device index and bitfile
@@ -212,10 +205,8 @@ int main(int argc, char* argv[])
 			{
 				if(i+1 >= argc)
 				{
-					throw JtagExceptionWrapper(
-						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+					fprintf(stderr, "Not enough arguments for --indirect\n");
+					return 1;
 				}
 				
 				indirect_width = atoi(argv[++i]);
@@ -224,26 +215,20 @@ int main(int argc, char* argv[])
 			{
 				if(i+1 >= argc)
 				{
-					throw JtagExceptionWrapper(
-						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+					fprintf(stderr, "Not enough arguments for --indirect-image\n");
+					return 1;
 				}
 				
 				indirect_image = argv[++i];
 			}
-			else if(s == "--nobanner")
-				nobanner = true;
 			else if(s == "--profile-init")
 				profile_init_time = true;
 			else if(s == "--info")
 			{
 				if(i+1 >= argc)
 				{
-					throw JtagExceptionWrapper(
-						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+					fprintf(stderr, "Not enough arguments for --info\n");
+					return 1;
 				}
 				
 				//Expect device index
@@ -254,10 +239,8 @@ int main(int argc, char* argv[])
 			{
 				if(i+1 >= argc)
 				{
-					throw JtagExceptionWrapper(
-						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+					fprintf(stderr, "Not enough arguments for --erase\n");
+					return 1;
 				}
 				
 				//Expect device index
@@ -268,10 +251,8 @@ int main(int argc, char* argv[])
 			{
 				if(i+1 >= argc)
 				{
-					throw JtagExceptionWrapper(
-						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+					fprintf(stderr, "Not enough arguments for --reboot\n");
+					return 1;
 				}
 				
 				//Expect device index
@@ -282,32 +263,44 @@ int main(int argc, char* argv[])
 				noreboot = true;
 			else if(s == "--raw")
 				raw = true;
-			else if(s == "--verbose")
-				verbose = true;
 			else if(s == "--base")
 			{
 				if(i+1 >= argc)
 				{
-					throw JtagExceptionWrapper(
-						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+					fprintf(stderr, "Not enough arguments for --base\n");
+					return 1;
 				}
 				
 				sscanf(argv[++i], "%8x", &base);
 			}
 			else if(s == "--version")
-			{
-				ShowVersion();
-				return 0;
-			}
+				mode = MODE_VERSION;
 			else
 			{
-				printf("Unrecognized command-line argument \"%s\", use --help\n", s.c_str());
+				fprintf(stderr, "Unrecognized command-line argument \"%s\", use --help\n", s.c_str());
 				return 1;
 			}
 		}
-		
+
+		//Set up logging
+		g_log_sinks.emplace(g_log_sinks.begin(), new ColoredSTDLogSink(console_verbosity));
+
+		//Print header
+		if(console_verbosity >= Severity::NOTICE)
+		{
+			ShowVersion();
+			printf("\n");
+		}
+
+		//Process help/version requests
+		if(mode == MODE_VERSION)
+			return 0;
+		else if(mode == MODE_HELP)
+		{
+			ShowUsage();
+			return 0;
+		}
+
 		//Abort cleanly if no server specified
 		if( (port == 0) || (server.empty()) )
 		{
@@ -315,10 +308,7 @@ int main(int argc, char* argv[])
 			return 0;
 		}
 		
-		//Print version number by default
-		if(!nobanner)
-			ShowVersion();
-		
+		/*
 		//Connect to the server
 		NetworkedJtagInterface iface;
 		iface.Connect(server, port);
@@ -507,11 +497,12 @@ int main(int argc, char* argv[])
 			default:
 				break;
 		}
+		*/
 	}
 	
 	catch(const JtagException& ex)
 	{
-		printf("%s\n", ex.GetDescription().c_str());
+		LogError("%s\n", ex.GetDescription().c_str());
 		return 1;
 	}
 
@@ -533,8 +524,7 @@ void PrintDeviceInfo(JtagDevice* pdev)
 	{
 		throw JtagExceptionWrapper(
 			"Device is null, cannot continue",
-			"",
-			JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+			"");
 	}
 	
 	pdev->PrintInfo();
@@ -547,7 +537,7 @@ void PrintDeviceInfo(JtagDevice* pdev)
  */
 void ShowUsage()
 {
-	printf(
+	LogNotice(
 		"Usage: jtagclient [general args] [mode]\n"
 		"\n"
 		"General arguments:\n"
@@ -591,12 +581,12 @@ void sig_handler(int sig)
  */
 void ShowVersion()
 {
-	printf(
-		"JTAG client [SVN rev %s] by Andrew D. Zonenberg.\n"
+	LogNotice(
+		"JTAG client [git rev %s] by Andrew D. Zonenberg.\n"
 		"\n"
 		"License: 3-clause (\"new\" or \"modified\") BSD.\n"
 		"This is free software: you are free to change and redistribute it.\n"
 		"There is NO WARRANTY, to the extent permitted by law.\n"
 		"\n"
-		, SVNVERSION);
+		, "TODO");
 }
