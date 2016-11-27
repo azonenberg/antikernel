@@ -315,7 +315,7 @@ int main(int argc, char* argv[])
 		printf("Querying adapter...\n");
 		printf("    Remote JTAG adapter is a %s (serial number \"%s\", userid \"%s\", frequency %.2f MHz)\n",
 			iface.GetName().c_str(), iface.GetSerial().c_str(), iface.GetUserID().c_str(), iface.GetFrequency()/1E6);
-		/*
+
 		//Initialize the chain
 		printf("Initializing chain...\n");
 		double start = GetTime();
@@ -328,7 +328,7 @@ int main(int argc, char* argv[])
 
 		//Get device count and see what we've found
 		printf("Scan chain contains %d devices\n", (int)iface.GetDeviceCount());
-
+		/*
 		//Walk the chain and see what we find
 		//No need for mutexing here since the device will lock the high-level interface when necessary
 		if(mode != MODE_DEVINFO)

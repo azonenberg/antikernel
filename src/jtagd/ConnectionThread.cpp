@@ -88,14 +88,14 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 						client.SendLooped((unsigned char*)&dummy, 1);
 					}
 					break;
-				/*
+
 				case JTAGD_OP_SHIFT_DATA:
 				case JTAGD_OP_SHIFT_DATA_WO:
 					{
 						uint8_t last_tms;
 						uint32_t count;
-						NetworkedJtagInterface::read_looped(socket, (unsigned char*)&last_tms, 1);
-						NetworkedJtagInterface::read_looped(socket, (unsigned char*)&count, 4);
+						client.RecvLooped((unsigned char*)&last_tms, 1);
+						client.RecvLooped((unsigned char*)&count, 4);
 
 						//JTAGD_OP_SHIFT_DATA_WO is write only, so no response
 						bool want_response = (opcode == JTAGD_OP_SHIFT_DATA);
@@ -111,7 +111,7 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 						unsigned char* send_data = new unsigned char[bytesize];
 
 						//Receive data and send it
-						NetworkedJtagInterface::read_looped(socket, send_data, bytesize);
+						client.RecvLooped(send_data, bytesize);
 
 						try
 						{
@@ -124,14 +124,15 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 						catch(const JtagException& ex)
 						{
 							//If the actual shift operation fails, send an error code to the source
-							if(ex.GetType() == JtagException::EXCEPTION_TYPE_ADAPTER)
+							//if(ex.GetType() == JtagException::EXCEPTION_TYPE_ADAPTER)
+							if(true)
 							{
 								uint8_t status = 1;
 								client.SendLooped(&status, 1);
 
 								//Print error anyway
-								printf("Non-fatal exception, passed to client\n");
-								printf("%s\n", ex.GetDescription().c_str());
+								LogWarning("Non-fatal exception, passed to caller\n");
+								LogWarning("%s\n", ex.GetDescription().c_str());
 							}
 
 							//otherwise re-throw and abort
@@ -154,9 +155,9 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 						uint8_t last_tms;
 						uint32_t count;
 						uint8_t want_response;
-						NetworkedJtagInterface::read_looped(socket, (unsigned char*)&last_tms, 1);
-						NetworkedJtagInterface::read_looped(socket, (unsigned char*)&count, 4);
-						NetworkedJtagInterface::read_looped(socket, (unsigned char*)&want_response, 1);
+						client.RecvLooped((unsigned char*)&last_tms, 1);
+						client.RecvLooped((unsigned char*)&count, 4);
+						client.RecvLooped((unsigned char*)&want_response, 1);
 
 						int bytesize =  ceil(count / 8.0f);
 
@@ -164,7 +165,7 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 						unsigned char* send_data = new unsigned char[bytesize];
 
 						//Receive data and send it
-						NetworkedJtagInterface::read_looped(socket, send_data, bytesize);
+						client.RecvLooped(send_data, bytesize);
 
 						try
 						{
@@ -185,14 +186,15 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 						catch(const JtagException& ex)
 						{
 							//If the actual shift operation fails, send an error code to the source
-							if(ex.GetType() == JtagException::EXCEPTION_TYPE_ADAPTER)
+							//if(ex.GetType() == JtagException::EXCEPTION_TYPE_ADAPTER)
+							if(true)
 							{
 								uint8_t status = -1;
 								client.SendLooped(&status, 1);
 
 								//Print error anyway
-								printf("Non-fatal exception, passed to client\n");
-								printf("%s\n", ex.GetDescription().c_str());
+								LogWarning("Non-fatal exception, passed to caller\n");
+								LogWarning("%s\n", ex.GetDescription().c_str());
 							}
 
 							//otherwise re-throw and abort
@@ -208,13 +210,12 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 				case JTAGD_OP_SHIFT_DATA_READ_ONLY:
 					{
 						uint32_t count;
-						NetworkedJtagInterface::read_looped(socket, (unsigned char*)&count, 4);
+						client.RecvLooped((unsigned char*)&count, 4);
 						if(count == 0)
 						{
 							throw JtagExceptionWrapper(
 								"Invalid size",
-								"",
-								JtagException::EXCEPTION_TYPE_GIGO);
+								"");
 						}
 
 						int bytesize =  ceil(count / 8.0f);
@@ -237,14 +238,15 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 						catch(const JtagException& ex)
 						{
 							//If the actual shift operation fails, send an error code to the source
-							if(ex.GetType() == JtagException::EXCEPTION_TYPE_ADAPTER)
+							//if(ex.GetType() == JtagException::EXCEPTION_TYPE_ADAPTER)
+							if(true)
 							{
 								uint8_t status = -1;
 								client.SendLooped(&status, 1);
 
 								//Print error anyway
-								printf("Non-fatal exception, passed to client\n");
-								printf("%s\n", ex.GetDescription().c_str());
+								LogWarning("Non-fatal exception, passed to caller\n");
+								LogWarning("%s\n", ex.GetDescription().c_str());
 							}
 
 							//otherwise re-throw and abort
@@ -268,7 +270,7 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 				case JTAGD_OP_DUMMY_CLOCK:
 					{
 						uint32_t count;
-						NetworkedJtagInterface::read_looped(socket, (unsigned char*)&count, 4);
+						client.RecvLooped((unsigned char*)&count, 4);
 						iface->SendDummyClocks(count);
 					}
 					break;
@@ -276,7 +278,7 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 				case JTAGD_OP_DUMMY_CLOCK_DEFERRED:
 					{
 						uint32_t count;
-						NetworkedJtagInterface::read_looped(socket, (unsigned char*)&count, 4);
+						client.RecvLooped((unsigned char*)&count, 4);
 						iface->SendDummyClocksDeferred(count);
 					}
 					break;
@@ -315,7 +317,7 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 						client.SendLooped((unsigned char*)&n, 8);
 					}
 					break;
-				*/
+
 				case JTAGD_OP_HAS_GPIO:
 					{
 						GPIOInterface* gpio = dynamic_cast<GPIOInterface*>(iface);
@@ -355,7 +357,7 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 						}
 					}
 					break;
-				/*
+
 				case JTAGD_OP_WRITE_GPIO_STATE:
 					{
 						GPIOInterface* gpio = dynamic_cast<GPIOInterface*>(iface);
@@ -363,7 +365,7 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 						{
 							int count = gpio->GetGpioCount();
 							uint8_t* buf = new uint8_t[count];
-							NetworkedJtagInterface::read_looped(socket, buf, count);
+							client.RecvLooped(buf, count);
 							for(int i=0; i<count; i++)
 							{
 								uint8_t val = buf[i];
@@ -375,7 +377,7 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 						}
 					};
 					break;
-				*/
+
 				case JTAGD_OP_ENTER_SIR:
 					iface->EnterShiftIR();
 					break;
