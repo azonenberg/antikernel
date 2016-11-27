@@ -328,7 +328,7 @@ int main(int argc, char* argv[])
 
 		//Get device count and see what we've found
 		printf("Scan chain contains %d devices\n", (int)iface.GetDeviceCount());
-		/*
+
 		//Walk the chain and see what we find
 		//No need for mutexing here since the device will lock the high-level interface when necessary
 		if(mode != MODE_DEVINFO)
@@ -346,6 +346,7 @@ int main(int argc, char* argv[])
 
 			case MODE_PROGRAM:
 				{
+					/*
 					if(bitfile == "")
 					{
 						throw JtagExceptionWrapper(
@@ -403,11 +404,13 @@ int main(int argc, char* argv[])
 					}
 					printf("Configuration successful\n");
 					delete img;
+					*/
 				}
 				break;
 
 			case MODE_DUMP:
 				{
+					/*
 					//Get the device
 					JtagDevice* device = iface.GetDevice(devnum);
 					if(device == NULL)
@@ -430,6 +433,7 @@ int main(int argc, char* argv[])
 
 					printf("Dumping flash...\n");
 					pdev->DumpIndirect(indirect_width, bitfile);
+					*/
 				}
 				break;
 
@@ -439,6 +443,7 @@ int main(int argc, char* argv[])
 
 			case MODE_ERASE:
 				{
+					/*
 					//Get the device
 					JtagDevice* device = iface.GetDevice(devnum);
 					if(device == NULL)
@@ -462,11 +467,13 @@ int main(int argc, char* argv[])
 					//Erase it
 					printf("Erasing...\n");
 					pdev->Erase();
+					*/
 				}
 				break;
 
 			case MODE_REBOOT:
 				{
+					/*
 					//Get the device
 					JtagDevice* device = iface.GetDevice(devnum);
 					if(device == NULL)
@@ -490,13 +497,13 @@ int main(int argc, char* argv[])
 					//Erase it
 					printf("Rebooting...\n");
 					pdev->Reboot();
+					*/
 				}
 				break;
 
 			default:
 				break;
 		}
-		*/
 	}
 
 	catch(const JtagException& ex)
