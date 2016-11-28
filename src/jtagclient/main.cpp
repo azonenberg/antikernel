@@ -346,13 +346,11 @@ int main(int argc, char* argv[])
 
 			case MODE_PROGRAM:
 				{
-					/*
 					if(bitfile == "")
 					{
 						throw JtagExceptionWrapper(
 							"No filename specified, cannot continue",
-							"",
-							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+							"");
 					}
 
 					//Get the device
@@ -361,8 +359,7 @@ int main(int argc, char* argv[])
 					{
 						throw JtagExceptionWrapper(
 							"Device is null, cannot continue",
-							"",
-							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+							"");
 					}
 
 					//Make sure it's a programmable device
@@ -371,12 +368,11 @@ int main(int argc, char* argv[])
 					{
 						throw JtagExceptionWrapper(
 							"Device is not a programmable device, cannot continue",
-							"",
-							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+							"");
 					}
 
 					//Load the firmware image and program the device
-					printf("Loading firmware image...\n");
+					LogNotice("Loading firmware image...\n");
 					FirmwareImage* img = NULL;
 					if(raw)
 						img = new RawBinaryFirmwareImage(bitfile, "flash");
@@ -385,12 +381,12 @@ int main(int argc, char* argv[])
 
 					if(indirect_width == 0)
 					{
-						printf("Programming device...\n");
+						LogNotice("Programming device...\n");
 						pdev->Program(img);
 					}
 					else
 					{
-						printf("Programming device (using indirect programming, bus width %d)...\n", indirect_width);
+						LogNotice("Programming device (using indirect programming, bus width %d)...\n", indirect_width);
 						ByteArrayFirmwareImage* bi = dynamic_cast<ByteArrayFirmwareImage*>(img);
 						if(bi)
 							pdev->ProgramIndirect(bi, indirect_width, !noreboot, base, indirect_image);
@@ -398,27 +394,23 @@ int main(int argc, char* argv[])
 						{
 							throw JtagExceptionWrapper(
 								"Cannot indirectly program non-byte-array firmware images",
-								"",
-								JtagException::EXCEPTION_TYPE_GIGO);
+								"");
 						}
 					}
-					printf("Configuration successful\n");
+					LogNotice("Configuration successful\n");
 					delete img;
-					*/
 				}
 				break;
 
 			case MODE_DUMP:
 				{
-					/*
 					//Get the device
 					JtagDevice* device = iface.GetDevice(devnum);
 					if(device == NULL)
 					{
 						throw JtagExceptionWrapper(
 							"Device is null, cannot continue",
-							"",
-							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+							"");
 					}
 
 					//Make sure it's a Xilinx FPGA (TODO: move this to base class)
@@ -427,13 +419,11 @@ int main(int argc, char* argv[])
 					{
 						throw JtagExceptionWrapper(
 							"Device is not a Xilinx FPGA, cannot continue",
-							"",
-							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+							"");
 					}
 
-					printf("Dumping flash...\n");
+					LogNotice("Dumping flash...\n");
 					pdev->DumpIndirect(indirect_width, bitfile);
-					*/
 				}
 				break;
 
