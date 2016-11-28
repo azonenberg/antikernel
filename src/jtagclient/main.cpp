@@ -381,7 +381,7 @@ int main(int argc, char* argv[])
 					if(raw)
 						img = new RawBinaryFirmwareImage(bitfile, "flash");
 					else
-						img = pdev->LoadFirmwareImage(bitfile, verbose);
+						img = pdev->LoadFirmwareImage(bitfile);
 
 					if(indirect_width == 0)
 					{
@@ -443,15 +443,13 @@ int main(int argc, char* argv[])
 
 			case MODE_ERASE:
 				{
-					/*
 					//Get the device
 					JtagDevice* device = iface.GetDevice(devnum);
 					if(device == NULL)
 					{
 						throw JtagExceptionWrapper(
 							"Device is null, cannot continue",
-							"",
-							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+							"");
 					}
 
 					//Make sure it's a programmable device
@@ -460,28 +458,24 @@ int main(int argc, char* argv[])
 					{
 						throw JtagExceptionWrapper(
 							"Device is not a programmable device, cannot continue",
-							"",
-							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+							"");
 					}
 
 					//Erase it
-					printf("Erasing...\n");
+					LogNotice("Erasing...\n");
 					pdev->Erase();
-					*/
 				}
 				break;
 
 			case MODE_REBOOT:
 				{
-					/*
 					//Get the device
 					JtagDevice* device = iface.GetDevice(devnum);
 					if(device == NULL)
 					{
 						throw JtagExceptionWrapper(
 							"Device is null, cannot continue",
-							"",
-							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+							"");
 					}
 
 					//Make sure it's a Xilinx FPGA (TODO: move this to base class)
@@ -490,14 +484,12 @@ int main(int argc, char* argv[])
 					{
 						throw JtagExceptionWrapper(
 							"Device is not rebootable, cannot continue",
-							"",
-							JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+							"");
 					}
 
 					//Erase it
 					printf("Rebooting...\n");
 					pdev->Reboot();
-					*/
 				}
 				break;
 
