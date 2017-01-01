@@ -86,7 +86,9 @@ module main(
 		.USE_BLOCK(0),
 		.OUT_REG(0),
 		.TRUE_DUAL(1),
-		.NO_INIT(1)
+		.INIT_VALUE(0),
+		.WIDTH(WIDTH),
+		.DEPTH(DEPTH)
 	) mem_lat0 (
 		.porta_clk(clk),
 		.porta_en(porta_en),
@@ -108,7 +110,9 @@ module main(
 		.USE_BLOCK(1),
 		.OUT_REG(1),
 		.TRUE_DUAL(1),
-		.NO_INIT(1)
+		.INIT_VALUE(0),
+		.WIDTH(WIDTH),
+		.DEPTH(DEPTH)
 	) mem_lat1 (
 		.porta_clk(clk),
 		.porta_en(porta_en),
@@ -130,7 +134,9 @@ module main(
 		.USE_BLOCK(1),
 		.OUT_REG(2),
 		.TRUE_DUAL(1),
-		.NO_INIT(1)
+		.INIT_VALUE(0),
+		.WIDTH(WIDTH),
+		.DEPTH(DEPTH)
 	) mem_lat2 (
 		.porta_clk(clk),
 		.porta_en(porta_en),
