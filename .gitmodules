@@ -7,3 +7,6 @@
 [submodule "src/xptools"]
 	path = src/xptools
 	url = git@github.com:azonenberg/xptools.git
+[submodule "antikernel-ipcores"]
+	path = antikernel-ipcores
+	url = git@github.com:azonenberg/antikernel-ipcores
