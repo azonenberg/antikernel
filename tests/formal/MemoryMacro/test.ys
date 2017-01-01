@@ -1,0 +1,11 @@
+#!/usr/local/bin/yosys
+read_verilog -formal ../../../antikernel-ipcores/device_abstraction/MemoryMacro.v
+read_verilog -formal main.v
+prep -nordff -top main
+#write_smt2 -wires /tmp/memorymacro.smt2
+
+flatten
+dfflibmap
+techmap
+
+sat -seq -tempinduct -prove-asserts
