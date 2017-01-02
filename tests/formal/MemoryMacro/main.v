@@ -213,14 +213,6 @@ module main(
 
 	end
 
-	//Cycle counter
-	reg[ADDR_BITS:0] count = 0;
-	wire setup = (count < DEPTH);
-	always @(posedge clk) begin
-		if(count < DEPTH)
-			count <= count + 1'b1;
-	end
-		
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Simple behavioral model of the combinatorial memory
 
@@ -246,16 +238,6 @@ module main(
 
 	//Result of simultaneous writes to the same address on both ports is undefined, so don't allow it
 	assume property ( !porta_writing || !portb_writing || !address_match );
-
-	//Initialize all memory to zero during the setup period
-	//FIXME: Why do we need to do vm_a/vm_b separately?
-	always @(posedge clk) begin
-		if(setup) begin
-			assume(vm_a == 0);
-			assume(vm_b == 0);
-			assume(porta_en && porta_we && porta_din == 0 && porta_addr == count);
-		end
-	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verified properties	
