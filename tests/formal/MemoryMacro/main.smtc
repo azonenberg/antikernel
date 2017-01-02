@@ -1,3 +1,8 @@
+initial
+assume (= [vmem] [mem_lat0.storage])
+assume (= [vmem] [mem_lat1.storage])
+assume (= [vmem] [mem_lat2.storage])
+
 always -1
 assert (= [vmem] [mem_lat0.storage])
 assert (= [vmem] [mem_lat1.storage])
