@@ -232,10 +232,6 @@ module main(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Preconditions
 
-	//Don't assert write enable when port isn't enabled (there's no point)
-	assume property(!porta_we || porta_en);
-	assume property(!portb_we || portb_en);
-
 	//Result of simultaneous writes to the same address on both ports is undefined, so don't allow it
 	assume property ( !porta_writing || !portb_writing || !address_match );
 
