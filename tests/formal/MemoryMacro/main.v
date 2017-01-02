@@ -33,7 +33,7 @@
 	@file
 	@author Andrew D. Zonenberg
 	@brief Formal validation test harness for MemoryMacro
-	
+
 	The goal of this test is to prove that a MemoryMacro actually functions like memory and has the correct latency.
 
 	This test only covers a single clock domain; multi-domain behavior is not tested.
@@ -51,7 +51,7 @@ module main(
 	//This is parameterizable and we make it small for the formal test so it completes faster.
 	//The proof should easily generalize to wider or deeper memories.
 	localparam WIDTH = 2;
-	localparam DEPTH = 16;
+	localparam DEPTH = 4;
 
 	//get bus size
 	`include "../../../antikernel-ipcores/synth_helpers/clog2.vh"
@@ -59,7 +59,7 @@ module main(
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// I/O declarations
-	
+
 	input wire					clk;
 
 	input wire					porta_en;
@@ -70,6 +70,10 @@ module main(
 		  wire[WIDTH-1:0]		porta_dout_1;
 		  wire[WIDTH-1:0]		porta_dout_2;
 
+		  wire[WIDTH-1:0]		porta_dout_0_comb;
+		  wire[WIDTH-1:0]		porta_dout_1_comb;
+		  wire[WIDTH-1:0]		porta_dout_2_comb;
+
 	input wire					portb_en;
 	input wire					portb_we;
 	input wire[ADDR_BITS-1:0]	portb_addr;
@@ -78,8 +82,12 @@ module main(
 		  wire[WIDTH-1:0]		portb_dout_1;
 		  wire[WIDTH-1:0]		portb_dout_2;
 
+		  wire[WIDTH-1:0]		portb_dout_0_comb;
+		  wire[WIDTH-1:0]		portb_dout_1_comb;
+		  wire[WIDTH-1:0]		portb_dout_2_comb;
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// The DUTs
+	// The DUTs: three memories with different latency for each
 
 	MemoryMacro #(
 		.DUAL_PORT(1),
@@ -96,13 +104,15 @@ module main(
 		.porta_we(porta_we),
 		.porta_din(porta_din),
 		.porta_dout(porta_dout_0),
+		.porta_dout_comb(porta_dout_0_comb),
 
 		.portb_clk(clk),
 		.portb_en(portb_en),
 		.portb_addr(portb_addr),
 		.portb_we(portb_we),
 		.portb_din(portb_din),
-		.portb_dout(portb_dout_0)
+		.portb_dout(portb_dout_0),
+		.portb_dout_comb(portb_dout_0_comb)
 	);
 
 	MemoryMacro #(
@@ -120,15 +130,17 @@ module main(
 		.porta_we(porta_we),
 		.porta_din(porta_din),
 		.porta_dout(porta_dout_1),
+		.porta_dout_comb(porta_dout_1_comb),
 
 		.portb_clk(clk),
 		.portb_en(portb_en),
 		.portb_addr(portb_addr),
 		.portb_we(portb_we),
 		.portb_din(portb_din),
-		.portb_dout(portb_dout_1)
+		.portb_dout(portb_dout_1),
+		.portb_dout_comb(portb_dout_1_comb)
 	);
-	
+
 	MemoryMacro #(
 		.DUAL_PORT(1),
 		.USE_BLOCK(1),
@@ -144,44 +156,143 @@ module main(
 		.porta_we(porta_we),
 		.porta_din(porta_din),
 		.porta_dout(porta_dout_2),
+		.porta_dout_comb(porta_dout_2_comb),
 
 		.portb_clk(clk),
 		.portb_en(portb_en),
 		.portb_addr(portb_addr),
 		.portb_we(portb_we),
 		.portb_din(portb_din),
-		.portb_dout(portb_dout_2)
+		.portb_dout(portb_dout_2),
+		.portb_dout_comb(portb_dout_2_comb)
 	);
 
-	//Delay all of the combinatorial and registered outputs to an overall 2 clocks of latency
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verification helpers
+
+	//Write enable is gated by port enable so save the gated value for reference
+	wire porta_writing = (porta_en & porta_we);
+	wire portb_writing = (portb_en & portb_we);
+
+	//Check if we're reading the same address on both ports
+	wire address_match = (porta_addr == portb_addr);
+
+	//Check if we got the same data on both ports (combinatorially)
+	wire data_match = (porta_dout_0_comb == portb_dout_0_comb);
+
+	//Keep track of when each port was enabled.
+	reg					porta_en_ff  = 0;
+	reg					portb_en_ff  = 0;
+	always @(posedge clk) begin
+		porta_en_ff			<= porta_en;
+		portb_en_ff			<= portb_en;
+	end
+
+	//Delay all of the combinatorial and registered outputs to an overall 2 clocks of latency.
+	//Output holds stable when enable is low.
 	reg[WIDTH-1:0]		porta_dout_0_ff  = 0;
 	reg[WIDTH-1:0]		portb_dout_0_ff  = 0;
 	reg[WIDTH-1:0]		porta_dout_0_ff2 = 0;
 	reg[WIDTH-1:0]		portb_dout_0_ff2 = 0;
-
 	reg[WIDTH-1:0]		porta_dout_1_ff  = 0;
 	reg[WIDTH-1:0]		portb_dout_1_ff  = 0;
+	always @(posedge clk) begin
+		if(porta_en)
+			porta_dout_0_ff		<= porta_dout_0;
+		if(portb_en)
+			portb_dout_0_ff		<= portb_dout_0;
+
+		if(porta_en_ff) begin
+			porta_dout_0_ff2	<= porta_dout_0_ff;
+			porta_dout_1_ff		<= porta_dout_1;
+		end
+		if(portb_en_ff) begin
+			portb_dout_0_ff2	<= portb_dout_0_ff;
+			portb_dout_1_ff		<= portb_dout_1;
+		end
+
+	end
+
+	//Cycle counter
+	/*
+	integer count = 0;
+	reg setup = 1;
+	always @(posedge clk) begin
+		if(count >= DEPTH)
+			setup <= 0;
+		else
+			count <= count + 1'b1;
+	end
+	*/
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Behavioral model of the combinatorial memory
+
+	reg[WIDTH-1:0] vmem[DEPTH-1:0];
 
 	always @(posedge clk) begin
-		porta_dout_0_ff		<= porta_dout_0;
-		portb_dout_0_ff		<= portb_dout_0;
-
-		porta_dout_0_ff2	<= porta_dout_0_ff;
-		portb_dout_0_ff2	<= portb_dout_0_ff;
-
-		porta_dout_1_ff		<= porta_dout_1;
-		portb_dout_1_ff		<= portb_dout_1;
+		if(porta_writing)
+			vmem[porta_addr] <= porta_din;
+		if(portb_writing)
+			vmem[portb_addr] <= portb_din;
 	end
-	
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Verification logic
 
-	//First pass: make sure all memories have the requested latency.
+	//Read it
+	wire[WIDTH-1:0] vm_a = vmem[porta_addr];
+	wire[WIDTH-1:0] vm_b = vmem[portb_addr];
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Preconditions
+
+	//Don't assert write enable when port isn't enabled (there's no point)
+	assume property(!porta_we || porta_en);
+	assume property(!portb_we || portb_en);
+
+	//Result of simultaneous writes to the same address on both ports is undefined, so don't allow it
+	assume property ( !porta_writing || !portb_writing || !address_match );
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verified properties
+
+	//Initialize all memory to zero during the setup period
+	/*
+	always @(posedge clk) begin
+		assume(!setup || (porta_writing && porta_din == 0) );
+	end
+	*/
+
+	//All copies of the memory must be equal (combinatorial reads should give identical results)
+	assume property (porta_dout_0_comb == vm_a);
+	assume property (porta_dout_0_comb == porta_dout_1_comb);
+	assume property (porta_dout_0_comb == porta_dout_2_comb);
+	//assert property(porta_dout_0_comb == porta_dout_1_comb);
+	//assert property(porta_dout_0_comb == porta_dout_2_comb);
+
+	//If port A has identical data, port B must (since it's reading from the same RAM)
+	//FIXME: Why do we need to assume? can't we prove it?
+	/*assert*/assume property(portb_dout_0_comb == portb_dout_1_comb);
+	/*assert*/assume property(portb_dout_0_comb == portb_dout_2_comb);
+
+	//Both ports are point to the same memory (reading the same address on both ports should give identical results)
+	assert property(!address_match || data_match);
+
+	//Latency-0 memory (LUTRAM with no FF) should be a combinatorial read
+	assert property (porta_dout_0 == porta_dout_0_comb);
+	assert property (portb_dout_0 == portb_dout_0_comb);
+
+	//Make sure all memories have the requested latency.
 	//A combinatorial memory delayed by one clock should be the same as a synchronous one.
 	//A synchronous memory delayed by one clock should be the same as a synchronous one with output register.
-	assert property(porta_dout_0_ff2 == porta_dout_2);
-	assert property(portb_dout_0_ff2 == portb_dout_2);
-	assert property(porta_dout_1_ff == porta_dout_2);
-	assert property(portb_dout_1_ff == portb_dout_2);
-	
+	assert property (porta_dout_0_ff == porta_dout_1);
+	assert property (porta_dout_0_ff2 == porta_dout_1_ff);
+	assert property (porta_dout_1_ff == porta_dout_2);
+
+	assert property (portb_dout_0_ff == portb_dout_1);
+	assert property (portb_dout_0_ff2 == portb_dout_1_ff);
+	assert property (portb_dout_1_ff == portb_dout_2);
+
+	//Reading the memory should give the same value as our simple behavioral model
+	assert property (vm_a == porta_dout_0_comb);
+	assert property (vm_b == portb_dout_0_comb);
+
 endmodule

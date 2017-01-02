@@ -2,4 +2,6 @@
 read_verilog -formal ../../../antikernel-ipcores/device_abstraction/MemoryMacro.v
 read_verilog -formal main.v
 prep -nordff -top main
+
+# yes this is an absolute path, the script to do this in a temp dir hasn't been written yet :)
 write_smt2 -wires /tmp/memorymacro.smt2
