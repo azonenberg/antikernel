@@ -254,7 +254,7 @@ module main(
 			assume(vm_a == 0);
 			assume(vm_b == 0);
 			assume(porta_en && porta_we && porta_din == 0 && porta_addr == count);
-		emd
+		end
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
