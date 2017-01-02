@@ -214,19 +214,15 @@ module main(
 	end
 
 	//Cycle counter
-	/*
-	integer count = 0;
-	reg setup = 1;
+	reg[ADDR_BITS:0] count = 0;
+	wire setup = (count < DEPTH);
 	always @(posedge clk) begin
-		if(count >= DEPTH)
-			setup <= 0;
-		else
+		if(count < DEPTH)
 			count <= count + 1'b1;
 	end
-	*/
-
+		
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Behavioral model of the combinatorial memory
+	// Simple behavioral model of the combinatorial memory
 
 	reg[WIDTH-1:0] vmem[DEPTH-1:0];
 
@@ -251,27 +247,30 @@ module main(
 	//Result of simultaneous writes to the same address on both ports is undefined, so don't allow it
 	assume property ( !porta_writing || !portb_writing || !address_match );
 
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Verified properties
-
 	//Initialize all memory to zero during the setup period
-	/*
+	//FIXME: Why do we need to do vm_a/vm_b separately?
 	always @(posedge clk) begin
-		assume(!setup || (porta_writing && porta_din == 0) );
+		if(setup) begin
+			assume(vm_a == 0);
+			assume(vm_b == 0);
+			assume(porta_en && porta_we && porta_din == 0 && porta_addr == count);
+		emd
 	end
-	*/
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verified properties	
+
+	//Reading the memory should give the same value as our simple behavioral model
+	assert property (vm_a == porta_dout_0_comb);
+	assert property (vm_b == portb_dout_0_comb);
 
 	//All copies of the memory must be equal (combinatorial reads should give identical results)
-	assume property (porta_dout_0_comb == vm_a);
-	assume property (porta_dout_0_comb == porta_dout_1_comb);
-	assume property (porta_dout_0_comb == porta_dout_2_comb);
-	//assert property(porta_dout_0_comb == porta_dout_1_comb);
-	//assert property(porta_dout_0_comb == porta_dout_2_comb);
+	assert property (porta_dout_0_comb == porta_dout_1_comb);
+	assert property (porta_dout_0_comb == porta_dout_2_comb);
 
 	//If port A has identical data, port B must (since it's reading from the same RAM)
-	//FIXME: Why do we need to assume? can't we prove it?
-	/*assert*/assume property(portb_dout_0_comb == portb_dout_1_comb);
-	/*assert*/assume property(portb_dout_0_comb == portb_dout_2_comb);
+	assert property(portb_dout_0_comb == portb_dout_1_comb);
+	assert property(portb_dout_0_comb == portb_dout_2_comb);
 
 	//Both ports are point to the same memory (reading the same address on both ports should give identical results)
 	assert property(!address_match || data_match);
@@ -279,7 +278,7 @@ module main(
 	//Latency-0 memory (LUTRAM with no FF) should be a combinatorial read
 	assert property (porta_dout_0 == porta_dout_0_comb);
 	assert property (portb_dout_0 == portb_dout_0_comb);
-
+	
 	//Make sure all memories have the requested latency.
 	//A combinatorial memory delayed by one clock should be the same as a synchronous one.
 	//A synchronous memory delayed by one clock should be the same as a synchronous one with output register.
@@ -290,9 +289,5 @@ module main(
 	assert property (portb_dout_0_ff == portb_dout_1);
 	assert property (portb_dout_0_ff2 == portb_dout_1_ff);
 	assert property (portb_dout_1_ff == portb_dout_2);
-
-	//Reading the memory should give the same value as our simple behavioral model
-	assert property (vm_a == porta_dout_0_comb);
-	assert property (vm_b == portb_dout_0_comb);
 
 endmodule
