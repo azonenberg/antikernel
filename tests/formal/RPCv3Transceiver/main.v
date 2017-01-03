@@ -217,6 +217,58 @@ module main(
 		.rpc_fab_rx_d2(rpc_fab_rx_d2_32),
 	);
 
+	wire		rpc_tx_en_16;
+	wire[15:0]	rpc_tx_data_16;
+	wire		rpc_tx_ready_16;
+
+	wire		rpc_fab_tx_done_16;
+	wire		rpc_fab_tx_busy_16;
+
+	wire		rpc_fab_rx_en_16;
+	wire		rpc_fab_rx_busy_16;
+	wire[15:0]	rpc_fab_rx_src_addr_16;
+	wire[7:0]	rpc_fab_rx_callnum_16;
+	wire[2:0]	rpc_fab_rx_type_16;
+	wire[20:0]	rpc_fab_rx_d0_16;
+	wire[31:0]	rpc_fab_rx_d1_16;
+	wire[31:0]	rpc_fab_rx_d2_16;
+
+	RPCv3Transceiver #(
+		.DATA_WIDTH(16),
+		.QUIET_WHEN_IDLE(1),
+		.NODE_ADDR(NODE_ADDR)
+	) dut_16 (
+		.clk(clk),
+
+		.rpc_tx_en(rpc_tx_en_16),
+		.rpc_tx_data(rpc_tx_data_16),
+		.rpc_tx_ready(rpc_tx_ready_16),
+
+		.rpc_rx_en(rpc_tx_en_16),
+		.rpc_rx_data(rpc_tx_data_16),
+		.rpc_rx_ready(rpc_tx_ready_16),
+
+		.rpc_fab_tx_en(rpc_fab_tx_en),
+		.rpc_fab_tx_busy(rpc_fab_tx_busy_16),
+		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
+		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
+		.rpc_fab_tx_type(rpc_fab_tx_type),
+		.rpc_fab_tx_d0(rpc_fab_tx_d0),
+		.rpc_fab_tx_d1(rpc_fab_tx_d1),
+		.rpc_fab_tx_d2(rpc_fab_tx_d2),
+		.rpc_fab_tx_done(rpc_fab_tx_done_16),
+
+		.rpc_fab_rx_ready(rpc_fab_rx_ready),
+		.rpc_fab_rx_busy(rpc_fab_rx_busy_16),
+		.rpc_fab_rx_en(rpc_fab_rx_en_16),
+		.rpc_fab_rx_src_addr(rpc_fab_rx_src_addr_16),
+		.rpc_fab_rx_callnum(rpc_fab_rx_callnum_16),
+		.rpc_fab_rx_type(rpc_fab_rx_type_16),
+		.rpc_fab_rx_d0(rpc_fab_rx_d0_16),
+		.rpc_fab_rx_d1(rpc_fab_rx_d1_16),
+		.rpc_fab_rx_d2(rpc_fab_rx_d2_16),
+	);
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Save transmit data when we begin sending
 
@@ -246,7 +298,7 @@ module main(
 	always @(posedge clk) begin
 
 		if(rpc_fab_tx_en)
-			busy_mask		<= 4'b1110;	//16-bit txvr not here yet
+			busy_mask		<= 4'b1111;
 
 		if(rpc_fab_rx_en_128)
 			busy_mask[3]	<= 0;
@@ -254,6 +306,8 @@ module main(
 			busy_mask[2]	<= 0;
 		if(rpc_fab_rx_en_32)
 			busy_mask[1]	<= 0;
+		if(rpc_fab_rx_en_16)
+			busy_mask[0]	<= 0;
 
 	end
 
@@ -303,7 +357,7 @@ module main(
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Verified properties: shared
+	// Verified properties: timing and sync
 
 	//Nobody should be doing anything if we're not busy.
 	//This ensures everyone starts in a clean state when tx_en is asserted.
@@ -312,10 +366,12 @@ module main(
 			assert(!rpc_fab_tx_busy_128);
 			assert(!rpc_fab_tx_busy_64);
 			assert(!rpc_fab_tx_busy_32);
+			assert(!rpc_fab_tx_busy_16);
 
 			assert(!rpc_fab_rx_busy_128);
 			assert(!rpc_fab_rx_busy_64);
 			assert(!rpc_fab_rx_busy_32);
+			assert(!rpc_fab_rx_busy_16);
 		end
 
 	end
@@ -372,7 +428,7 @@ module main(
 
 		//If not sending, bus should be idle
 		//TODO: dontcare for non-QUIET_WHEN_IDLE
-		if(!rpc_tx_en_64) begin
+		if(!rpc_tx_en_64 && !rpc_fab_tx_busy_64) begin
 			assert(rpc_tx_data_64 == 64'h0);
 		end
 
@@ -415,8 +471,10 @@ module main(
 
 	always @(posedge clk) begin
 
-		//If not sending, TODO
-		if(!rpc_tx_en_32) begin
+		//If not sending, bus should be idle
+		//TODO: dontcare for non-QUIET_WHEN_IDLE
+		if(!rpc_tx_en_32 && !rpc_fab_tx_busy_32) begin
+			assert(rpc_tx_data_32 == 32'h0);
 		end
 
 		//We're sending, must be correct data
@@ -425,22 +483,32 @@ module main(
 			//Should never try to transmit when receiver isn't ready
 			assert (rpc_tx_ready_32);
 
-			//Should fail
-			assert(rpc_tx_data_32[15:0] == 16'hcccc);
-
-			/*
 			//If we're transmitting, we should have the correct data
-			assert (rpc_tx_data_64 ==
-			{
-				rpc_fab_tx_dst_addr,
-				NODE_ADDR,
-				rpc_fab_tx_callnum,
-				rpc_fab_tx_type,
-				rpc_fab_tx_d0
-				//rpc_fab_tx_d1,
-				//rpc_fab_tx_d2
-			});
-			*/
+			case(word_count)
+
+				0: begin
+					assert (rpc_tx_data_32 ==
+					{
+						rpc_fab_tx_dst_addr,
+						NODE_ADDR
+					});
+				end
+
+				1: begin
+					assert (rpc_tx_data_32 ==
+					{
+						rpc_fab_tx_callnum,
+						rpc_fab_tx_type,
+						rpc_fab_tx_d0
+					});
+				end
+
+				2: assert (rpc_tx_data_32 == rpc_fab_tx_d1);
+
+				3: assert (rpc_tx_data_32 == rpc_fab_tx_d2);
+
+			endcase
+
 		end
 
 	end
@@ -450,37 +518,44 @@ module main(
 
 	always @(posedge clk) begin
 
-		/*
-		//If not sending, TODO
-		if(!rpc_tx_en_64) begin
+		//If not sending, bus should be idle
+		//TODO: dontcare for non-QUIET_WHEN_IDLE
+		if(!rpc_tx_en_16 && !rpc_fab_tx_busy_16) begin
+			assert(rpc_tx_data_16 == 16'h0);
 		end
 
 		//We're sending, must be correct data
 		else begin
 
 			//Should never try to transmit when receiver isn't ready
-			//assert (rpc_tx_ready_64);
-
-			//Should fail
-			assert(rpc_tx_data_64[63:48] == 16'hcccc);
+			assert (rpc_tx_ready_16);
 
 			//If we're transmitting, we should have the correct data
-			assert (rpc_tx_data_64 ==
-			{
-				rpc_fab_tx_dst_addr,
-				NODE_ADDR,
-				rpc_fab_tx_callnum,
-				rpc_fab_tx_type,
-				rpc_fab_tx_d0
-				//rpc_fab_tx_d1,
-				//rpc_fab_tx_d2
-			});
+			case(word_count)
 
+				0: assert (rpc_tx_data_16 == rpc_fab_tx_dst_addr);
+				1: assert (rpc_tx_data_16 == NODE_ADDR);
+
+				2: begin
+					assert (rpc_tx_data_16 ==
+					{
+						rpc_fab_tx_callnum,
+						rpc_fab_tx_type,
+						rpc_fab_tx_d0[20:16]
+					});
+				end
+
+				3: assert (rpc_tx_data_16 == rpc_fab_tx_d0[15:0]);
+
+				4: assert (rpc_tx_data_16 == rpc_fab_tx_d1[31:16]);
+				5: assert (rpc_tx_data_16 == rpc_fab_tx_d1[15:0]);
+
+				6: assert (rpc_tx_data_16 == rpc_fab_tx_d2[31:16]);
+				7: assert (rpc_tx_data_16 == /*rpc_fab_tx_d2[15:0]*/ 16'h55AA);	//should fail
+
+			endcase
 		end
-		*/
 
 	end
-
-
 
 endmodule
