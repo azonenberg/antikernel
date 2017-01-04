@@ -59,7 +59,8 @@ module main(
 	localparam NODE_ADDR = 16'h4141;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// The DUTs: four transceivers with a different bus width for each (TODO test non-quiet ones)
+	// The DUTs: four transceivers with a different bus width for each
+	// Quiet version (tx_data held zero when not sending)
 
 	wire		rpc_tx_en_128;
 	wire[127:0]	rpc_tx_data_128;
@@ -270,6 +271,177 @@ module main(
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Noisy versions of the DUTs (less gates, can inject arbitrary noise on tx_data when not sending)
+
+	wire		rpc_tx_en_128_noisy;
+	wire[127:0]	rpc_tx_data_128_noisy;
+
+	wire		rpc_fab_tx_done_128_noisy;
+	wire		rpc_fab_tx_busy_128_noisy;
+
+	RPCv3Transceiver #(
+		.DATA_WIDTH(128),
+		.QUIET_WHEN_IDLE(0),
+		.NODE_ADDR(NODE_ADDR)
+	) dut_128_noisy (
+		.clk(clk),
+
+		.rpc_tx_en(rpc_tx_en_128_noisy),
+		.rpc_tx_data(rpc_tx_data_128_noisy),
+		.rpc_tx_ready(rpc_tx_ready_128),
+
+		.rpc_rx_en(),
+		.rpc_rx_data(),
+		.rpc_rx_ready(),
+
+		.rpc_fab_tx_en(rpc_fab_tx_en),
+		.rpc_fab_tx_busy(rpc_fab_tx_busy_128_noisy),
+		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
+		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
+		.rpc_fab_tx_type(rpc_fab_tx_type),
+		.rpc_fab_tx_d0(rpc_fab_tx_d0),
+		.rpc_fab_tx_d1(rpc_fab_tx_d1),
+		.rpc_fab_tx_d2(rpc_fab_tx_d2),
+		.rpc_fab_tx_done(rpc_fab_tx_done_128_noisy),
+
+		.rpc_fab_rx_ready(),
+		.rpc_fab_rx_busy(),
+		.rpc_fab_rx_en(),
+		.rpc_fab_rx_src_addr(),
+		.rpc_fab_rx_callnum(),
+		.rpc_fab_rx_type(),
+		.rpc_fab_rx_d0(),
+		.rpc_fab_rx_d1(),
+		.rpc_fab_rx_d2(),
+	);
+
+	wire		rpc_tx_en_64_noisy;
+	wire[63:0]	rpc_tx_data_64_noisy;
+
+	wire		rpc_fab_tx_done_64_noisy;
+	wire		rpc_fab_tx_busy_64_noisy;
+
+	RPCv3Transceiver #(
+		.DATA_WIDTH(64),
+		.QUIET_WHEN_IDLE(0),
+		.NODE_ADDR(NODE_ADDR)
+	) dut_64_noisy (
+		.clk(clk),
+
+		.rpc_tx_en(rpc_tx_en_64_noisy),
+		.rpc_tx_data(rpc_tx_data_64_noisy),
+		.rpc_tx_ready(rpc_tx_ready_64),
+
+		.rpc_rx_en(),
+		.rpc_rx_data(),
+		.rpc_rx_ready(),
+
+		.rpc_fab_tx_en(rpc_fab_tx_en),
+		.rpc_fab_tx_busy(rpc_fab_tx_busy_64_noisy),
+		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
+		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
+		.rpc_fab_tx_type(rpc_fab_tx_type),
+		.rpc_fab_tx_d0(rpc_fab_tx_d0),
+		.rpc_fab_tx_d1(rpc_fab_tx_d1),
+		.rpc_fab_tx_d2(rpc_fab_tx_d2),
+		.rpc_fab_tx_done(rpc_fab_tx_done_64_noisy),
+
+		.rpc_fab_rx_ready(),
+		.rpc_fab_rx_busy(),
+		.rpc_fab_rx_en(),
+		.rpc_fab_rx_src_addr(),
+		.rpc_fab_rx_callnum(),
+		.rpc_fab_rx_type(),
+		.rpc_fab_rx_d0(),
+		.rpc_fab_rx_d1(),
+		.rpc_fab_rx_d2(),
+	);
+
+	wire		rpc_tx_en_32_noisy;
+	wire[31:0]	rpc_tx_data_32_noisy;
+
+	wire		rpc_fab_tx_done_32_noisy;
+	wire		rpc_fab_tx_busy_32_noisy;
+
+	RPCv3Transceiver #(
+		.DATA_WIDTH(32),
+		.QUIET_WHEN_IDLE(0),
+		.NODE_ADDR(NODE_ADDR)
+	) dut_32_noisy (
+		.clk(clk),
+
+		.rpc_tx_en(rpc_tx_en_32_noisy),
+		.rpc_tx_data(rpc_tx_data_32_noisy),
+		.rpc_tx_ready(rpc_tx_ready_32),
+
+		.rpc_rx_en(),
+		.rpc_rx_data(),
+		.rpc_rx_ready(),
+
+		.rpc_fab_tx_en(rpc_fab_tx_en),
+		.rpc_fab_tx_busy(rpc_fab_tx_busy_32_noisy),
+		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
+		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
+		.rpc_fab_tx_type(rpc_fab_tx_type),
+		.rpc_fab_tx_d0(rpc_fab_tx_d0),
+		.rpc_fab_tx_d1(rpc_fab_tx_d1),
+		.rpc_fab_tx_d2(rpc_fab_tx_d2),
+		.rpc_fab_tx_done(rpc_fab_tx_done_32_noisy),
+
+		.rpc_fab_rx_ready(),
+		.rpc_fab_rx_busy(),
+		.rpc_fab_rx_en(),
+		.rpc_fab_rx_src_addr(),
+		.rpc_fab_rx_callnum(),
+		.rpc_fab_rx_type(),
+		.rpc_fab_rx_d0(),
+		.rpc_fab_rx_d1(),
+		.rpc_fab_rx_d2(),
+	);
+
+	wire		rpc_tx_en_16_noisy;
+	wire[15:0]	rpc_tx_data_16_noisy;
+
+	wire		rpc_fab_tx_done_16_noisy;
+	wire		rpc_fab_tx_busy_16_noisy;
+
+	RPCv3Transceiver #(
+		.DATA_WIDTH(16),
+		.QUIET_WHEN_IDLE(0),
+		.NODE_ADDR(NODE_ADDR)
+	) dut_16_noisy (
+		.clk(clk),
+
+		.rpc_tx_en(rpc_tx_en_16_noisy),
+		.rpc_tx_data(rpc_tx_data_16_noisy),
+		.rpc_tx_ready(rpc_tx_ready_16),
+
+		.rpc_rx_en(),
+		.rpc_rx_data(),
+		.rpc_rx_ready(),
+
+		.rpc_fab_tx_en(rpc_fab_tx_en),
+		.rpc_fab_tx_busy(rpc_fab_tx_busy_16_noisy),
+		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
+		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
+		.rpc_fab_tx_type(rpc_fab_tx_type),
+		.rpc_fab_tx_d0(rpc_fab_tx_d0),
+		.rpc_fab_tx_d1(rpc_fab_tx_d1),
+		.rpc_fab_tx_d2(rpc_fab_tx_d2),
+		.rpc_fab_tx_done(rpc_fab_tx_done_16_noisy),
+
+		.rpc_fab_rx_ready(),
+		.rpc_fab_rx_busy(),
+		.rpc_fab_rx_en(),
+		.rpc_fab_rx_src_addr(),
+		.rpc_fab_rx_callnum(),
+		.rpc_fab_rx_type(),
+		.rpc_fab_rx_d0(),
+		.rpc_fab_rx_d1(),
+		.rpc_fab_rx_d2(),
+	);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Save transmit data when we begin sending
 
 	reg[15:0]	tx_dst_addr_saved	= 0;
@@ -470,12 +642,30 @@ module main(
 	assert property(rpc_fab_rx_en_16  == rpc_fab_tx_done_16_ff);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verified properties: Noisy transmitters
+
+	//All status flags should be identical to non-noisy ones
+	assert property(rpc_tx_en_128 == rpc_tx_en_128_noisy);
+	assert property(rpc_tx_en_64  == rpc_tx_en_64_noisy);
+	assert property(rpc_tx_en_32  == rpc_tx_en_32_noisy);
+	assert property(rpc_tx_en_16  == rpc_tx_en_16_noisy);
+
+	assert property(rpc_fab_tx_done_128 == rpc_fab_tx_done_128_noisy);
+	assert property(rpc_fab_tx_done_64  == rpc_fab_tx_done_64_noisy);
+	assert property(rpc_fab_tx_done_32  == rpc_fab_tx_done_32_noisy);
+	assert property(rpc_fab_tx_done_16  == rpc_fab_tx_done_16_noisy);
+
+	assert property(rpc_fab_tx_busy_128 == rpc_fab_tx_busy_128_noisy);
+	assert property(rpc_fab_tx_busy_64  == rpc_fab_tx_busy_64_noisy);
+	assert property(rpc_fab_tx_busy_32  == rpc_fab_tx_busy_32_noisy);
+	assert property(rpc_fab_tx_busy_16  == rpc_fab_tx_busy_16_noisy);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verified properties: 128-bit transmit datapath
 
 	always @(posedge clk) begin
 
-		//If not sending, bus should be idle
-		//TODO: dontcare for non-QUIET_WHEN_IDLE
+		//If not sending, quiet bus should be idle, noisy bus is a don't care
 		if(!rpc_tx_en_128) begin
 			assert(rpc_tx_data_128 == 128'h0);
 		end
@@ -485,6 +675,9 @@ module main(
 
 			//Should never try to transmit when receiver isn't ready
 			assert (rpc_tx_ready_128);
+
+			//Quiet transmitter should be same as noisy one here
+			assert(rpc_tx_data_128 == rpc_tx_data_128_noisy);
 
 			//If we're transmitting, we should have the correct data
 			assert (rpc_tx_data_128 ==
@@ -526,8 +719,7 @@ module main(
 
 	always @(posedge clk) begin
 
-		//If not sending, bus should be idle
-		//TODO: dontcare for non-QUIET_WHEN_IDLE
+		//If not sending, quiet bus should be idle, noisy bus is a don't care
 		if(!rpc_tx_en_64 && (word_count == 0)) begin
 			assert(rpc_tx_data_64 == 64'h0);
 		end
@@ -537,6 +729,10 @@ module main(
 
 			//Should never try to transmit when receiver isn't ready
 			assert (rpc_tx_ready_64);
+
+			//Quiet transmitter should be same as noisy one here
+			if(word_count <= 1)
+				assert(rpc_tx_data_64 == rpc_tx_data_64_noisy);
 
 			//If we're transmitting, we should have the correct data
 			case(word_count)
@@ -588,8 +784,7 @@ module main(
 
 	always @(posedge clk) begin
 
-		//If not sending, bus should be idle
-		//TODO: dontcare for non-QUIET_WHEN_IDLE
+		//If not sending, quiet bus should be idle, noisy bus is a don't care
 		if(!rpc_tx_en_32 && (word_count == 0)) begin
 			assert(rpc_tx_data_32 == 32'h0);
 		end
@@ -599,6 +794,10 @@ module main(
 
 			//Should never try to transmit when receiver isn't ready
 			assert (rpc_tx_ready_32);
+
+			//Quiet transmitter should be same as noisy one here
+			if(word_count <= 3)
+				assert(rpc_tx_data_32 == rpc_tx_data_32_noisy);
 
 			//If we're transmitting, we should have the correct data
 			case(word_count)
@@ -652,8 +851,7 @@ module main(
 
 	always @(posedge clk) begin
 
-		//If not sending, bus should be idle
-		//TODO: dontcare for non-QUIET_WHEN_IDLE
+		//If not sending, quiet bus should be idle, noisy bus is a don't care
 		if(!rpc_tx_en_16 && (word_count == 0)) begin
 			assert(rpc_tx_data_16 == 16'h0);
 		end
@@ -663,6 +861,10 @@ module main(
 
 			//Should never try to transmit when receiver isn't ready
 			assert (rpc_tx_ready_16);
+
+			//Quiet transmitter should be same as noisy one here
+			if(word_count <= 7)
+				assert(rpc_tx_data_16 == rpc_tx_data_16_noisy);
 
 			//If we're transmitting, we should have the correct data
 			case(word_count)
