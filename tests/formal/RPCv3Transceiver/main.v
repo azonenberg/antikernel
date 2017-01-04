@@ -313,7 +313,7 @@ module main(
 
 	wire somebody_busy		= (busy_mask != 0);
 
-	//Receiver should never be blocked for too long
+	//External test logic should not block receiving for too many cycles
 	reg[3:0] rx_timeout = 0;
 	always @(posedge clk) begin
 		rx_timeout <= rx_timeout + 1;
@@ -325,13 +325,42 @@ module main(
 		assume(rx_timeout != 15);
 	end
 
-	//Counter of cycles since we began the transmit
-	reg[2:0] word_count = 0;
+	//Keep track of whether messages are waiting to be sent
+	reg tx_pending = 0;
+	always @(posedge clk) begin
+
+		//No longer have a message pending once this one gets sent
+		if(rpc_tx_en_128)
+			tx_pending		<= 0;
+
+		//If we try to send and the link is busy, send it later
+		if(rpc_fab_tx_en && !rpc_tx_ready_128)
+			tx_pending		<= 1;
+
+	end
+
+	//Counter of cycles since we actually began the transmit
+	reg[3:0] word_count = 0;
 	always @(posedge clk) begin
 		if(rpc_tx_en_128)
 			word_count	<= 1;
 		if(word_count)
 			word_count	<= word_count + 1'h1;
+
+		if(rpc_fab_tx_done_16)
+			word_count	<= 0;
+	end
+
+	//Keep track of if a transmit just finished
+	reg		rpc_fab_tx_done_128_ff	= 0;
+	reg		rpc_fab_tx_done_64_ff	= 0;
+	reg		rpc_fab_tx_done_32_ff	= 0;
+	reg		rpc_fab_tx_done_16_ff	= 0;
+	always @(posedge clk) begin
+		rpc_fab_tx_done_128_ff	<= rpc_fab_tx_done_128;
+		rpc_fab_tx_done_64_ff	<= rpc_fab_tx_done_64;
+		rpc_fab_tx_done_32_ff	<= rpc_fab_tx_done_32;
+		rpc_fab_tx_done_16_ff	<= rpc_fab_tx_done_16;
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -388,8 +417,55 @@ module main(
 		assert(tx_timeout != 15);
 	end
 
+	//All transceivers should start sending at the same time
+	assert property(rpc_tx_en_128 == rpc_tx_en_64);
+	assert property(rpc_tx_en_128 == rpc_tx_en_32);
+	assert property(rpc_tx_en_128 == rpc_tx_en_16);
+
+	//We should never send if the receiver isn't ready
+	assert property(! (rpc_tx_en_128 && !rpc_tx_ready_128) );
+	assert property(! (rpc_tx_en_64 && !rpc_tx_ready_64) );
+	assert property(! (rpc_tx_en_32 && !rpc_tx_ready_32) );
+	assert property(! (rpc_tx_en_16 && !rpc_tx_ready_16) );
+
+	//If there is a message waiting to be sent, we should send as soon as possible.
+	//Do not send if there are no messages to send, though.
+	wire ready_to_send		= tx_pending || rpc_fab_tx_en;
+	wire should_be_sending	= ready_to_send && rpc_tx_ready_128;
+	assert property(should_be_sending == rpc_tx_en_128);
+
+	//128-bit transmitter should finish combinatorially the same cycle the packet goes out
+	assert property(rpc_tx_en_128 == rpc_fab_tx_done_128);
+	assert property(!rpc_fab_tx_busy_128);
+
+	//64-bit transmitter should finish one cycle after packet begins.
+	//Busy during that cycle only.
+	wire is_cycle_1 = (word_count == 1);
+	assert property(rpc_fab_tx_done_64 == is_cycle_1);
+	assert property(rpc_fab_tx_busy_64 == is_cycle_1);
+
+	//32-bit transmitter should finish three cycles after packet begins.
+	//Busy during that time.
+	wire is_cycle_3 = (word_count == 3);
+	wire is_cycle_1to3 = (word_count >= 1) && (word_count <= 3);
+	assert property(rpc_fab_tx_done_32 == is_cycle_3);
+	assert property(rpc_fab_tx_busy_32 == is_cycle_1to3);
+
+	//16-bit transmitter should finish seven cycles after packet begins.
+	//Busy during that time.
+	wire is_cycle_7 = (word_count == 7);
+	wire is_cycle_1to7 = (word_count >= 1) && (word_count <= 7);
+	assert property(rpc_fab_tx_done_16 == is_cycle_7);
+	assert property(rpc_fab_tx_busy_16 == is_cycle_1to7);
+
+	//Receiver should be done one cycle after transmit finishes
+	assert property(rpc_fab_rx_en_128 == rpc_fab_tx_done_128_ff);
+	assert property(rpc_fab_rx_en_64  == rpc_fab_tx_done_64_ff);
+	assert property(rpc_fab_rx_en_32  == rpc_fab_tx_done_32_ff);
+	assert property(rpc_fab_rx_en_16  == rpc_fab_tx_done_16_ff);
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Verified properties: 128-bit datapath
+	// Verified properties: 128-bit transmit datapath
 
 	always @(posedge clk) begin
 
@@ -422,7 +498,24 @@ module main(
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Verified properties: 64-bit datapath
+	// Verified properties: 128-bit receive datapath
+
+	always @(posedge clk) begin
+
+		//The data we receive should be the same as what was transmitted
+		if(rpc_fab_rx_en_128) begin
+			assert(rpc_fab_rx_src_addr_128	== NODE_ADDR);
+			assert(rpc_fab_rx_callnum_128	== tx_callnum_saved);
+			assert(rpc_fab_rx_type_128		== tx_type_saved);
+			assert(rpc_fab_rx_d0_128		== tx_d0_saved);
+			assert(rpc_fab_rx_d1_128		== tx_d1_saved);
+			assert(rpc_fab_rx_d2_128		== tx_d2_saved);
+		end
+
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verified properties: 64-bit transmit datapath
 
 	always @(posedge clk) begin
 
@@ -467,7 +560,24 @@ module main(
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Verified properties: 32-bit datapath
+	// Verified properties: 64-bit receive datapath
+
+	always @(posedge clk) begin
+
+		//The data we receive should be the same as what was transmitted
+		if(rpc_fab_rx_en_64) begin
+			assert(rpc_fab_rx_src_addr_64	== NODE_ADDR);
+			assert(rpc_fab_rx_callnum_64	== tx_callnum_saved);
+			assert(rpc_fab_rx_type_64		== tx_type_saved);
+			assert(rpc_fab_rx_d0_64			== tx_d0_saved);
+			assert(rpc_fab_rx_d1_64			== tx_d1_saved);
+			assert(rpc_fab_rx_d2_64			== tx_d2_saved);
+		end
+
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verified properties: 32-bit transmit datapath
 
 	always @(posedge clk) begin
 
@@ -514,7 +624,24 @@ module main(
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Verified properties: 16-bit datapath
+	// Verified properties: 32-bit receive datapath
+
+	always @(posedge clk) begin
+
+		//The data we receive should be the same as what was transmitted
+		if(rpc_fab_rx_en_32) begin
+			assert(rpc_fab_rx_src_addr_32	== NODE_ADDR);
+			assert(rpc_fab_rx_callnum_32	== tx_callnum_saved);
+			assert(rpc_fab_rx_type_32		== tx_type_saved);
+			assert(rpc_fab_rx_d0_32			== tx_d0_saved);
+			assert(rpc_fab_rx_d1_32			== tx_d1_saved);
+			assert(rpc_fab_rx_d2_32			== tx_d2_saved);
+		end
+
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verified properties: 16-bit transmit datapath
 
 	always @(posedge clk) begin
 
@@ -554,6 +681,23 @@ module main(
 				7: assert (rpc_tx_data_16 == /*rpc_fab_tx_d2[15:0]*/ 16'h55AA);	//should fail
 
 			endcase
+		end
+
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verified properties: 16-bit receive datapath
+
+	always @(posedge clk) begin
+
+		//The data we receive should be the same as what was transmitted
+		if(rpc_fab_rx_en_16) begin
+			assert(rpc_fab_rx_src_addr_16	== NODE_ADDR);
+			assert(rpc_fab_rx_callnum_16	== tx_callnum_saved);
+			assert(rpc_fab_rx_type_16		== tx_type_saved);
+			assert(rpc_fab_rx_d0_16			== tx_d0_saved);
+			assert(rpc_fab_rx_d1_16			== tx_d1_saved);
+			assert(rpc_fab_rx_d2_16			== tx_d2_saved);
 		end
 
 	end
