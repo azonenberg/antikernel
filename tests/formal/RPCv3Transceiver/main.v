@@ -293,6 +293,23 @@ module main(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verification helpers
 
+	//Keep track of whether messages are waiting to be sent
+	reg tx_pending = 0;
+	always @(posedge clk) begin
+
+		//No longer have a message pending once this one gets sent
+		if(rpc_tx_en_128)
+			tx_pending		<= 0;
+
+		//If we try to send and the link is busy, send it later
+		if(rpc_fab_tx_en && !rpc_tx_ready_128)
+			tx_pending		<= 1;
+
+	end
+
+	//True if a message is waiting to be sent, but not being sent this cycle
+	wire tx_pending_unfulfilled = tx_pending && !rpc_tx_en_128;
+
 	//Set busy flag as soon as a transmit comes in, clear when the last transmit is done
 	reg[3:0] busy_mask		= 0;
 	always @(posedge clk) begin
@@ -310,7 +327,6 @@ module main(
 			busy_mask[0]	<= 0;
 
 	end
-
 	wire somebody_busy		= (busy_mask != 0);
 
 	//External test logic should not block receiving for too many cycles
@@ -318,28 +334,14 @@ module main(
 	always @(posedge clk) begin
 		rx_timeout <= rx_timeout + 1;
 
-		//Reset timeout if we're no longer busy
-		if(!rpc_fab_rx_ready)
+		//Reset timeout if we're still busy
+		if(!rpc_tx_ready_128)
 			rx_timeout <= 0;
 
 		assume(rx_timeout != 15);
 	end
 
-	//Keep track of whether messages are waiting to be sent
-	reg tx_pending = 0;
-	always @(posedge clk) begin
-
-		//No longer have a message pending once this one gets sent
-		if(rpc_tx_en_128)
-			tx_pending		<= 0;
-
-		//If we try to send and the link is busy, send it later
-		if(rpc_fab_tx_en && !rpc_tx_ready_128)
-			tx_pending		<= 1;
-
-	end
-
-	//Counter of cycles since we actually began the transmit
+	//Counter of cycles since we actually began the transmit (position in the packet)
 	reg[3:0] word_count = 0;
 	always @(posedge clk) begin
 		if(rpc_tx_en_128)
@@ -388,6 +390,16 @@ module main(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verified properties: timing and sync
 
+	//Shorter packets should always finish sending before longer ones
+	always @(posedge clk) begin
+		if(busy_mask[3])
+			assert(busy_mask[2:0] == 3'b111);
+		if(busy_mask[2])
+			assert(busy_mask[1:0] == 2'b11);
+		if(busy_mask[1])
+			assert(busy_mask[0] == 1'b1);
+	end
+
 	//Nobody should be doing anything if we're not busy.
 	//This ensures everyone starts in a clean state when tx_en is asserted.
 	always @(posedge clk) begin
@@ -406,16 +418,7 @@ module main(
 	end
 
 	//Transmitter should never be busy for too long
-	reg[3:0] tx_timeout = 0;
-	always @(posedge clk) begin
-		tx_timeout <= tx_timeout + 1;
-
-		//Reset timeout if we're no longer busy
-		if(!somebody_busy)
-			tx_timeout <= 0;
-
-		assert(tx_timeout != 15);
-	end
+	assert property(word_count <= 8);
 
 	//All transceivers should start sending at the same time
 	assert property(rpc_tx_en_128 == rpc_tx_en_64);
@@ -434,29 +437,31 @@ module main(
 	wire should_be_sending	= ready_to_send && rpc_tx_ready_128;
 	assert property(should_be_sending == rpc_tx_en_128);
 
-	//128-bit transmitter should finish combinatorially the same cycle the packet goes out
+	//128-bit transmitter should finish combinatorially the same cycle the packet goes out.
+	//Should never be busy unless RX is blocking.
 	assert property(rpc_tx_en_128 == rpc_fab_tx_done_128);
-	assert property(!rpc_fab_tx_busy_128);
+	assert property(rpc_fab_tx_busy_128 == tx_pending_unfulfilled);
 
 	//64-bit transmitter should finish one cycle after packet begins.
 	//Busy during that cycle only.
+	//If transmitter blocks, we're busy before that too.
 	wire is_cycle_1 = (word_count == 1);
 	assert property(rpc_fab_tx_done_64 == is_cycle_1);
-	assert property(rpc_fab_tx_busy_64 == is_cycle_1);
+	assert property(rpc_fab_tx_busy_64 == (is_cycle_1 || tx_pending) );
 
 	//32-bit transmitter should finish three cycles after packet begins.
-	//Busy during that time.
+	//Busy during that time, or if bus isn't ready yet
 	wire is_cycle_3 = (word_count == 3);
 	wire is_cycle_1to3 = (word_count >= 1) && (word_count <= 3);
 	assert property(rpc_fab_tx_done_32 == is_cycle_3);
-	assert property(rpc_fab_tx_busy_32 == is_cycle_1to3);
+	assert property(rpc_fab_tx_busy_32 == (is_cycle_1to3 || tx_pending) );
 
 	//16-bit transmitter should finish seven cycles after packet begins.
 	//Busy during that time.
 	wire is_cycle_7 = (word_count == 7);
 	wire is_cycle_1to7 = (word_count >= 1) && (word_count <= 7);
 	assert property(rpc_fab_tx_done_16 == is_cycle_7);
-	assert property(rpc_fab_tx_busy_16 == is_cycle_1to7);
+	assert property(rpc_fab_tx_busy_16 == (is_cycle_1to7 || tx_pending) );
 
 	//Receiver should be done one cycle after transmit finishes
 	assert property(rpc_fab_rx_en_128 == rpc_fab_tx_done_128_ff);
@@ -512,6 +517,8 @@ module main(
 			assert(rpc_fab_rx_d2_128		== tx_d2_saved);
 		end
 
+		//TODO: Receive data won't change if rx_ready is low
+
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -521,7 +528,7 @@ module main(
 
 		//If not sending, bus should be idle
 		//TODO: dontcare for non-QUIET_WHEN_IDLE
-		if(!rpc_tx_en_64 && !rpc_fab_tx_busy_64) begin
+		if(!rpc_tx_en_64 && (word_count == 0)) begin
 			assert(rpc_tx_data_64 == 64'h0);
 		end
 
@@ -583,7 +590,7 @@ module main(
 
 		//If not sending, bus should be idle
 		//TODO: dontcare for non-QUIET_WHEN_IDLE
-		if(!rpc_tx_en_32 && !rpc_fab_tx_busy_32) begin
+		if(!rpc_tx_en_32 && (word_count == 0)) begin
 			assert(rpc_tx_data_32 == 32'h0);
 		end
 
@@ -647,7 +654,7 @@ module main(
 
 		//If not sending, bus should be idle
 		//TODO: dontcare for non-QUIET_WHEN_IDLE
-		if(!rpc_tx_en_16 && !rpc_fab_tx_busy_16) begin
+		if(!rpc_tx_en_16 && (word_count == 0)) begin
 			assert(rpc_tx_data_16 == 16'h0);
 		end
 
@@ -678,7 +685,7 @@ module main(
 				5: assert (rpc_tx_data_16 == rpc_fab_tx_d1[15:0]);
 
 				6: assert (rpc_tx_data_16 == rpc_fab_tx_d2[31:16]);
-				7: assert (rpc_tx_data_16 == /*rpc_fab_tx_d2[15:0]*/ 16'h55AA);	//should fail
+				7: assert (rpc_tx_data_16 == rpc_fab_tx_d2[15:0]);
 
 			endcase
 		end
