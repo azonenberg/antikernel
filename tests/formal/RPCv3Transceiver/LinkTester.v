@@ -158,27 +158,6 @@ module LinkTester(
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Save transmit data when we begin sending
-
-	reg[15:0]	tx_dst_addr_saved	= 0;
-	reg[7:0]	tx_callnum_saved	= 0;
-	reg[2:0]	tx_type_saved		= 0;
-	reg[20:0]	tx_d0_saved			= 0;
-	reg[31:0]	tx_d1_saved			= 0;
-	reg[31:0]	tx_d2_saved			= 0;
-
-	always @(posedge clk) begin
-		if(rpc_fab_tx_en) begin
-			tx_dst_addr_saved	<= rpc_fab_tx_dst_addr;
-			tx_callnum_saved	<= rpc_fab_tx_callnum;
-			tx_type_saved		<= rpc_fab_tx_type;
-			tx_d0_saved			<= rpc_fab_tx_d0;
-			tx_d1_saved			<= rpc_fab_tx_d1;
-			tx_d2_saved			<= rpc_fab_tx_d2;
-		end
-	end
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verification helpers
 
 	//Keep track of whether messages are waiting to be sent
@@ -252,6 +231,27 @@ module LinkTester(
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Save transmit data when we begin sending
+
+	reg[15:0]	tx_dst_addr_saved	= 0;
+	reg[7:0]	tx_callnum_saved	= 0;
+	reg[2:0]	tx_type_saved		= 0;
+	reg[20:0]	tx_d0_saved			= 0;
+	reg[31:0]	tx_d1_saved			= 0;
+	reg[31:0]	tx_d2_saved			= 0;
+
+	always @(posedge clk) begin
+		if(rpc_fab_tx_en && !transaction_active) begin
+			tx_dst_addr_saved	<= rpc_fab_tx_dst_addr;
+			tx_callnum_saved	<= rpc_fab_tx_callnum;
+			tx_type_saved		<= rpc_fab_tx_type;
+			tx_d0_saved			<= rpc_fab_tx_d0;
+			tx_d1_saved			<= rpc_fab_tx_d1;
+			tx_d2_saved			<= rpc_fab_tx_d2;
+		end
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Preconditions
 
 	//External test logic should not block receiving for too many cycles
@@ -270,10 +270,6 @@ module LinkTester(
 	always @(posedge clk) begin
 
 		if(transaction_active) begin
-
-			//For initial verification, don't try to transmit if we're already sending.
-			//TODO: verify this doesn't trigger a new send or anything derpy?
-			assume(!rpc_fab_tx_en);
 
 			//Result of changing inputs when sending is undefined. Don't do it.
 			assume (rpc_fab_tx_dst_addr	== tx_dst_addr_saved);
@@ -296,9 +292,9 @@ module LinkTester(
 	assert property(! (rpc_tx_en && !rpc_tx_ready) );
 
 	//If there is a message waiting to be sent, we should send as soon as possible.
-	//Do not send if there are no messages to send, though.
+	//Do not send if there are no messages to send, or if we already have a message in progress
 	wire ready_to_send		= tx_pending || rpc_fab_tx_en;
-	wire should_be_sending	= ready_to_send && rpc_tx_ready;
+	wire should_be_sending	= (ready_to_send && rpc_tx_ready) && (word_count == 0);
 	assert property(should_be_sending == rpc_tx_en);
 
 	//Make sure we finished (128 / DATA_WIDTH) cycles after we started sending
