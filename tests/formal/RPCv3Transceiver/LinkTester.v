@@ -60,21 +60,22 @@ module LinkTester(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DUT: Quiet version (tx_data held zero when not sending)
 
-	wire		rpc_tx_en;
-	wire[127:0]	rpc_tx_data;
-	wire		rpc_tx_ready;
+	wire					rpc_tx_en;
+	wire[DATA_WIDTH-1:0]	rpc_tx_data;
+	wire					rpc_tx_ready;
 
-	wire		rpc_fab_tx_done;
-	wire		rpc_fab_tx_busy;
+	wire					rpc_fab_tx_done;
+	wire					rpc_fab_tx_busy;
 
-	wire		rpc_fab_rx_en;
-	wire		rpc_fab_rx_busy;
-	wire[15:0]	rpc_fab_rx_src_addr;
-	wire[7:0]	rpc_fab_rx_callnum;
-	wire[2:0]	rpc_fab_rx_type;
-	wire[20:0]	rpc_fab_rx_d0;
-	wire[31:0]	rpc_fab_rx_d1;
-	wire[31:0]	rpc_fab_rx_d2;
+	wire					rpc_fab_rx_en;
+	wire					rpc_fab_rx_busy;
+	wire[15:0]				rpc_fab_rx_src_addr;
+	wire[15:0]				rpc_fab_rx_dst_addr;
+	wire[7:0]				rpc_fab_rx_callnum;
+	wire[2:0]				rpc_fab_rx_type;
+	wire[20:0]				rpc_fab_rx_d0;
+	wire[31:0]				rpc_fab_rx_d1;
+	wire[31:0]				rpc_fab_rx_d2;
 
 	RPCv3Transceiver #(
 		.DATA_WIDTH(DATA_WIDTH),
@@ -105,21 +106,22 @@ module LinkTester(
 		.rpc_fab_rx_busy(rpc_fab_rx_busy),
 		.rpc_fab_rx_en(rpc_fab_rx_en),
 		.rpc_fab_rx_src_addr(rpc_fab_rx_src_addr),
+		.rpc_fab_rx_dst_addr(rpc_fab_rx_dst_addr),
 		.rpc_fab_rx_callnum(rpc_fab_rx_callnum),
 		.rpc_fab_rx_type(rpc_fab_rx_type),
 		.rpc_fab_rx_d0(rpc_fab_rx_d0),
 		.rpc_fab_rx_d1(rpc_fab_rx_d1),
-		.rpc_fab_rx_d2(rpc_fab_rx_d2),
+		.rpc_fab_rx_d2(rpc_fab_rx_d2)
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Noisy versions (less gates, can inject arbitrary noise from rpc_fab_* on rpc_tx_data when not sending)
 
-	wire		rpc_tx_en_noisy;
-	wire[127:0]	rpc_tx_data_noisy;
+	wire					rpc_tx_en_noisy;
+	wire[DATA_WIDTH-1:0]	rpc_tx_data_noisy;
 
-	wire		rpc_fab_tx_done_noisy;
-	wire		rpc_fab_tx_busy_noisy;
+	wire					rpc_fab_tx_done_noisy;
+	wire					rpc_fab_tx_busy_noisy;
 
 	RPCv3Transceiver #(
 		.DATA_WIDTH(DATA_WIDTH),
@@ -150,11 +152,14 @@ module LinkTester(
 		.rpc_fab_rx_busy(),
 		.rpc_fab_rx_en(),
 		.rpc_fab_rx_src_addr(),
+		.rpc_fab_rx_dst_addr(),
 		.rpc_fab_rx_callnum(),
 		.rpc_fab_rx_type(),
 		.rpc_fab_rx_d0(),
 		.rpc_fab_rx_d1(),
-		.rpc_fab_rx_d2(),
+		.rpc_fab_rx_d2()
+
+		//TODO: assert that these outputs are otherwise identical?
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -448,6 +453,7 @@ module LinkTester(
 		//The data we receive should be the same as what was transmitted
 		if(rpc_fab_rx_en) begin
 			assert(rpc_fab_rx_src_addr	== NODE_ADDR);
+			assert(rpc_fab_rx_dst_addr	== tx_dst_addr_saved);
 			assert(rpc_fab_rx_callnum	== tx_callnum_saved);
 			assert(rpc_fab_rx_type		== tx_type_saved);
 			assert(rpc_fab_rx_d0		== tx_d0_saved);

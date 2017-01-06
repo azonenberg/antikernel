@@ -3,6 +3,7 @@ read_verilog -formal ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v
 read_verilog -formal main.v
 read_verilog -formal LinkTester.v
 prep -nordff -top main
+check -initdrv
 
 # yes this is an absolute path, the script to do this in a temp dir hasn't been written yet :)
 write_smt2 -wires /tmp/rpcv3transceiver.smt2

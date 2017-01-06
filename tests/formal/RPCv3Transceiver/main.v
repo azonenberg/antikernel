@@ -60,7 +60,7 @@ module main(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// The individual test blocks (one for each data width)
 
-	/*LinkTester #(
+	LinkTester #(
 		.NODE_ADDR(NODE_ADDR),
 		.DATA_WIDTH(128)
 	) tester_128 (
@@ -73,7 +73,7 @@ module main(
 		.rpc_fab_tx_d1(rpc_fab_tx_d1),
 		.rpc_fab_tx_d2(rpc_fab_tx_d2),
 		.rpc_fab_rx_ready(rpc_fab_rx_ready)
-	);*/
+	);
 
 	LinkTester #(
 		.NODE_ADDR(NODE_ADDR),
@@ -89,7 +89,7 @@ module main(
 		.rpc_fab_tx_d2(rpc_fab_tx_d2),
 		.rpc_fab_rx_ready(rpc_fab_rx_ready)
 	);
-/*
+
 	LinkTester #(
 		.NODE_ADDR(NODE_ADDR),
 		.DATA_WIDTH(32)
@@ -118,6 +118,6 @@ module main(
 		.rpc_fab_tx_d1(rpc_fab_tx_d1),
 		.rpc_fab_tx_d2(rpc_fab_tx_d2),
 		.rpc_fab_rx_ready(rpc_fab_rx_ready)
-	);*/
+	);
 
 endmodule
