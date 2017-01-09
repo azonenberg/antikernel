@@ -29,18 +29,15 @@
 
 ZyboBlinkyTestBitstream:
 
-    toolchain:      verilog/generic
+    toolchain:      verilog/ise
     type:           bitstream
 
     # use default configs
 
-    # Specify target boards
-    # TODO: specify BSP file instead of just chip, and have this pull in the pinout / imply arches?
-    arches:
-        - zynq7-xc7z010
+    # Specify target BSP rather than list of triplets
+    boards:
+        - ../../../boards/zybo.yml
 
-    #TODO: specify pinout file?
-    #This section is only needed for modules where the top level is manually written
-
+    # All source code for now, no automatic generation
     sources:
-        ZyboBlinkyTestBitstream.v
+        - ZyboBlinkyTestBitstream.v

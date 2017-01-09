@@ -28,20 +28,12 @@
 ***********************************************************************************************************************/
 
 module ZyboBlinkyTestBitstream(
-	clk_125mhz,
-    led
+	input wire clk,
+    output reg led = 0;
     );
 
-    (* LOC = "L16" *)
-    (* IOSTANDARD = "LVCMOS33" *)
-    input wire clk_125mhz;
-
-    (* LOC = "M14" *)
-    (* IOSTANDARD = "LVCMOS33" *)
-    output reg led = 0;
-
     reg[25:0] count = 0;
-    always @(posedge clk_125mhz) begin
+    always @(posedge clk) begin
         count <= count + 1'h1;
         led <= count[25];
     end
