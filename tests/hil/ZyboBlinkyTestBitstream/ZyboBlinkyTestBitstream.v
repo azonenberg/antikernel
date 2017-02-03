@@ -29,7 +29,7 @@
 
 module ZyboBlinkyTestBitstream(
 	input wire clk,
-    output reg led = 0;
+    output reg led = 0
     );
 
     reg[25:0] count = 0;
