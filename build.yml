@@ -55,3 +55,25 @@ recursive_config:
             - optimize/speed
             - define/NDEBUG
 
+########################################################################################################################
+# FPGA
+
+---
+recursive_config:
+    toolchain:      verilog/generic
+
+    # No default target architectures (must override for each target)
+
+    # Generic flags that apply everywhere
+    flags:
+        - warning/max
+
+    # Generic per-configuration flags
+    configurations:
+        debug:
+            - optimize/none
+            - define/_DEBUG
+        release:
+            - optimize/speed
+            - define/NDEBUG
+
