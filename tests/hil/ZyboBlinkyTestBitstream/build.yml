@@ -38,6 +38,16 @@ ZyboBlinkyTestBitstream:
     boards:
         - ../../../boards/zybo.yml
 
+    # Signals that we need broken out at the top level (in addition to anything that peripheral IP requires)
+    pins:
+        clk:
+            width: 1
+            dir: input
+
+        led:
+            width: 1
+            dir: output
+
     # All source code for now, no automatic generation
     sources:
         - ZyboBlinkyTestBitstream.v
