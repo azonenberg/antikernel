@@ -60,7 +60,7 @@ recursive_config:
 
 ---
 recursive_config:
-    toolchain:      verilog/generic
+    toolchain:      verilog/ise
 
     # No default target architectures (must override for each target)
 
