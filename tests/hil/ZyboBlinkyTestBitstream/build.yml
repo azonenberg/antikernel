@@ -36,7 +36,7 @@ ZyboBlinkyTestBitstream:
 
     # Specify target BSP rather than list of triplets
     boards:
-        - ../../../boards/zybo.yml
+        - ../../../bsp/zybo.yml
 
     # Signals that we need broken out at the top level (in addition to anything that peripheral IP requires)
     pins:

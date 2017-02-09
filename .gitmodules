@@ -11,5 +11,5 @@
 	path = antikernel-ipcores
 	url = git@github.com:azonenberg/antikernel-ipcores
 [submodule "boards"]
-	path = boards
+	path = bsp
 	url = git@github.com:/azonenberg/antikernel-bsps
