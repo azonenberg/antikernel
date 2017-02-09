@@ -10,3 +10,6 @@
 [submodule "antikernel-ipcores"]
 	path = antikernel-ipcores
 	url = git@github.com:azonenberg/antikernel-ipcores
+[submodule "boards"]
+	path = boards
+	url = git@github.com:/azonenberg/antikernel-bsps
