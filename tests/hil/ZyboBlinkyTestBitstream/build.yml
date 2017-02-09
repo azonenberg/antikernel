@@ -45,7 +45,7 @@ ZyboBlinkyTestBitstream:
             dir: input
 
         led:
-            width: 1
+            width: 4
             dir: output
 
     # All source code for now, no automatic generation

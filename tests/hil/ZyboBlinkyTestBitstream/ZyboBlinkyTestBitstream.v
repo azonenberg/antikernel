@@ -29,13 +29,15 @@
 
 module ZyboBlinkyTestBitstream(
 	input wire clk,
-    output reg led = 0
+    output reg[3:0] led = 0
     );
 
-    reg[25:0] count = 0;
+    reg[24:0] count = 0;
     always @(posedge clk) begin
         count <= count + 1'h1;
-        led <= count[25];
+
+        if(count == 0)
+			led <= led + 4'h1;
     end
 
 endmodule
