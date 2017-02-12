@@ -38,7 +38,7 @@
 
 	This test only covers a single clock domain; multi-domain behavior is not tested.
  */
-module main(
+module MemoryMacroFormal(
 	clk,
 	porta_en, porta_we, porta_addr, porta_din,
 	portb_en, portb_we, portb_addr, portb_din

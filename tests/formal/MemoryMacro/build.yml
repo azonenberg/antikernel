@@ -27,7 +27,7 @@
 #                                                                                                                      #
 ########################################################################################################################
 
-MemoryMacro:
+MemoryMacroFormal:
     toolchain:      verilog/yosys
     type:           formal
 
@@ -39,6 +39,9 @@ MemoryMacro:
     arches:
         - generic-formal
 
+    # Source files include the SMT constraints file, YosysToolchain is smart enough
+    # to not try synthesizing that
     sources:
-        - main.v
+        - MemoryMacroFormal.v
+        - MemoryMacroFormal.smtc
         - ../../../antikernel-ipcores/device_abstraction/MemoryMacro.v
