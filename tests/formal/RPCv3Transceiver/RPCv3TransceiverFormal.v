@@ -37,7 +37,7 @@
 	The goal of this test is to prove that an RPCv3Transceiver sends the correct data on the link, and that
 	two transceivers connected end to end will pass data through unchanged and supply the correct source address.
  */
-module main(
+module RPCv3TransceiverFormal(
 	input wire					clk,
 
 	input wire					rpc_fab_tx_en,
