@@ -51,3 +51,4 @@ ZyboBlinkyTestBitstream:
     # All source code for now, no automatic generation
     sources:
         - ZyboBlinkyTestBitstream.v
+        - ../../../antikernel-ipcores/processor/zynq/XilinxZynq7CPU.v

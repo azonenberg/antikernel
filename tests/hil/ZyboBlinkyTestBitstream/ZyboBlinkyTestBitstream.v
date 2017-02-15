@@ -40,4 +40,19 @@ module ZyboBlinkyTestBitstream(
 			led <= led + 4'h1;
     end
 
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // The Zynq CPU (not actually used for anything for now, just to make DRC shut up)
+
+	XilinxZynq7CPU cpu(
+		.cpu_jtag_tdo(),
+		.cpu_jtag_tdi(1'b0),
+		.cpu_jtag_tms(1'b0),
+		.cpu_jtag_tck(1'b0),
+
+		//Don't use any of these signals
+		.__nowarn_528_cpu_clk(),
+		.__nowarn_528_cpu_por_n(),
+		.__nowarn_528_cpu_srst_n()
+	);
+
 endmodule
