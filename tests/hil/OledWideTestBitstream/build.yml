@@ -40,21 +40,10 @@ OledWideTestBitstream:
 
     # Signals that we need broken out at the top level (in addition to anything that peripheral IP requires)
     pins:
-        clk:
-            width: 1
-            dir: input
-
-        led:
-            width: 4
-            dir: output
-
-        switch:
-            width: 4
-            dir: input
-
-        pmod_a:
-            width: 8
-            dir: inout
+        clk: 	1
+        led: 	4
+        switch: 4
+        pmod_a:	8
 
     # All source code for now, no automatic generation
     sources:
