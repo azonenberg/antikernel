@@ -45,6 +45,7 @@ module OledWideTestBitstream(
 	input wire clk,
     output reg[3:0] led = 0,
     input wire[3:0] switch,
+    input wire[3:0] button,
     inout wire[7:0] pmod_a
     );
 
@@ -81,16 +82,6 @@ module OledWideTestBitstream(
 
     assign pmod_a[2]	= 1'b0;			//NC
 
-	/*
-    //Pin assignments
-	assign pmod_a[0]	= spi_cs_n;
-	assign pmod_a[1]	= spi_mosi;
-	assign pmod_a[3]	= spi_sck;
-	assign pmod_a[4]	= cmd_n;
-	assign pmod_a[5]	= rst_out;
-	assign pmod_a[6]	= vbat_en_n;
-	assign pmod_a[7]	= vdd_en_n;*/
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Switch debouncing
 
@@ -98,10 +89,14 @@ module OledWideTestBitstream(
 	wire[3:0] switch_rising;
 	wire[3:0] switch_falling;
 
+	wire[3:0] button_debounced;
+	wire[3:0] button_rising;
+	wire[3:0] button_falling;
+
 	SwitchDebouncerBlock #(
 		.WIDTH(4),
 		.INIT_VAL(0)
-	) debouncer (
+	) switch_debouncer (
 		.clk(clk_bufg),
 		.din(switch),
 		.dout(switch_debounced),
@@ -109,8 +104,23 @@ module OledWideTestBitstream(
 		.falling(switch_falling)
 	);
 
+	SwitchDebouncerBlock #(
+		.WIDTH(4),
+		.INIT_VAL(0)
+	) button_debouncer (
+		.clk(clk_bufg),
+		.din(button),
+		.dout(button_debounced),
+		.rising(button_rising),
+		.falling(button_falling)
+	);
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // The display controller
+
+    wire power_state;
+    wire ready;
+    reg refresh			= 0;
 
     SSD1306 #(
 		.INTERFACE("SPI")
@@ -128,14 +138,24 @@ module OledWideTestBitstream(
 		.vdd_en_n(pmod_a[7]),
 
 		.powerup(switch_rising[0]),
-		.powerdown(switch_falling[0])
+		.powerdown(switch_falling[0]),
+		.refresh(refresh),
+
+		.power_state(power_state),
+		.ready(ready)
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // TODO: Other logic
 
     always @(*) begin
-		led <= switch_debounced;
+		led[3]		<= switch_debounced[3] ^ switch_debounced[2] ^ switch_debounced[1];	//prevent warnings
+		led[2]		<= button_debounced[3] ^ button_debounced[2] ^ button_debounced[1];
+
+		led[1]		<= ready;
+		led[0]		<= power_state;
+
+		refresh		<= button_rising[0];
     end
 
 endmodule

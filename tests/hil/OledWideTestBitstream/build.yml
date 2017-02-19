@@ -43,6 +43,7 @@ OledWideTestBitstream:
         clk: 	1
         led: 	4
         switch: 4
+        button: 4
         pmod_a:	8
 
     # All source code for now, no automatic generation
