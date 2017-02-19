@@ -128,6 +128,7 @@ module OledWideTestBitstream(
 	wire[8:0]	display_rd_addr;
 	wire[7:0]	display_rd_data;
 
+	//Should be vertical 4-pixel wide bars
     MemoryMacro #(
 		.WIDTH(8),
 		.DEPTH(512),
@@ -135,7 +136,7 @@ module OledWideTestBitstream(
 		.TRUE_DUAL(0),
 		.USE_BLOCK(1),
 		.OUT_REG(1'b1),
-		.INIT_VALUE(8'hF0),
+		.INIT_VALUE(8'h0F),
 		.INIT_ADDR(0),
 		.INIT_FILE("")
     ) framebuffer (
