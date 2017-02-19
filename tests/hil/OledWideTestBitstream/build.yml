@@ -53,6 +53,7 @@ OledWideTestBitstream:
         - ../../../antikernel-ipcores/clock/crossing/SwitchDebouncerBlock.v
         - ../../../antikernel-ipcores/clock/crossing/ThreeStageSynchronizer.v
         - ../../../antikernel-ipcores/device_abstraction/ClockBuffer.v
+        - ../../../antikernel-ipcores/device_abstraction/MemoryMacro.v
         - ../../../antikernel-ipcores/graphics/display/SSD1306.v
         - ../../../antikernel-ipcores/interface/spi/SPITransceiver.v
         - ../../../antikernel-ipcores/processor/zynq/XilinxZynq7CPU.v

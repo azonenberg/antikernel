@@ -116,6 +116,45 @@ module OledWideTestBitstream(
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Framebuffer RAM
+
+	//GPU write bus
+	reg 		gpu_wr_en	= 0;
+	reg[8:0]	gpu_wr_addr	= 0;
+	reg[7:0]	gpu_wr_data	= 0;
+
+	//Display read bus
+	wire		display_rd_en;
+	wire[8:0]	display_rd_addr;
+	wire[7:0]	display_rd_data;
+
+    MemoryMacro #(
+		.WIDTH(8),
+		.DEPTH(512),
+		.DUAL_PORT(1),
+		.TRUE_DUAL(0),
+		.USE_BLOCK(1),
+		.OUT_REG(1'b1),
+		.INIT_VALUE(8'hF0),
+		.INIT_ADDR(0),
+		.INIT_FILE("")
+    ) framebuffer (
+		.porta_clk(clk_bufg),
+		.porta_en(gpu_wr_en),
+		.porta_addr(gpu_wr_addr),
+		.porta_we(gpu_wr_en),
+		.porta_din(gpu_wr_data),
+		.porta_dout(),
+
+		.portb_clk(clk_bufg),
+		.portb_en(display_rd_en),
+		.portb_addr(display_rd_addr),
+		.portb_we(1'b0),
+		.portb_din(8'h0),
+		.portb_dout(display_rd_data)
+	);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // The display controller
 
     wire power_state;
@@ -140,6 +179,10 @@ module OledWideTestBitstream(
 		.powerup(switch_rising[0]),
 		.powerdown(switch_falling[0]),
 		.refresh(refresh),
+
+		.framebuffer_rd_en(display_rd_en),
+		.framebuffer_rd_addr(display_rd_addr),
+		.framebuffer_rd_data(display_rd_data),
 
 		.power_state(power_state),
 		.ready(ready)
