@@ -27,7 +27,7 @@
 *                                                                                                                      *
 ***********************************************************************************************************************/
 
-module ZyboBlinkyTestBitstream(
+module BlinkyTestBitstream(
 	input wire clk,
     output reg[3:0] led = 0
     );
@@ -41,7 +41,10 @@ module ZyboBlinkyTestBitstream(
     end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // The Zynq CPU (not actually used for anything for now, just to make DRC shut up)
+    //The Zynq CPU (not actually used for anything for now, just to make DRC shut up)
+
+    // Only define this if we're targeting a Zynq part
+	`ifdef XILINX_ZYNQ7
 
 	XilinxZynq7CPU cpu(
 		.cpu_jtag_tdo(),
@@ -54,5 +57,7 @@ module ZyboBlinkyTestBitstream(
 		.__nowarn_528_cpu_por_n(),
 		.__nowarn_528_cpu_srst_n()
 	);
+
+	`endif
 
 endmodule

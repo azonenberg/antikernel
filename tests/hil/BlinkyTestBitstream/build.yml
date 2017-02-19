@@ -27,7 +27,7 @@
 #                                                                                                                      #
 ########################################################################################################################
 
-ZyboBlinkyTestBitstream:
+BlinkyTestBitstream:
 
     toolchain:      verilog/ise
     type:           bitstream
@@ -45,5 +45,5 @@ ZyboBlinkyTestBitstream:
 
     # All source code for now, no automatic generation
     sources:
-        - ZyboBlinkyTestBitstream.v
+        - BlinkyTestBitstream.v
         - ../../../antikernel-ipcores/processor/zynq/XilinxZynq7CPU.v
