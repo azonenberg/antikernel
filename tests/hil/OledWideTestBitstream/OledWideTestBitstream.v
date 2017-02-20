@@ -130,7 +130,7 @@ module OledWideTestBitstream(
 	wire[8:0]	display_rd_addr;
 	wire[7:0]	display_rd_data;
 
-	//Skinny lines with spaces
+	//Blank
     MemoryMacro #(
 		.WIDTH(8),
 		.DEPTH(512),
@@ -138,7 +138,7 @@ module OledWideTestBitstream(
 		.TRUE_DUAL(1),
 		.USE_BLOCK(1),
 		.OUT_REG(1'b1),
-		.INIT_VALUE(8'h50),
+		.INIT_VALUE(8'h00),
 		.INIT_ADDR(0),
 		.INIT_FILE("")
     ) framebuffer (
@@ -169,6 +169,11 @@ module OledWideTestBitstream(
     reg[3:0]	gpu_cmd			= GPU_OP_NOP;
     wire		gpu_cmd_done;
 
+    reg[6:0]	left			= 10;		//random initial coordinates
+    reg[6:0]	right			= 63;
+    reg[4:0]	top				= 13;
+    reg[4:0]	bottom			= 25;
+
     Minimal2DGPU #(
 		.FRAMEBUFFER_WIDTH(128),
 		.FRAMEBUFFER_HEIGHT(32),
@@ -184,6 +189,11 @@ module OledWideTestBitstream(
 
 		.fg_color(fg_color),
 		.bg_color(bg_color),
+
+		.left(left),
+		.right(right),
+		.top(top),
+		.bottom(bottom),
 
 		.cmd_en(gpu_cmd_en),
 		.cmd(gpu_cmd),
@@ -233,15 +243,16 @@ module OledWideTestBitstream(
 		gpu_cmd			<= GPU_OP_NOP;
 		refresh			<= 0;
 
-		//Refresh without touching framebuffer
-		if(button_rising[0])
-			refresh		<= 1;
-
 		//Wipe the framebuffer
-		if(button_rising[1]) begin
+		if(button_rising[0]) begin
 			gpu_cmd		<= GPU_OP_CLEAR;
 			gpu_cmd_en	<= 1;
-			led[1]		<= 1;
+		end
+
+		//Draw a rectangle
+		if(button_rising[1]) begin
+			gpu_cmd		<= GPU_OP_RECT;
+			gpu_cmd_en	<= 1;
 		end
 
 		//Left-hand switches set fg/bg colors
