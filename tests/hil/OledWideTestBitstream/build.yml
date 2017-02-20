@@ -29,22 +29,28 @@
 
 OledWideTestBitstream:
 
+    # FPGA target using Xilinx tools (TODO: figure out how to do verilog/generic?)
     toolchain:      verilog/ise
     type:           bitstream
 
-    # use default configs
+    # use default debug/release configs and flags
 
     # Specify target BSP rather than list of triplets
     boards:
         - ../../../bsp/zybo.yml
 
-    # Signals that we need broken out at the top level (in addition to anything that peripheral IP requires)
+    # Signals that we need broken out at the top level
     pins:
         clk: 	1
         led: 	4
         switch: 4
         button: 4
         pmod_a:	8
+
+    # Pull in GPU opcodes
+    constants:
+        ../../../antikernel-ipcores/graphics/gpu/Minimal2DGPU_opcodes.yml:
+            - verilog/localparam
 
     # All source code for now, no automatic generation
     sources:
@@ -55,5 +61,6 @@ OledWideTestBitstream:
         - ../../../antikernel-ipcores/device_abstraction/ClockBuffer.v
         - ../../../antikernel-ipcores/device_abstraction/MemoryMacro.v
         - ../../../antikernel-ipcores/graphics/display/SSD1306.v
+        - ../../../antikernel-ipcores/graphics/gpu/Minimal2DGPU.v
         - ../../../antikernel-ipcores/interface/spi/SPITransceiver.v
         - ../../../antikernel-ipcores/processor/zynq/XilinxZynq7CPU.v

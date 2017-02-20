@@ -119,40 +119,75 @@ module OledWideTestBitstream(
     // Framebuffer RAM
 
 	//GPU write bus
-	reg 		gpu_wr_en	= 0;
-	reg[8:0]	gpu_wr_addr	= 0;
-	reg[7:0]	gpu_wr_data	= 0;
+	wire 		gpu_mem_en;
+	wire 		gpu_mem_wr;
+	wire[8:0]	gpu_mem_addr;
+	wire[7:0]	gpu_mem_wdata;
+	wire[7:0]	gpu_mem_rdata;
 
 	//Display read bus
 	wire		display_rd_en;
 	wire[8:0]	display_rd_addr;
 	wire[7:0]	display_rd_data;
 
-	//Should be vertical 4-pixel wide bars
+	//Skinny lines with spaces
     MemoryMacro #(
 		.WIDTH(8),
 		.DEPTH(512),
 		.DUAL_PORT(1),
-		.TRUE_DUAL(0),
+		.TRUE_DUAL(1),
 		.USE_BLOCK(1),
 		.OUT_REG(1'b1),
-		.INIT_VALUE(8'h0F),
+		.INIT_VALUE(8'h50),
 		.INIT_ADDR(0),
 		.INIT_FILE("")
     ) framebuffer (
 		.porta_clk(clk_bufg),
-		.porta_en(gpu_wr_en),
-		.porta_addr(gpu_wr_addr),
-		.porta_we(gpu_wr_en),
-		.porta_din(gpu_wr_data),
-		.porta_dout(),
+		.porta_en(gpu_mem_en),
+		.porta_addr(gpu_mem_addr),
+		.porta_we(gpu_mem_wr),
+		.porta_din(gpu_mem_wdata),
+		.porta_dout(gpu_mem_rdata),
 
 		.portb_clk(clk_bufg),
-		.portb_en(display_rd_en),
+		.portb_en(/*display_rd_en*/1'b1),
 		.portb_addr(display_rd_addr),
 		.portb_we(1'b0),
 		.portb_din(8'h0),
 		.portb_dout(display_rd_data)
+	);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // The GPU
+
+	`include "Minimal2DGPU_opcodes_localparam.vh"
+
+    reg			fg_color		= 0;
+    reg			bg_color		= 1;
+
+    reg			gpu_cmd_en		= 0;
+    reg[3:0]	gpu_cmd			= GPU_OP_NOP;
+    wire		gpu_cmd_done;
+
+    Minimal2DGPU #(
+		.FRAMEBUFFER_WIDTH(128),
+		.FRAMEBUFFER_HEIGHT(32),
+		.PIXEL_DEPTH(1)
+	) gpu (
+		.clk(clk_bufg),
+
+		.framebuffer_mem_en(gpu_mem_en),
+		.framebuffer_mem_wr(gpu_mem_wr),
+		.framebuffer_mem_addr(gpu_mem_addr),
+		.framebuffer_mem_wdata(gpu_mem_wdata),
+		.framebuffer_mem_rdata(gpu_mem_rdata),
+
+		.fg_color(fg_color),
+		.bg_color(bg_color),
+
+		.cmd_en(gpu_cmd_en),
+		.cmd(gpu_cmd),
+		.cmd_done(gpu_cmd_done)
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -190,16 +225,45 @@ module OledWideTestBitstream(
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // GPU control logic
+
+    always @(posedge clk_bufg) begin
+
+		gpu_cmd_en		<= 0;
+		gpu_cmd			<= GPU_OP_NOP;
+		refresh			<= 0;
+
+		//Refresh without touching framebuffer
+		if(button_rising[0])
+			refresh		<= 1;
+
+		//Wipe the framebuffer
+		if(button_rising[1]) begin
+			gpu_cmd		<= GPU_OP_CLEAR;
+			gpu_cmd_en	<= 1;
+			led[1]		<= 1;
+		end
+
+		//Left-hand switches set fg/bg colors
+		bg_color		<= switch_debounced[3];
+		fg_color		<= switch_debounced[2];
+
+		//Refresh the display whenever a command completes
+		if(gpu_cmd_done) begin
+			led[2]		<= 1;
+			refresh		<= 1;
+		end
+
+		if(gpu_mem_en && gpu_mem_wr)
+			led[3]		<= 1;
+
+    end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // TODO: Other logic
 
     always @(*) begin
-		led[3]		<= switch_debounced[3] ^ switch_debounced[2] ^ switch_debounced[1];	//prevent warnings
-		led[2]		<= button_debounced[3] ^ button_debounced[2] ^ button_debounced[1];
-
-		led[1]		<= ready;
-		led[0]		<= power_state;
-
-		refresh		<= button_rising[0];
+		led[0]		<= switch_debounced[1] ^ button_debounced[3] ^ button_debounced[2];
     end
 
 endmodule
