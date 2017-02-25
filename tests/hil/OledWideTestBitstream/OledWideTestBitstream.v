@@ -169,10 +169,18 @@ module OledWideTestBitstream(
     reg[3:0]	gpu_cmd			= GPU_OP_NOP;
     wire		gpu_cmd_done;
 
-    reg[6:0]	left			= 10;		//random initial coordinates
-    reg[6:0]	right			= 63;
-    reg[4:0]	top				= 13;
-    reg[4:0]	bottom			= 25;
+	/*
+		Y 1/30 are correct (one empty space above/below)
+
+		X
+
+		X seems to be shifted by 8 pixels. 120-127 is far left of display
+		0-7 is to the right of that, 8-15 is right of that, etc
+	 */
+    reg[6:0]	left			= 0;
+    reg[6:0]	right			= 7;
+    reg[4:0]	top				= 1;
+    reg[4:0]	bottom			= 30;
 
     Minimal2DGPU #(
 		.FRAMEBUFFER_WIDTH(128),
@@ -258,6 +266,12 @@ module OledWideTestBitstream(
 		//Left-hand switches set fg/bg colors
 		bg_color		<= switch_debounced[3];
 		fg_color		<= switch_debounced[2];
+
+		//Move the rectangle
+		if(button_rising[2]) begin
+			left		<= left + 7'd16;
+			right		<= right + 7'd16;
+		end
 
 		//Refresh the display whenever a command completes
 		if(gpu_cmd_done) begin
