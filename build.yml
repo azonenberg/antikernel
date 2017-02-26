@@ -37,7 +37,7 @@ recursive_config:
 
     # Target architectures (default for PC stuff, firmware will override)
     arches:
-        - i386-linux-gnu
+        #- i386-linux-gnu
         - x86_64-linux-gnu
 
     # Generic flags that apply everywhere
