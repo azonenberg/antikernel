@@ -3,10 +3,10 @@
 	url = git@github.com:azonenberg/jtaghal.git
 [submodule "src/log"]
 	path = src/log
-	url = git@github.com:azonenberg/logtools.git
+	url = https://github.com/azonenberg/logtools.git
 [submodule "src/xptools"]
 	path = src/xptools
-	url = git@github.com:azonenberg/xptools.git
+	url = https://github.com/azonenberg/xptools.git
 [submodule "antikernel-ipcores"]
 	path = antikernel-ipcores
 	url = git@github.com:azonenberg/antikernel-ipcores
