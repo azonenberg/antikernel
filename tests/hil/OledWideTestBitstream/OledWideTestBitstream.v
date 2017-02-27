@@ -167,20 +167,14 @@ module OledWideTestBitstream(
 
     reg			gpu_cmd_en		= 0;
     reg[3:0]	gpu_cmd			= GPU_OP_NOP;
+    reg[7:0]	gpu_cmd_char	= " ";
     wire		gpu_cmd_done;
+    wire		gpu_cmd_fail;
 
-	/*
-		Y 1/30 are correct (one empty space above/below)
-
-		X
-
-		X seems to be shifted by 8 pixels. 120-127 is far left of display
-		0-7 is to the right of that, 8-15 is right of that, etc
-	 */
     reg[6:0]	left			= 0;
-    reg[6:0]	right			= 7;
-    reg[4:0]	top				= 1;
-    reg[4:0]	bottom			= 30;
+    reg[6:0]	right			= 0;
+    reg[4:0]	top				= 0;
+    reg[4:0]	bottom			= 0;
 
     Minimal2DGPU #(
 		.FRAMEBUFFER_WIDTH(128),
@@ -205,7 +199,9 @@ module OledWideTestBitstream(
 
 		.cmd_en(gpu_cmd_en),
 		.cmd(gpu_cmd),
-		.cmd_done(gpu_cmd_done)
+		.cmd_char(gpu_cmd_char),
+		.cmd_done(gpu_cmd_done),
+		.cmd_fail(gpu_cmd_fail)
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -243,7 +239,34 @@ module OledWideTestBitstream(
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Sample text ROM
+
+	reg[4:0] text_rom_addr = 0;
+    reg[7:0] text_rom[31:0];
+
+    initial begin
+		text_rom[0] <= "I";
+		text_rom[1] <= "P";
+		text_rom[2] <= ":";
+		text_rom[3] <= "1";
+		text_rom[4] <= "0";
+		text_rom[5] <= ".";
+		text_rom[6] <= "0";
+		text_rom[7] <= ".";
+		text_rom[8] <= "0";
+		text_rom[9] <= ".";
+		text_rom[10] <= "4";
+		text_rom[11] <= "2";
+    end
+
+    always @(*) begin
+		gpu_cmd_char	<= text_rom[text_rom_addr];
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // GPU control logic
+
+    reg	 text_busy			= 0;
 
     always @(posedge clk_bufg) begin
 
@@ -251,36 +274,89 @@ module OledWideTestBitstream(
 		gpu_cmd			<= GPU_OP_NOP;
 		refresh			<= 0;
 
-		//Wipe the framebuffer
-		if(button_rising[0]) begin
-			gpu_cmd		<= GPU_OP_CLEAR;
-			gpu_cmd_en	<= 1;
-		end
-
-		//Draw a rectangle
-		if(button_rising[1]) begin
-			gpu_cmd		<= GPU_OP_RECT;
-			gpu_cmd_en	<= 1;
-		end
-
 		//Left-hand switches set fg/bg colors
 		bg_color		<= switch_debounced[3];
 		fg_color		<= switch_debounced[2];
 
-		//Move the rectangle
-		if(button_rising[2]) begin
-			left		<= left + 7'd16;
-			right		<= right + 7'd16;
+		//Wipe the framebuffer
+		if(button_rising[0]) begin
+			gpu_cmd		<= GPU_OP_CLEAR;
+			gpu_cmd_en	<= 1;
+			led[2]		<= 0;
 		end
 
-		//Refresh the display whenever a command completes
-		if(gpu_cmd_done) begin
-			led[2]		<= 1;
+		//Draw a rectangle
+		//TODO: seems to have a bug with trailing stuff on the x axis in the hlines?
+		if(button_rising[1]) begin
+			gpu_cmd		<= GPU_OP_RECT;
+			gpu_cmd_en	<= 1;
+
+			left		<= 2;
+			top			<= 18;
+
+			right		<= 126;
+			bottom		<= 30;
+
+		end
+
+		//Draw a simple text string
+		if(button_rising[2]) begin
+			text_busy	<= 1;
+
+			gpu_cmd		<= GPU_OP_CHAR;
+			gpu_cmd_en	<= 1;
+
+			left		<= 0;
+			top			<= 0;
+
+		end
+
+		//Continue drawing more text
+		if(gpu_cmd_done && text_busy) begin
+
+			//If we just did the last character, stop and refresh
+			if(text_rom_addr == 11) begin
+				led[0]		<= 1;
+				refresh		<= 1;
+				text_busy	<= 0;
+			end
+
+			//Nope, move along and keep going
+			else begin
+				left			<= left + 7'd10;		//TODO: get font width from GPU
+				text_rom_addr	<= text_rom_addr + 1'h1;
+
+				gpu_cmd			<= GPU_OP_CHAR;
+				gpu_cmd_en		<= 1;
+			end
+
+		end
+
+		//For anything but text refresh after the command completes
+		if(gpu_cmd_done && !text_busy) begin
+			led[1]		<= 1;
 			refresh		<= 1;
 		end
 
-		if(gpu_mem_en && gpu_mem_wr)
-			led[3]		<= 1;
+		/*
+		//Draw some text (for now just one button)
+		if(button_rising[2]) begin
+
+			gpu_cmd			<= GPU_OP_CHAR;
+			gpu_cmd_en		<= 1;
+
+			gpu_cmd_char	<= "A";
+
+			left			<= 8;
+			top				<= 6;
+			//right/bottom ignored
+
+		end
+		*/
+
+		//Note if a command fails
+		if(gpu_cmd_fail)
+			led[2]		<= 1;
 
     end
 
@@ -288,7 +364,7 @@ module OledWideTestBitstream(
     // TODO: Other logic
 
     always @(*) begin
-		led[0]		<= switch_debounced[1] ^ button_debounced[3] ^ button_debounced[2];
+		led[3]		<= switch_debounced[1] ^ button_debounced[3] ^ button_debounced[2];
     end
 
 endmodule
