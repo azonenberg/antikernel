@@ -391,7 +391,7 @@ module OledWideTestBitstream(
 			//Go back to counting before doing more stuff
 			2: begin
 				if(offset == 20) begin
-					offset				<= 20;
+					offset				<= 19;
 					dir					<= 0;
 				end
 				else if(offset == 0) begin
