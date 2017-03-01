@@ -169,6 +169,7 @@ module OledWideTestBitstream(
     reg[3:0]	gpu_cmd			= GPU_OP_NOP;
     reg[7:0]	gpu_cmd_char	= " ";
     wire[3:0]	gpu_cmd_char_width;
+    wire[4:0]	gpu_cmd_char_height;
     wire		gpu_cmd_done;
     wire		gpu_cmd_fail;
 
@@ -202,6 +203,7 @@ module OledWideTestBitstream(
 		.cmd(gpu_cmd),
 		.cmd_char(gpu_cmd_char),
 		.cmd_char_width(gpu_cmd_char_width),
+		.cmd_char_height(gpu_cmd_char_height),
 		.cmd_done(gpu_cmd_done),
 		.cmd_fail(gpu_cmd_fail)
 	);
@@ -250,38 +252,40 @@ module OledWideTestBitstream(
 		text_rom[0] <= "I";
 		text_rom[1] <= "P";
 		text_rom[2] <= ":";
-		text_rom[3] <= "1";
-		text_rom[4] <= "0";
-		text_rom[5] <= ".";
-		text_rom[6] <= "0";
-		text_rom[7] <= ".";
-		text_rom[8] <= "0";
-		text_rom[9] <= ".";
-		text_rom[10] <= "4";
-		text_rom[11] <= "2";
-		text_rom[12] <= "\n";
+		text_rom[3] <= " ";
+		text_rom[4] <= "1";
+		text_rom[5] <= "0";
+		text_rom[6] <= ".";
+		text_rom[7] <= "0";
+		text_rom[8] <= ".";
+		text_rom[9] <= "0";
+		text_rom[10] <= ".";
+		text_rom[11] <= "4";
+		text_rom[12] <= "2";
+		text_rom[13] <= "\n";
 
-		text_rom[13] <= "M";
-		text_rom[14] <= "A";
-		text_rom[15] <= "C";
-		text_rom[16] <= ":";
-		text_rom[17] <= "0";
-		text_rom[18] <= "0";
-		text_rom[19] <= ":";
-		text_rom[20] <= "2";
-		text_rom[21] <= "0";
-		text_rom[22] <= ":";
-		text_rom[23] <= "9";
-		text_rom[24] <= "1";
-		text_rom[25] <= ":";
-		text_rom[26] <= "4";
-		text_rom[27] <= "1";
-		text_rom[28] <= ":";
-		text_rom[29] <= "4";
-		text_rom[30] <= "1";
-		text_rom[31] <= ":";
-		text_rom[32] <= "4";
-		text_rom[33] <= "1";
+		text_rom[14] <= "M";
+		text_rom[15] <= "A";
+		text_rom[16] <= "C";
+		text_rom[17] <= ":";
+		text_rom[18] <= " ";
+		text_rom[19] <= "0";
+		text_rom[20] <= "0";
+		text_rom[21] <= ":";
+		text_rom[22] <= "2";
+		text_rom[23] <= "0";
+		text_rom[24] <= ":";
+		text_rom[25] <= "9";
+		text_rom[26] <= "1";
+		text_rom[27] <= ":";
+		text_rom[28] <= "4";
+		text_rom[29] <= "1";
+		text_rom[30] <= ":";
+		text_rom[31] <= "4";
+		text_rom[32] <= "1";
+		text_rom[33] <= ":";
+		text_rom[34] <= "4";
+		text_rom[35] <= "1";
 
     end
 
@@ -293,7 +297,14 @@ module OledWideTestBitstream(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // GPU control logic
 
-    reg	 text_busy			= 0;
+	reg[1:0]	state		= 0;
+    reg[4:0]	offset		= 0;
+    reg[23:0]	count		= 1;
+    reg			dir			= 0;
+
+	//GPU provides character width so we can do proportional fonts
+	//Add one extra space between characters so it doesn't look stupidly dense
+    wire[7:0]	next_char_x	= left + gpu_cmd_char_width + 1'h1;
 
     always @(posedge clk_bufg) begin
 
@@ -301,95 +312,108 @@ module OledWideTestBitstream(
 		gpu_cmd			<= GPU_OP_NOP;
 		refresh			<= 0;
 
+		//Right/bottom aren't actually used for anything
+		//For now, bump them on button presses to avoid them being optimized out
+		if(button_rising[0])
+			right 		<= right + 1'h1;
+		if(button_rising[1])
+			bottom 		<= bottom + 1'h1;
+
 		//Left-hand switches set fg/bg colors
 		bg_color		<= switch_debounced[3];
 		fg_color		<= switch_debounced[2];
 
-		//Reset pointer when we redraw
-		if(refresh)
-			text_rom_addr	<= 0;
+		if(!power_state)
+			state		<= 3;
 
-		//Wipe the framebuffer
-		if(button_rising[0]) begin
-			gpu_cmd		<= GPU_OP_CLEAR;
-			gpu_cmd_en	<= 1;
-			led[2]		<= 0;
-		end
+		case(state)
 
-		//Draw a rectangle
-		//TODO: seems to have a bug with trailing stuff on the x axis in the hlines?
-		if(button_rising[1]) begin
-			gpu_cmd		<= GPU_OP_RECT;
-			gpu_cmd_en	<= 1;
+			//Bump counter. Clear framebuffer when it wraps
+			0: begin
 
-			left		<= 2;
-			top			<= 18;
+				//Prep for drawing the text
+				text_rom_addr	<= 0;
+				top				<= 2;
+				left			<= 2;
+				count			<= count + 1'h1;
 
-			right		<= 126;
-			bottom		<= 30;
-
-		end
-
-		//Draw a simple text string
-		if(button_rising[2]) begin
-			text_busy		<= 1;
-
-			gpu_cmd			<= GPU_OP_CHAR;
-			gpu_cmd_char	<= text_rom_out;
-			gpu_cmd_en		<= 1;
-
-			text_rom_addr	<= 1;
-
-			left			<= 2;
-			top				<= 2;
-
-		end
-
-		//Continue drawing more text
-		if(gpu_cmd_done && text_busy) begin
-
-			//If we just did the last character, stop and refresh
-			if(text_rom_addr == 34) begin
-				led[0]		<= 1;
-				refresh		<= 1;
-				text_busy	<= 0;
-			end
-
-			//Nope, do next char
-			else begin
-
-				//If last char was a newline, go back to start of line
-				//TODO: Have GPU store line height somewhere as part of the font?
-				if(gpu_cmd_char == "\n") begin
-					left			<= 2;
-					top				<= top + 5'd8;
+				if(count == 0) begin
+					gpu_cmd		<= GPU_OP_CLEAR;
+					gpu_cmd_en	<= 1;
+					state		<= 1;
 				end
-
-				//No, just move along
-				//GPU provides character width so we can do proportional fonts
-				//Add one extra space between characters so it doesn't look silly
-				else
-					left			<= left + gpu_cmd_char_width + 1'h1;
-
-				text_rom_addr	<= text_rom_addr + 1'h1;
-
-				gpu_cmd			<= GPU_OP_CHAR;
-				gpu_cmd_char	<= text_rom_out;
-				gpu_cmd_en		<= 1;
-
 			end
 
-		end
+			//Draw the text
+			1: begin
+				if(gpu_cmd_done) begin
 
-		//For anything but text refresh after the command completes
-		if(gpu_cmd_done && !text_busy) begin
-			led[1]		<= 1;
-			refresh		<= 1;
-		end
+					//If we just did the last character, stop and refresh
+					if(text_rom_addr >= 35) begin
+						refresh		<= 1;
+						state		<= 2;
+					end
 
-		//Note if a command fails
-		if(gpu_cmd_fail)
-			led[2]		<= 1;
+					//Nope, still busy
+					else begin
+
+						//Go on to next char
+						text_rom_addr		<= text_rom_addr + 1'h1;
+
+						//Render the text
+						gpu_cmd				<= GPU_OP_CHAR;
+						gpu_cmd_char		<= text_rom_out;
+						gpu_cmd_en			<= 1;
+
+						//If last char was a newline, go back to start of line and scroll
+						if(gpu_cmd_char == "\n") begin
+							left			<= 2 + offset;
+							top				<= top + gpu_cmd_char_height;
+						end
+
+						//No, just move along (unless we're the first char, don't move that!)
+						else if(text_rom_addr != 0)
+							left			<= next_char_x[6:0];
+
+						//Go to end of line right away if the next char would fall off the display
+						//(leave a bit of space so we don't chop stuff)
+						if(next_char_x >= 126) begin
+							refresh		<= 1;
+							state		<= 2;
+							gpu_cmd_en	<= 0;
+						end
+
+					end
+
+				end
+			end
+
+			//Go back to counting before doing more stuff
+			2: begin
+				if(offset == 20) begin
+					offset				<= 20;
+					dir					<= 0;
+				end
+				else if(offset == 0) begin
+					offset				<= 1;
+					dir					<= 1;
+				end
+				else if(dir)
+					offset				<= offset + 1'h1;
+				else
+					offset				<= offset - 1'h1;
+
+				if(!refresh && !ready)
+					state			<= 0;
+			end
+
+			//Hang and wait for display to be turned on
+			3: begin
+				if(power_state)
+					state			<= 0;
+			end
+
+		endcase
 
     end
 
