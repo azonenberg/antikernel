@@ -349,7 +349,7 @@ module OledWideTestBitstream(
 				if(gpu_cmd_done) begin
 
 					//If we just did the last character, stop and refresh
-					if(text_rom_addr >= 35) begin
+					if(text_rom_addr > 35) begin
 						refresh		<= 1;
 						state		<= 2;
 					end
@@ -390,8 +390,8 @@ module OledWideTestBitstream(
 
 			//Go back to counting before doing more stuff
 			2: begin
-				if(offset == 20) begin
-					offset				<= 19;
+				if(offset == 31) begin
+					offset				<= 30;
 					dir					<= 0;
 				end
 				else if(offset == 0) begin
