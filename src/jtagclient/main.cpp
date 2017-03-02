@@ -545,7 +545,7 @@ void ShowUsage()
 		);
 }
 
-#ifndef _WINDOWS
+#ifndef _WIN32
 /**
 	@brief SIGPIPE handler
 
