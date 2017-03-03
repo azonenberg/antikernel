@@ -37,9 +37,9 @@
 
 /*
 	Each request begins with the client sending a uint16_t containing an opcode to the server.
-	
+
 	All ASCII strings are sent as a uint16_t followed by a raw (non-null-terminated) string
- */ 
+ */
 enum nocswitch_opcodes
 {
 	NOCSWITCH_OP_SENDRPC,		//Send an RPC message

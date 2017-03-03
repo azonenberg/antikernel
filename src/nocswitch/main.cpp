@@ -53,9 +53,9 @@ int main(int argc, char* argv[])
 	signal(SIGPIPE, sig_handler);
 	signal(SIGINT, sig_handler);
 	#endif
-	
+
 	int exit_code = 0;
-	
+
 	try
 	{
 		//Global settings
@@ -63,15 +63,15 @@ int main(int argc, char* argv[])
 		unsigned short lport = 0;
 		string server = "localhost";
 		bool nobanner = false;
-		
+
 		//Device index
 		int devnum = 0;
-		
+
 		//Parse command-line arguments
 		for(int i=1; i<argc; i++)
 		{
 			string s(argv[i]);
-			
+
 			if(s == "--help")
 			{
 				ShowUsage();
@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
 						"",
 						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 				}
-				
+
 				port = atoi(argv[++i]);
 			}
 			else if(s == "--lport")
@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
 						"",
 						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 				}
-				
+
 				lport = atoi(argv[++i]);
 			}
 			else if(s == "--server")
@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
 						"",
 						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 				}
-				
+
 				server = argv[++i];
 			}
 			else if(s == "--nobanner")
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
 						"",
 						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 				}
-				
+
 				//TODO: sanity check
 				devnum = atoi(argv[++i]);
 			}
@@ -139,11 +139,11 @@ int main(int argc, char* argv[])
 				return 1;
 			}
 		}
-		
+
 		//Print version number by default
 		if(!nobanner)
 			ShowVersion();
-		
+
 		//Connect to the server
 		NetworkedJtagInterface iface;
 		iface.Connect(server, port);
@@ -151,11 +151,11 @@ int main(int argc, char* argv[])
 		printf("Querying adapter...\n");
 		printf("    Remote JTAG adapter is a %s (serial number \"%s\", userid \"%s\", frequency %.2f MHz)\n",
 			iface.GetName().c_str(), iface.GetSerial().c_str(), iface.GetUserID().c_str(), iface.GetFrequency()/1E6);
-		
+
 		//Initialize the chain
 		printf("Initializing chain...\n");
 		iface.InitializeChain();
-		
+
 		//Get device count and see what we've found
 		printf("Scan chain contains %d devices\n", (int)iface.GetDeviceCount());
 
@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
 				JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 		}
 		printf("Device %2d is a %s\n", devnum, pdev->GetDescription().c_str());
-		
+
 		//Make sure it's an FPGA, if not something is wrong
 		FPGA* pfpga = dynamic_cast<FPGA*>(pdev);
 		if(pfpga == NULL)
@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
 				"",
 				JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 		}
-		
+
 		//Make sure it's configured, if not something is wrong
 		if(!pfpga->IsProgrammed())
 		{
@@ -189,7 +189,7 @@ int main(int argc, char* argv[])
 				"",
 				JtagException::EXCEPTION_TYPE_FIRMWARE);
 		}
-		
+
 		//Probe the FPGA and see if it has any virtual TAPs on board
 		pfpga->ProbeVirtualTAPs();
 		if(!pfpga->HasRPCInterface())
@@ -206,10 +206,10 @@ int main(int argc, char* argv[])
 				"",
 				JtagException::EXCEPTION_TYPE_FIRMWARE);
 		}
-		
+
 		//All is well
 		//TODO: Figure out how to do name server caching
-		
+
 		//Sit back and listen for incoming connections
 		//Create the socket server
 		g_socket.Bind(lport);
@@ -218,11 +218,11 @@ int main(int argc, char* argv[])
 		#ifndef _WINDOWS
 		struct linger sol;
 		sol.l_onoff = 1;
-		sol.l_linger = 0;	
+		sol.l_linger = 0;
 		if(0 != setsockopt(g_socket, SOL_SOCKET, SO_LINGER, (const char*)&sol, sizeof(sol)))
 			printf("[nocswitch] WARNING: Failed to set SOL_LINGER, connection reuse may not be possible\n");
 		#endif
-		
+
 		//Figure out the port number
 		if(lport == 0)
 		{
@@ -249,15 +249,15 @@ int main(int argc, char* argv[])
 			fprintf(fp, "%u\n", kport);
 			fclose(fp);
 		}
-		
+
 		//Get ready to wait for connections
 		g_socket.Listen();
 		fflush(stdout);
-		
+
 		//Start the JTAG thread AFTER creating and binding the socket so we don't have problems with the JTAG interface
 		//mysteriously disappearing on us if the port is already used. Fixes #31.
 		Thread jtag_thread(JtagThreadProc, pdev);
-		
+
 		//Wait for connections
 		std::vector<Thread> threads;
 		std::vector<int> sockets;
@@ -267,7 +267,7 @@ int main(int argc, char* argv[])
 			try
 			{
 				Socket client = g_socket.Accept();
-				
+
 				//Allocate a new address to this node
 				//TODO: Provide interface for querying this address
 				int addr = cnocaddr;
@@ -276,7 +276,7 @@ int main(int argc, char* argv[])
 					printf("All addresses allocated, no new connections possible (see #147)\n");
 				printf("Allocating address 0x%04x to new client\n", addr);
 				fflush(stdout);
-				
+
 				//Spawn a thread to handle this connection
 				ConnectionThreadProcData* data = new ConnectionThreadProcData;
 				data->addr = addr;
@@ -286,23 +286,23 @@ int main(int argc, char* argv[])
 					printf("[nocswitch] WARNING: Failed to set SOL_LINGER on client socket, connection reuse may not be possible\n");
 				#endif
 				sockets.push_back(data->client_socket);
-				
-				threads.push_back(Thread(ConnectionThreadProc, data));				
+
+				threads.push_back(Thread(ConnectionThreadProc, data));
 			}
 			catch(const JtagException& ex)
 			{
 				break;
 			}
 		}
-		
+
 		//We're terminating - wait for client threads to stop
 		for(size_t i=0; i<threads.size(); i++)
 			threads[i].WaitUntilTermination();
-			
+
 		//Wait for JTAG thread to stop
 		jtag_thread.WaitUntilTermination();
 	}
-	
+
 	catch(const JtagException& ex)
 	{
 		printf("%s\n", ex.GetDescription().c_str());
@@ -337,13 +337,13 @@ void sig_handler(int sig)
 	switch(sig)
 	{
 		case SIGINT:
-		
-			printf("[nocswitch] Quitting...\n");		
+
+			printf("[nocswitch] Quitting...\n");
 			close(g_socket);
 			g_socket = -1;
-			g_quitting = true;			
+			g_quitting = true;
 			break;
-			
+
 		case SIGPIPE:
 			//ignore
 			break;

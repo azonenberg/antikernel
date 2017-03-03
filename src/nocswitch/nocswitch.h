@@ -33,7 +33,7 @@
 	@brief Main project include file
  */
 
-#ifndef nocswitch_h 
+#ifndef nocswitch_h
 #define nocswitch_h
 
 #include <stdio.h>

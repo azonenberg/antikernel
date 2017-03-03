@@ -41,18 +41,18 @@ SPLASHFILE_EXPORT void CreateNodes(BuildGraph* graph)
 {
 	//Save some useful variables
 	string srcdir = GetDirOfFile(CanonicalizePath(__FILE__));
-	
+
 	//Find all of the libjtaghal source files
 	vector<string> source_files;
 	FindFilesByExtension(srcdir, ".cpp", source_files);
-	
+
 	//Generic compiler settings
 	CppCompileFlagList cflags;
 	cflags.push_back(new CppStandardFlag(CppStandardFlag::CPP_STANDARD_11));
 	cflags.push_back(new CppOptimizationLevelFlag(CppOptimizationLevelFlag::OPT_LEVEL_NONE));
 	cflags.push_back(new CppDebugInfoFlag);
 	cflags.push_back(new CppProfilingFlag);
-	
+
 	//Multiarch build
 	string arches[]=
 	{
@@ -63,23 +63,23 @@ SPLASHFILE_EXPORT void CreateNodes(BuildGraph* graph)
 	for(size_t i=0; i<sizeof(arches)/sizeof(arches[0]); i++)
 	{
 		string arch = arches[i];
-	
+
 		CppToolchain* toolchain = CppToolchain::CreateDefaultToolchainForArchitectureCached(arch);
-		
+
 		//Linker settings vary slightly by platform
 		CppLinkFlagList lflags;
 		lflags.push_back(new CppLinkProfilingFlag);
 		lflags.push_back(new CppLinkLibraryByTargetNameFlag("jtaghal", graph));
-		
+
 		//for some reason the ARM cross compiler can't recognize that jtaghal pulls in ftd2xx already
 		string ftd2xx_path = FindSharedLibrary("ftd2xx", arch);
 		if(!ftd2xx_path.empty())
 			lflags.push_back(new CppLinkLibraryByPathFlag(ftd2xx_path));
-		
+
 		//On Windows platforms, socket library is non-default
 		if(arch.find("mingw") != string::npos)
 			lflags.push_back(new CppLinkLibraryByNameFlag("ws2_32"));
-		
+
 		//Define the actual library
 		CppExecutableNode::CreateCppExecutableNode(
 			graph,

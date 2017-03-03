@@ -53,14 +53,14 @@ extern bool g_quitting;
 	@brief Thread for handling JTAG operations
  */
 THREAD_PROTOTYPE(JtagThreadProc, _pData)
-{	
+{
 	JtagDevice* pdev = reinterpret_cast<JtagDevice*>(_pData);
 	FPGA* pfpga = dynamic_cast<FPGA*>(pdev);
 	if(pfpga == NULL)
 		THREAD_RETURN(0);
 	RPCNetworkInterface* prif = pfpga->GetRPCNetworkInterface();
 	DMANetworkInterface* pdif = pfpga->GetDMANetworkInterface();
-	
+
 	try
 	{
 		while(!g_quitting)
@@ -77,42 +77,42 @@ THREAD_PROTOTYPE(JtagThreadProc, _pData)
 				while(!g_dsendqueue.empty())
 				{
 					DMAMessage msg = g_dsendqueue.front();
-					
+
 					//Sent, remove from the list
 					if(pdif->SendDMAMessageNonblocking(msg))
 						g_dsendqueue.pop_front();
-					
+
 					//Sender is busy, give up and try later
 					else
 						break;
 				}
 			}
-			
+
 			//Poll for receive data
 			{
 				RPCMessage msg;
 				DMAMessage dmsg;
-								
+
 				if(prif->RecvRPCMessage(msg))
 				{
 					MutexLock lock(g_recvmutex);
 					g_recvqueue[msg.to].push_back(msg);
 				}
-				
+
 				if(pdif->RecvDMAMessage(dmsg))
 				{
 					MutexLock lock(g_recvmutex);
 					g_drecvqueue[dmsg.to].push_back(dmsg);
 				}
 			}
-		}		
+		}
 	}
 	catch(const JtagException& ex)
 	{
 		printf("%s\n", ex.GetDescription().c_str());
 		exit(-1);
 	}
-	
+
 	THREAD_RETURN(0);
 }
 
