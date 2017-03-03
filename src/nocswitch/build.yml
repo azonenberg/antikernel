@@ -35,9 +35,9 @@ nocswitch:
         - main.cpp
         #- ConnectionThread.cpp
 
-    #constants:
-    #    ../jtaghal/jtagd_opcodes.yml:
-    #        - c/enum
+    constants:
+        nocswitch_opcodes.yml:
+            - c/enum
 
     flags:
         - global

@@ -33,6 +33,23 @@ nocswitch_opcodes:
 
     values:
 
-        # Query the name of the JTAG adapter
-        # Server responds with a string (suitable for display only, no specified format).
-        JTAGD_OP_GET_NAME: 00
+        # Send an RPC message
+        NOCSWITCH_OP_SENDRPC: 00
+
+        # Get an RPC message
+        NOCSWITCH_OP_RECVRPC: 01
+
+        # Done, disconnect
+        NOCSWITCH_OP_QUIT: 02
+
+        # Send a DMA message
+        NOCSWITCH_OP_SENDDMA: 03
+
+        # Get a DMA message
+        NOCSWITCH_OP_RECVDMA: 04
+
+        # Query the server for our address
+        NOCSWITCH_OP_GET_ADDR: 05
+
+        # TODO: Request a specific address
+        #NOCSWITCH_OP_ADDR_REQUEST
