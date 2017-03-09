@@ -31,7 +31,7 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Ethernet CRC-32 (derived from easics.be generator)
+	@brief Ethernet CRC-32 (derived from easics.com generator)
 	
 	Original license:
 	
