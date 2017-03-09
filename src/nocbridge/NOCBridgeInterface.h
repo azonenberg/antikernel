@@ -30,30 +30,20 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Main project include file
+	@brief Declaration of NOCBridgeInterface
  */
+#ifndef NOCBridgeInterface_h
+#define NOCBridgeInterface_h
 
-#ifndef nocswitch_h
-#define nocswitch_h
+/**
+	@brief Abstract wrapper for a link to an Antikernel SoC
+ */
+class NOCBridgeInterface
+{
+public:
+	virtual ~NOCBridgeInterface();
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <memory.h>
-#include <string>
-#include <list>
-#include <map>
-#include <atomic>
-#include <signal.h>
-#include <thread>
-
-#include "../jtaghal/jtaghal.h"
-
-#include "../log/log.h"
-#include "../xptools/Socket.h"
-
-#include "nocswitch_opcodes_enum.h"
-
-void JtagThread();
+	virtual uint16_t		AllocateClientAddress() =0;
+};
 
 #endif

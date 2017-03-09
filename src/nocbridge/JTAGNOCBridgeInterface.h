@@ -30,30 +30,24 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Main project include file
+	@brief Declaration of JTAGNOCBridgeInterface
  */
+#ifndef JTAGNOCBridgeInterface_h
+#define JTAGNOCBridgeInterface_h
 
-#ifndef nocswitch_h
-#define nocswitch_h
+/**
+	@brief A NOCBridgeInterface that runs over JTAG
+ */
+class JTAGNOCBridgeInterface : public NOCBridgeInterface
+{
+public:
+	JTAGNOCBridgeInterface();
+	virtual ~JTAGNOCBridgeInterface();
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <memory.h>
-#include <string>
-#include <list>
-#include <map>
-#include <atomic>
-#include <signal.h>
-#include <thread>
+	virtual uint16_t		AllocateClientAddress() =0;
 
-#include "../jtaghal/jtaghal.h"
-
-#include "../log/log.h"
-#include "../xptools/Socket.h"
-
-#include "nocswitch_opcodes_enum.h"
-
-void JtagThread();
+protected:
+	uint16_t	m_nextClientAddress;
+};
 
 #endif

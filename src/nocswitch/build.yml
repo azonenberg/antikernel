@@ -33,14 +33,17 @@ nocswitch:
 
     sources:
         - main.cpp
+        - JtagThread.cpp
         #- ConnectionThread.cpp
 
     constants:
         nocswitch_opcodes.yml:
             - c/enum
 
+    # pthread is optional since not all platforms have it!
     flags:
         - global
+        - library/optional/pthread
         - library/target/jtaghal
         - library/target/log
         - library/target/xptools

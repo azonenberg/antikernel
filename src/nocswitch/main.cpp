@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -33,6 +33,8 @@
 	@brief Main function for nocswitch
  */
 #include "nocswitch.h"
+#include "../jtaghal/UserPID_enum.h"
+#include "../jtaghal/UserVID_enum.h"
 
 using namespace std;
 
@@ -49,12 +51,14 @@ bool g_quitting = false;
 
 int main(int argc, char* argv[])
 {
-	#ifndef _WINDOWS
+	#ifndef _WIN32
 	signal(SIGPIPE, sig_handler);
 	signal(SIGINT, sig_handler);
 	#endif
 
 	int exit_code = 0;
+
+	Severity console_verbosity = Severity::NOTICE;
 
 	try
 	{
@@ -62,29 +66,36 @@ int main(int argc, char* argv[])
 		unsigned short port = 0;
 		unsigned short lport = 0;
 		string server = "localhost";
-		bool nobanner = false;
 
 		//Device index
 		int devnum = 0;
+
+		//Operations to do
+		enum
+		{
+			OP_NORMAL,
+			OP_HELP,
+			OP_VERSION
+		} op = OP_NORMAL;
 
 		//Parse command-line arguments
 		for(int i=1; i<argc; i++)
 		{
 			string s(argv[i]);
 
-			if(s == "--help")
-			{
-				ShowUsage();
-				return 0;
-			}
+			//Let the logger eat its args first
+			if(ParseLoggerArguments(i, argc, argv, console_verbosity))
+				continue;
+
+			else if(s == "--help")
+				op = OP_HELP;
 			else if(s == "--port")
 			{
 				if(i+1 >= argc)
 				{
 					throw JtagExceptionWrapper(
 						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+						"");
 				}
 
 				port = atoi(argv[++i]);
@@ -95,8 +106,7 @@ int main(int argc, char* argv[])
 				{
 					throw JtagExceptionWrapper(
 						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+						"");
 				}
 
 				lport = atoi(argv[++i]);
@@ -107,32 +117,25 @@ int main(int argc, char* argv[])
 				{
 					throw JtagExceptionWrapper(
 						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+						"");
 				}
 
 				server = argv[++i];
 			}
-			else if(s == "--nobanner")
-				nobanner = true;
 			else if(s == "--device")
 			{
 				if(i+1 >= argc)
 				{
 					throw JtagExceptionWrapper(
 						"Not enough arguments",
-						"",
-						JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+						"");
 				}
 
 				//TODO: sanity check
 				devnum = atoi(argv[++i]);
 			}
 			else if(s == "--version")
-			{
-				ShowVersion();
-				return 0;
-			}
+				op = OP_VERSION;
 			else
 			{
 				printf("Unrecognized command-line argument \"%s\", use --help\n", s.c_str());
@@ -140,24 +143,41 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		//Print version number by default
-		if(!nobanner)
-			ShowVersion();
+		//Set up logging
+		g_log_sinks.emplace(g_log_sinks.begin(), new ColoredSTDLogSink(console_verbosity));
+
+		//Do special operations if requested
+		switch(op)
+		{
+			case OP_HELP:
+				ShowUsage();
+				return 0;
+
+			case OP_VERSION:
+				ShowVersion();
+				return 0;
+
+			default:
+				break;
+		}
 
 		//Connect to the server
 		NetworkedJtagInterface iface;
 		iface.Connect(server, port);
-		printf("Connected to JTAG daemon at %s:%d\n", server.c_str(), port);
-		printf("Querying adapter...\n");
-		printf("    Remote JTAG adapter is a %s (serial number \"%s\", userid \"%s\", frequency %.2f MHz)\n",
-			iface.GetName().c_str(), iface.GetSerial().c_str(), iface.GetUserID().c_str(), iface.GetFrequency()/1E6);
+		LogNotice("Connected to JTAG daemon at %s:%d\n", server.c_str(), port);
+		LogVerbose("Querying adapter...\n");
+		{
+			LogIndenter li;
+			LogVerbose("Remote JTAG adapter is a %s (serial number \"%s\", userid \"%s\", frequency %.2f MHz)\n",
+				iface.GetName().c_str(), iface.GetSerial().c_str(), iface.GetUserID().c_str(), iface.GetFrequency()/1E6);
+		}
 
 		//Initialize the chain
-		printf("Initializing chain...\n");
+		LogVerbose("Initializing chain...\n");
 		iface.InitializeChain();
 
 		//Get device count and see what we've found
-		printf("Scan chain contains %d devices\n", (int)iface.GetDeviceCount());
+		LogVerbose("Scan chain contains %d devices\n", (int)iface.GetDeviceCount());
 
 		//Walk the chain and see what we find
 		//No need for mutexing here since the device will lock the high-level interface when necessary
@@ -166,19 +186,20 @@ int main(int argc, char* argv[])
 		{
 			throw JtagExceptionWrapper(
 				"Device is null - unrecognized device ID?",
-				"",
-				JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+				"");
 		}
-		printf("Device %2d is a %s\n", devnum, pdev->GetDescription().c_str());
+		{
+			LogIndenter li;
+			LogVerbose("Device %2d is a %s\n", devnum, pdev->GetDescription().c_str());
+		}
 
 		//Make sure it's an FPGA, if not something is wrong
-		FPGA* pfpga = dynamic_cast<FPGA*>(pdev);
+		JtagFPGA* pfpga = dynamic_cast<JtagFPGA*>(pdev);
 		if(pfpga == NULL)
 		{
 			throw JtagExceptionWrapper(
 				"Device is not an FPGA, no NoC connection possible",
-				"",
-				JtagException::EXCEPTION_TYPE_BOARD_FAULT);
+				"");
 		}
 
 		//Make sure it's configured, if not something is wrong
@@ -186,29 +207,26 @@ int main(int argc, char* argv[])
 		{
 			throw JtagExceptionWrapper(
 				"Device is blank, no NoC connection possible",
-				"",
-				JtagException::EXCEPTION_TYPE_FIRMWARE);
+				"");
 		}
 
-		//Probe the FPGA and see if it has any virtual TAPs on board
-		pfpga->ProbeVirtualTAPs();
-		if(!pfpga->HasRPCInterface())
+		//Probe the FPGA and see if it has a usercode we know about
+		unsigned int vid = 0;
+		unsigned int pid = 0;
+		if(!pfpga->GetUserVIDPID(vid, pid))
 		{
 			throw JtagExceptionWrapper(
-				"No RPC interface found, no NoC connection possible",
-				"",
-				JtagException::EXCEPTION_TYPE_FIRMWARE);
+				"Could not read user VID/PID, no NoC connection possible",
+				"");
 		}
-		if(!pfpga->HasDMAInterface())
+		LogNotice("idVendor  = 0x%06x\n", vid);
+		LogNotice("idProduct = 0x%02x\n", pid);
+		if( (vid != VID_AZONENBERG) || (pid != PID_AZONENBERG_ANTIKERNEL_NOC) )
 		{
 			throw JtagExceptionWrapper(
-				"No DMA interface found, no NoC connection possible",
-				"",
-				JtagException::EXCEPTION_TYPE_FIRMWARE);
+				"Invalid user VID/PID, no NoC connection possible",
+				"");
 		}
-
-		//All is well
-		//TODO: Figure out how to do name server caching
 
 		//Sit back and listen for incoming connections
 		//Create the socket server
@@ -220,9 +238,10 @@ int main(int argc, char* argv[])
 		sol.l_onoff = 1;
 		sol.l_linger = 0;
 		if(0 != setsockopt(g_socket, SOL_SOCKET, SO_LINGER, (const char*)&sol, sizeof(sol)))
-			printf("[nocswitch] WARNING: Failed to set SOL_LINGER, connection reuse may not be possible\n");
+			LogWarning("Failed to set SOL_LINGER, connection reuse may not be possible\n");
 		#endif
 
+		/*
 		//Figure out the port number
 		if(lport == 0)
 		{
@@ -249,15 +268,16 @@ int main(int argc, char* argv[])
 			fprintf(fp, "%u\n", kport);
 			fclose(fp);
 		}
+		*/
 
 		//Get ready to wait for connections
 		g_socket.Listen();
-		fflush(stdout);
 
 		//Start the JTAG thread AFTER creating and binding the socket so we don't have problems with the JTAG interface
-		//mysteriously disappearing on us if the port is already used. Fixes #31.
-		Thread jtag_thread(JtagThreadProc, pdev);
+		//mysteriously disappearing on us if the port is already used.
+		thread jtag(JtagThread/*, pdev*/);
 
+		/*
 		//Wait for connections
 		std::vector<Thread> threads;
 		std::vector<int> sockets;
@@ -298,14 +318,15 @@ int main(int argc, char* argv[])
 		//We're terminating - wait for client threads to stop
 		for(size_t i=0; i<threads.size(); i++)
 			threads[i].WaitUntilTermination();
+		*/
 
 		//Wait for JTAG thread to stop
-		jtag_thread.WaitUntilTermination();
+		jtag.join();
 	}
 
 	catch(const JtagException& ex)
 	{
-		printf("%s\n", ex.GetDescription().c_str());
+		LogError("%s\n", ex.GetDescription().c_str());
 		exit_code = 1;
 	}
 
@@ -316,32 +337,32 @@ int main(int argc, char* argv[])
 
 void ShowUsage()
 {
-	printf(
+	LogNotice(
 		"Usage: nocswitch [args]\n"
 		"\n"
 		"General arguments:\n"
 		"    --help                                           Displays this message and exits.\n"
-		"    --lport PORT                                     Specifies the port number to listen on (defaults to 50124)\n"
-		"    --nobanner                                       Do not print version number on startup.\n"
-		"    --port PORT                                      Specifies the jtagd port number to connect to (defaults to 50123)\n"
-		"    --server [hostname]                              Specifies the hostname of the jtagd server to connect to (defaults to localhost).\n"
+		"    --lport PORT                                     Specifies the port number to listen on\n"
+		"    --port PORT                                      Specifies the jtagd port number to connect to\n"
+		"    --server [hostname]                              Specifies the hostname of the jtagd server to connect to.\n"
 		"    --device [index]                                 Specifies the index of the device to use.\n"
 		"    --version                                        Prints program version number and exits.\n"
 		"\n"
 		);
 }
 
-#ifndef _WINDOWS
+#ifndef _WIN32
 void sig_handler(int sig)
 {
 	switch(sig)
 	{
 		case SIGINT:
-
+			/*
 			printf("[nocswitch] Quitting...\n");
 			close(g_socket);
 			g_socket = -1;
 			g_quitting = true;
+			*/
 			break;
 
 		case SIGPIPE:
@@ -356,12 +377,11 @@ void sig_handler(int sig)
  */
 void ShowVersion()
 {
-	printf(
-		"Emulated NoC switch [SVN rev %s] by Andrew D. Zonenberg.\n"
+	LogNotice(
+		"Antikernel JTAG bridge by Andrew D. Zonenberg.\n"
 		"\n"
 		"License: 3-clause (\"new\" or \"modified\") BSD.\n"
 		"This is free software: you are free to change and redistribute it.\n"
 		"There is NO WARRANTY, to the extent permitted by law.\n"
-		"\n"
-		, SVNVERSION);
+		"\n");
 }

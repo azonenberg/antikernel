@@ -30,30 +30,14 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Main project include file
+	@brief Implementation of NOCBridgeInterface
  */
+#include "nocbridge.h"
 
-#ifndef nocswitch_h
-#define nocswitch_h
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Construction / destruction
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <memory.h>
-#include <string>
-#include <list>
-#include <map>
-#include <atomic>
-#include <signal.h>
-#include <thread>
+NOCBridgeInterface::~NOCBridgeInterface()
+{
 
-#include "../jtaghal/jtaghal.h"
-
-#include "../log/log.h"
-#include "../xptools/Socket.h"
-
-#include "nocswitch_opcodes_enum.h"
-
-void JtagThread();
-
-#endif
+}

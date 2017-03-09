@@ -32,16 +32,17 @@ nocbridge:
     type:           shlib
 
     constants:
-
-        # RPC type fields
         ../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver_types.yml:
             - c/enum
 
     sources:
         - nocbridge.cpp
+        - JTAGNOCBridgeInterface.cpp
+        - NOCBridgeInterface.cpp
         - RPCMessage.cpp
 
     flags:
         - global
         - output/reloc
         - library/target/log
+        - library/target/jtaghal

@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -35,6 +35,7 @@
 #include "nocswitch.h"
 #include "../jtaghal/jtaghal.h"
 
+/*
 using namespace std;
 
 //Send queue - just a FIFO
@@ -48,12 +49,16 @@ std::map<int, std::list<RPCMessage> > g_recvqueue;
 std::map<int, std::list<DMAMessage> > g_drecvqueue;
 
 extern bool g_quitting;
+*/
 
 /**
 	@brief Thread for handling JTAG operations
  */
-THREAD_PROTOTYPE(JtagThreadProc, _pData)
+void JtagThread()
 {
+	LogDebug("hai from jtag thread\n");
+
+	/*
 	JtagDevice* pdev = reinterpret_cast<JtagDevice*>(_pData);
 	FPGA* pfpga = dynamic_cast<FPGA*>(pdev);
 	if(pfpga == NULL)
@@ -114,5 +119,6 @@ THREAD_PROTOTYPE(JtagThreadProc, _pData)
 	}
 
 	THREAD_RETURN(0);
+	*/
 }
 

@@ -38,6 +38,9 @@
 
 #include "RPCMessage.h"
 
+#include "NOCBridgeInterface.h"
+#include "JTAGNOCBridgeInterface.h"
+
 /**
 	@brief A single on-chip debug frame (TODO: move to separate file?)
  */
