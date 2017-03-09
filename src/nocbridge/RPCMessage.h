@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -42,40 +42,40 @@
 /**
 	@brief A single packet on the RPCv2 network
 
-	The RPC network is a packet-switched NoC intended for low-latency control-plane operations in which high (25%) 
+	The RPC network is a packet-switched NoC intended for low-latency control-plane operations in which high (25%)
 	protocol overhead is acceptable as long as latency is minimized.
-		
+
 	Reliable, in-order delivery is guaranteed by the network.
-	
-	\ingroup libjtaghal	
+
+	\ingroup libjtaghal
  */
 class RPCMessage
 {
 public:
 	RPCMessage();
-	
+
 	///Source address
 	uint16_t from;
-	
+
 	///Destination address
 	uint16_t to;
-	
+
 	///RPC call number or IRQ number
 	uint8_t callnum;
-	
+
 	///Type
 	unsigned int type;
-	
+
 	///Application-layer data. Note that only the low 21 bits of data[0] are transmitted; the high 11 must be all zeros.
 	uint32_t data[3];
-	
-	void Pack(unsigned char* buf) const; 
-	void Pack(uint32_t* buf) const; 
+
+	void Pack(unsigned char* buf) const;
+	void Pack(uint32_t* buf) const;
 	void Unpack(unsigned char* buf);
-	void Unpack(uint32_t* buf); 
-	
+	void Unpack(uint32_t* buf);
+
 	std::string Format() const;
-	
+
 	bool operator==(const RPCMessage& rhs) const;
 };
 

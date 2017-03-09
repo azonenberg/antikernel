@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -75,7 +75,7 @@ void RPCMessage::Pack(unsigned char* buf) const
 			"",
 			JtagException::EXCEPTION_TYPE_GIGO);
 	}
-	
+
 	buf[0] = from >> 8;
 	buf[1] = from & 0xff;
 	buf[2] = to >> 8;
@@ -154,7 +154,7 @@ std::string RPCMessage::Format() const
 		stype = "Host unreachable";
 		break;
 	}
-	
+
 	char outbuf[1024];
 	snprintf(
 		outbuf,
@@ -167,6 +167,6 @@ std::string RPCMessage::Format() const
 		data[0],
 		data[1],
 		data[2]);
-		
+
 	return std::string(outbuf);
 }
