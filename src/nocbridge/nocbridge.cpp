@@ -32,47 +32,13 @@
 	@author Andrew D. Zonenberg
 	@brief Implementation of misc noc bridge stuff that has to go somewhere
  */
-
-#include "jtaghal.h"
-#include "XilinxFPGA.h"
-
+#include "nocbridge.h"
+//#include "jtaghal.h"
+//#include "XilinxFPGA.h"
 
 using namespace std;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Construction / destruction
-
-/**
-	@brief Initializes this device
-
-	@param idcode	The ID code of this device
-	@param iface	The JTAG adapter this device was discovered on
-	@param pos		Position in the chain that this device was discovered
- */
-XilinxFPGA::XilinxFPGA(unsigned int idcode, JtagInterface* iface, size_t pos)
-: XilinxDevice(idcode, iface, pos)
-{
-	m_bHasRPCInterface = false;
-	m_bHasDMAInterface = false;
-	m_sequence = false;
-	m_credits = 0;
-}
-
-/**
-	@brief Default virtual destructor
- */
-XilinxFPGA::~XilinxFPGA()
-{
-	for(auto x : m_ocdrxframes)
-		delete x;
-	m_ocdrxframes.clear();
-}
-
-bool XilinxFPGA::HasIndirectFlashSupport()
-{
-	return true;
-}
-
+/*
 void XilinxFPGA::ProgramIndirect(
 	ByteArrayFirmwareImage* image,
 	int buswidth,
@@ -136,13 +102,11 @@ void XilinxFPGA::ProgramIndirect(
 	for(unsigned int sec=0; sec<sectorlen; sec++)
 		iface->RPCFunctionCallWithTimeout(faddr, NOR_PAGE_ERASE, 0, base_address + sec*4096, 0, rxm, 5);
 
-	/*
 	//Debug code: erase the whole chip and stop
 	//TODO: Make a function for doing this
-	for(unsigned int sec=0; sec<sector_count; sec++)
-		iface->RPCFunctionCallWithTimeout(faddr, NOR_PAGE_ERASE, 0, sec*4096, 0, rxm, 5);
-	return;
-	*/
+	//for(unsigned int sec=0; sec<sector_count; sec++)
+	//	iface->RPCFunctionCallWithTimeout(faddr, NOR_PAGE_ERASE, 0, sec*4096, 0, rxm, 5);
+	//return;
 
 	printf("    Programming...\n");
 	for(unsigned int i=0; i<nmax; i+=64)
@@ -193,10 +157,12 @@ void XilinxFPGA::ProgramIndirect(
 			JtagException::EXCEPTION_TYPE_BOARD_FAULT);
 	}
 }
+*/
 
 /**
 	@brief Loads an indirect programming image suitable for the given bus width
  */
+/*
 uint16_t XilinxFPGA::LoadIndirectProgrammingImage(int buswidth, std::string image_fname)
 {
 	//Only support QSPI for now
@@ -330,10 +296,11 @@ DMANetworkInterface* XilinxFPGA::GetDMANetworkInterface()
 {
 	return static_cast<DMANetworkInterface*> (this);
 }
-
+*/
 /**
 	@brief Push all pending OCD operations to the device and get data back
  */
+/*
 void XilinxFPGA::OCDPush()
 {
 	//Make room for receive data
@@ -412,15 +379,13 @@ void XilinxFPGA::OCDPush()
 		//If it's a keepalive, don't waste buffer space... just update credits etc
 		if(type == JTAG_FRAME_TYPE_KEEPALIVE)
 		{
-			/*
-			static unsigned int old = 0;
-			if(old != m_ocdrxbuf[2])
-			{
-				printf("Keepalive: data = %08x\n", m_ocdrxbuf[2]);
-				fflush(stdout);
-				old = m_ocdrxbuf[2];
-			}
-			*/
+			//static unsigned int old = 0;
+			//if(old != m_ocdrxbuf[2])
+			//{
+			//	printf("Keepalive: data = %08x\n", m_ocdrxbuf[2]);
+			//	fflush(stdout);
+			//	old = m_ocdrxbuf[2];
+			//}
 		}
 
 		//No, normal packet but we got the whole frame. Store it.
@@ -439,7 +404,8 @@ void XilinxFPGA::OCDPush()
 		m_ocdrxbuf.erase(m_ocdrxbuf.begin(), m_ocdrxbuf.begin() + 2 + len);
 	}
 }
-
+*/
+/*
 void XilinxFPGA::ProbeVirtualTAPs()
 {
 	//TODO: Figure out how to stream if there's >1 device in the chain
@@ -512,11 +478,9 @@ bool XilinxFPGA::HasRPCInterface()
 
 unsigned int XilinxFPGA::GetActualCreditCount()
 {
-	/*
-		The available buffer space on the board is the credit count in this frame, minus the number of words sent
-		since that sequence number. One credit is required for the header, then N for N layer-2 data words. The preamble
-		does not use buffer space.
-	 */
+	//The available buffer space on the board is the credit count in this frame, minus the number of words sent
+	//since that sequence number. One credit is required for the header, then N for N layer-2 data words. The preamble
+	//does not use buffer space.
 
 	unsigned int credits = m_credits;
 
@@ -677,4 +641,4 @@ bool XilinxFPGA::RecvDMAMessage(DMAMessage& rx_msg)
 
 	return false;
 }
-
+*/

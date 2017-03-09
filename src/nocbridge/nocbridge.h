@@ -39,7 +39,7 @@
 /**
 	@brief A single on-chip debug frame (TODO: move to separate file?)
  */
-
+/*
 class AntikernelOCDFrame
 {
 public:
@@ -119,5 +119,6 @@ unsigned int GetActualCreditCount();
 ///pair(sequence, size)
 std::vector< std::pair<unsigned int, unsigned int> > m_pendingSendCounts;
 };
+*/
 
 #endif
