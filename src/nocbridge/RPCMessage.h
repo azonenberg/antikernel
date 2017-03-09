@@ -49,6 +49,7 @@
 
 	\ingroup libjtaghal
  */
+/*
 class RPCMessage
 {
 public:
@@ -78,5 +79,5 @@ public:
 
 	bool operator==(const RPCMessage& rhs) const;
 };
-
+*/
 #endif

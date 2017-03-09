@@ -33,6 +33,9 @@
 	@brief Implementation of RPCMessage
  */
 
+#include "nocbridge.h"
+
+/*
 #include "jtaghal.h"
 #include <stdio.h>
 #include "RPCMessage.h"
@@ -123,10 +126,11 @@ void RPCMessage::Unpack(unsigned char* buf)
 	data[1] = (buf[8] << 24) | (buf[9] << 16) | (buf[10] << 8) | buf[11];
 	data[2] = (buf[12] << 24) | (buf[13] << 16) | (buf[14] << 8) | buf[15];
 }
-
+*/
 /**
 	@brief Returns a printable version of the message
  */
+/*
 std::string RPCMessage::Format() const
 {
 	const char* stype = "Reserved";
@@ -170,3 +174,4 @@ std::string RPCMessage::Format() const
 
 	return std::string(outbuf);
 }
+*/

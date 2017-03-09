@@ -38,8 +38,7 @@ nocbridge:
         #    - c/enum
 
     sources:
-
-        # Core infrastructure
+        - nocbridge.cpp
         - RPCMessage.cpp
 
     flags:
