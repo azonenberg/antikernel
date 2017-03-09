@@ -36,6 +36,8 @@
 #ifndef nocbridge_h
 #define nocbridge_h
 
+#include "RPCMessage.h"
+
 /**
 	@brief A single on-chip debug frame (TODO: move to separate file?)
  */

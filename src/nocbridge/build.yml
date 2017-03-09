@@ -31,11 +31,11 @@ nocbridge:
     toolchain:      c++/generic
     type:           shlib
 
-    #constants:
+    constants:
 
-        # NetworkedJtagInterface/jtagd protocol
-        #jtagd_opcodes.yml:
-        #    - c/enum
+        # RPC type fields
+        ../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver_types.yml:
+            - c/enum
 
     sources:
         - nocbridge.cpp

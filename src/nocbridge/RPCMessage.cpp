@@ -34,6 +34,7 @@
  */
 
 #include "nocbridge.h"
+#include "RPCv3Transceiver_types_enum.h"
 
 /*
 #include "jtaghal.h"
