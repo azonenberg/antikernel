@@ -333,7 +333,6 @@ void ShowUsage()
 		"                                                       JTAG adapter. This argument is mandatory.\n"
 		"    --help                                           Displays this message and exits.\n"
 		"    --list                                           Prints a listing of connected adapters and exits.\n"
-		"    --nobanner                                       Do not print version number on startup.\n"
 		"    --port PORT                                      Specifies the port number the daemon should listen on.\n"
 		"    --serial SERIAL_NUM                              Specifies the serial number of the JTAG adapter. This argument is mandatory.\n"
 		);
