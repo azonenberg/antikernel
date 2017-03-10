@@ -35,6 +35,8 @@
 #ifndef JTAGNOCBridgeInterface_h
 #define JTAGNOCBridgeInterface_h
 
+#include <set>
+
 /**
 	@brief A NOCBridgeInterface that runs over JTAG
  */
@@ -44,10 +46,14 @@ public:
 	JTAGNOCBridgeInterface();
 	virtual ~JTAGNOCBridgeInterface();
 
-	virtual uint16_t		AllocateClientAddress() =0;
+	virtual bool AllocateClientAddress(uint16_t& addr);
+	virtual void FreeClientAddress(uint16_t addr);
 
 protected:
-	uint16_t	m_nextClientAddress;
+	void Poll();
+
+	/// Set of free addresses
+	std::set<uint16_t> m_freeAddresses;
 };
 
 #endif

@@ -36,6 +36,8 @@
 #ifndef nocbridge_h
 #define nocbridge_h
 
+#include "../log/log.h"
+
 #include "RPCMessage.h"
 
 #include "NOCBridgeInterface.h"

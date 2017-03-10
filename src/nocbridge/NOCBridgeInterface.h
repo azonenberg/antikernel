@@ -43,7 +43,8 @@ class NOCBridgeInterface
 public:
 	virtual ~NOCBridgeInterface();
 
-	virtual uint16_t		AllocateClientAddress() =0;
+	virtual bool AllocateClientAddress(uint16_t& addr) =0;
+	virtual void FreeClientAddress(uint16_t addr) =0;
 };
 
 #endif

@@ -33,14 +33,71 @@
 	@brief Implementation of JTAGNOCBridgeInterface
  */
 #include "nocbridge.h"
+#include "JtagDebugBridge_addresses_enum.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
 JTAGNOCBridgeInterface::JTAGNOCBridgeInterface()
 {
+	//Populate free list
+	for(unsigned int i = DEBUG_LOW_ADDR; i <= DEBUG_HIGH_ADDR; i++)
+		m_freeAddresses.emplace(i);
 }
 
 JTAGNOCBridgeInterface::~JTAGNOCBridgeInterface()
 {
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Address allocation
+
+bool JTAGNOCBridgeInterface::AllocateClientAddress(uint16_t& addr)
+{
+	//Pop free list, if we have anything there
+	if(m_freeAddresses.empty())
+		return false;
+
+	addr = *m_freeAddresses.begin();
+	m_freeAddresses.erase(addr);
+
+	return true;
+}
+
+void JTAGNOCBridgeInterface::FreeClientAddress(uint16_t addr)
+{
+	//Disable "comparison is always false due to limited range of data type" warnings for here
+	//If DEBUG_*_ADDR are at the low/high ends of the address range some comparisons are pointless
+	//but we need them there to keep the code generic.
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wtype-limits"
+
+	//Warn if we try to do something stupid
+	if( (addr < DEBUG_LOW_ADDR) || (addr > DEBUG_HIGH_ADDR) )
+	{
+		LogWarning("JTAGNOCBridgeInterface: Attempted to free client address %04x, which isn't in the debug subnet\n",
+			addr);
+		return;
+	}
+
+	#pragma GCC diagnostic pop
+
+	//If it's already free, something is funky
+	if(m_freeAddresses.find(addr) != m_freeAddresses.end())
+	{
+		LogWarning("JTAGNOCBridgeInterface: Attempted to free client address %04x, which was already free\n",
+			addr);
+		return;
+	}
+
+	//Nope, we're good
+	m_freeAddresses.emplace(addr);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// The actual JTAG bridge stuff
+
+void JTAGNOCBridgeInterface::Poll()
+{
+
 }
