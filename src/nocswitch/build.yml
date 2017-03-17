@@ -46,4 +46,5 @@ nocswitch:
         - library/optional/pthread
         - library/target/jtaghal
         - library/target/log
+        - library/target/nocbridge
         - library/target/xptools
