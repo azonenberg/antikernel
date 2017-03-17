@@ -47,6 +47,7 @@ JtagBridgeTestBitstream:
     sources:
         - JtagBridgeTestBitstream.v
         - ../../../antikernel-ipcores/debug/JtagDebugBridge.v
+        - ../../../antikernel-ipcores/debug/JtagUserIdentifier.v
         - ../../../antikernel-ipcores/device_abstraction/ClockBuffer.v
         - ../../../antikernel-ipcores/device_abstraction/JtagTAP.v
         - ../../../antikernel-ipcores/processor/zynq/XilinxZynq7CPU.v

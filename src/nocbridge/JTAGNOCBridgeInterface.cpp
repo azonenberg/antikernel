@@ -190,7 +190,7 @@ void JTAGNOCBridgeInterface::Cycle()
 	}
 
 	//Sanity check
-	LogTrace("About to send %d words\n", tx_buf.size());
+	LogTrace("About to send %d words\n", (int)tx_buf.size());
 
 	//Send the actual data
 	//TODO: do split transactions

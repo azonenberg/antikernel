@@ -56,6 +56,7 @@ module JtagBridgeTestBitstream(
     // The debug bridge
 
     JtagDebugBridge bridge(
+		.clk(clk),
 		.led(led)
 	);
 
