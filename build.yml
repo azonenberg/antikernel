@@ -46,11 +46,14 @@ recursive_config:
         - debug/gdb
         - dialect/c++11
 
-    # Generic per-configuration flags
+    # Generic per-configuration flags.
+    # Use asan in debug builds of EVERYTHING!
     configurations:
         debug:
             - optimize/none
             - define/_DEBUG
+            - analysis/sanitize/address
+            - library/optional/asan
         release:
             - optimize/speed
             - define/NDEBUG
