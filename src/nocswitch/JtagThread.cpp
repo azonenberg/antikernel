@@ -34,6 +34,7 @@
  */
 #include "nocswitch.h"
 #include "../jtaghal/jtaghal.h"
+#include "../nocbridge/nocbridge.h"
 
 /*
 using namespace std;
@@ -54,9 +55,21 @@ extern bool g_quitting;
 /**
 	@brief Thread for handling JTAG operations
  */
-void JtagThread()
+void JtagThread(JtagFPGA* pfpga)
 {
-	LogDebug("hai from jtag thread\n");
+	try
+	{
+		JTAGNOCBridgeInterface iface(pfpga);
+		while(!g_quitting)
+		{
+			iface.Cycle();
+			usleep(100 * 1000);	//debug
+		}
+	}
+	catch(const JtagException& ex)
+	{
+		LogError("%s\n", ex.GetDescription().c_str());
+	}
 
 	/*
 	JtagDevice* pdev = reinterpret_cast<JtagDevice*>(_pData);

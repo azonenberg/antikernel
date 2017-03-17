@@ -54,6 +54,8 @@
 
 #include "nocswitch_opcodes_enum.h"
 
-void JtagThread();
+void JtagThread(JtagFPGA* pfpga);
+
+extern bool g_quitting;
 
 #endif

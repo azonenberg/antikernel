@@ -219,14 +219,15 @@ int main(int argc, char* argv[])
 				"Could not read user VID/PID, no NoC connection possible",
 				"");
 		}
-		LogNotice("idVendor  = 0x%06x\n", vid);
-		LogNotice("idProduct = 0x%02x\n", pid);
+		//LogNotice("idVendor  = 0x%06x\n", vid);
+		//LogNotice("idProduct = 0x%02x\n", pid);
 		if( (vid != VID_AZONENBERG) || (pid != PID_AZONENBERG_ANTIKERNEL_NOC) )
 		{
 			throw JtagExceptionWrapper(
 				"Invalid user VID/PID, no NoC connection possible",
 				"");
 		}
+		LogNotice("Detected Antikernel JTAG interface\n");
 
 		//Sit back and listen for incoming connections
 		//Create the socket server
@@ -275,7 +276,7 @@ int main(int argc, char* argv[])
 
 		//Start the JTAG thread AFTER creating and binding the socket so we don't have problems with the JTAG interface
 		//mysteriously disappearing on us if the port is already used.
-		thread jtag(JtagThread/*, pdev*/);
+		thread jtag(JtagThread, pfpga);
 
 		/*
 		//Wait for connections
@@ -357,12 +358,10 @@ void sig_handler(int sig)
 	switch(sig)
 	{
 		case SIGINT:
-			/*
-			printf("[nocswitch] Quitting...\n");
+			LogNotice("Quitting...\n");
 			close(g_socket);
 			g_socket = -1;
 			g_quitting = true;
-			*/
 			break;
 
 		case SIGPIPE:

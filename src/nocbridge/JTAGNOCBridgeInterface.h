@@ -38,19 +38,76 @@
 #include <set>
 
 /**
+	@brief JTAG frame header
+ */
+union AntikernelJTAGFrameHeader
+{
+	struct
+	{
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// FIRST WORD
+
+		/// Sequence number of the frame being acked/nak'd
+		unsigned int ack_seq : 10;
+
+		/// Available buffer space (in words)
+		unsigned int credits : 10;
+
+		/// Sequence number of the frame
+		unsigned int sequence : 10;
+
+		/// 1 if frame contains a negative acknowledgement, 0 otherwise
+		unsigned int nak : 1;
+
+		/// 1 if frame contains an acknowledgement, 0 otherwise
+		unsigned int ack : 1;
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// SECOND WORD
+
+		/// Checksum of the header
+		unsigned int header_checksum : 8;
+
+		/// Reserved, write as zero
+		unsigned int reserved_zero : 11;
+
+		/// Length (in words) of our payload
+		unsigned int length : 10;
+
+		/// 1 if payload is DMA packet, 0 otherwise
+		unsigned int dma : 1;
+
+		/// 1 if payload is RPC packet, 0 otherwise
+		unsigned int rpc : 1;
+
+		/// 1 if we have a payload, 0 otherwise
+		unsigned int payload_present : 1;
+
+	} __attribute__ ((packed)) bits;
+
+	uint32_t words[2];
+	uint8_t bytes[8];
+};
+
+/**
 	@brief A NOCBridgeInterface that runs over JTAG
  */
 class JTAGNOCBridgeInterface : public NOCBridgeInterface
 {
 public:
-	JTAGNOCBridgeInterface();
+	JTAGNOCBridgeInterface(JtagFPGA* pfpga);
 	virtual ~JTAGNOCBridgeInterface();
 
 	virtual bool AllocateClientAddress(uint16_t& addr);
 	virtual void FreeClientAddress(uint16_t addr);
 
+	void Cycle();
+
 protected:
-	void Poll();
+	uint8_t CRC8(uint8_t* data, unsigned int len);
+
+	/// The device we're debugging
+	JtagFPGA* m_fpga;
 
 	/// Set of free addresses
 	std::set<uint16_t> m_freeAddresses;

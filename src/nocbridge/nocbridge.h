@@ -36,7 +36,10 @@
 #ifndef nocbridge_h
 #define nocbridge_h
 
+#include <vector>
+
 #include "../log/log.h"
+#include "../jtaghal/jtaghal.h"
 
 #include "RPCMessage.h"
 
