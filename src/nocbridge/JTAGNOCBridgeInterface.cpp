@@ -89,6 +89,7 @@ JTAGNOCBridgeInterface::JTAGNOCBridgeInterface(JtagFPGA* pfpga)
 
 JTAGNOCBridgeInterface::~JTAGNOCBridgeInterface()
 {
+	m_fpga->ResetToIdle();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -173,12 +174,9 @@ void JTAGNOCBridgeInterface::Cycle()
 	idle_frame.bits.length = 0;					//empty payload
 	idle_frame.bits.reserved_zero = 0;			//nothing here
 
-	FlipEndian32Array(idle_frame.bytes, 8);		//Convert to network byte order
-												//before computing checksum
 	//Calculate checksum for idle frame.
-	//Note that we can't poke the checksum struct field b/c we did an endian shift!
-	//TODO: figure out how to do checksum in host byte order and then endian swap after we compute it?
-	idle_frame.bytes[7] = CRC8(idle_frame.bytes, 7);
+	//TODO: endianness issues abound! Are we doing this right?
+	idle_frame.bits.header_checksum = CRC8(idle_frame.bytes, 7);
 
 	//TODO: Send actual messages here
 
@@ -191,6 +189,8 @@ void JTAGNOCBridgeInterface::Cycle()
 
 	//Sanity check
 	LogTrace("About to send %d words\n", (int)tx_buf.size());
+	for(int i=0; i<4; i++)
+		LogTrace("%08x\n", tx_buf[i]);
 
 	//Send the actual data
 	//TODO: do split transactions
