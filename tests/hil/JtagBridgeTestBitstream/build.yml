@@ -50,4 +50,5 @@ JtagBridgeTestBitstream:
         - ../../../antikernel-ipcores/debug/JtagUserIdentifier.v
         - ../../../antikernel-ipcores/device_abstraction/ClockBuffer.v
         - ../../../antikernel-ipcores/device_abstraction/JtagTAP.v
+        - ../../../antikernel-ipcores/math/CRC8_ATM.v
         - ../../../antikernel-ipcores/processor/zynq/XilinxZynq7CPU.v

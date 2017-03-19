@@ -104,7 +104,7 @@ public:
 	void Cycle();
 
 protected:
-	uint8_t CRC8(uint8_t* data, unsigned int len);
+	uint8_t CRC8(uint32_t* data, unsigned int len);
 
 	/// The device we're debugging
 	JtagFPGA* m_fpga;
