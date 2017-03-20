@@ -189,10 +189,13 @@ void JTAGNOCBridgeInterface::Cycle()
 		tx_buf.push_back(idle_frame.words[1]);
 	}
 
-	//Sanity check
+	//Print out the outbound messages
 	LogTrace("About to send %d words\n", (int)tx_buf.size());
-	for(int i=0; i<4; i++)
+	for(int i=0; i<32; i++)
 		LogTrace("    %08x\n", tx_buf[i]);
+
+	//DEBUG: Corrupt a message halfway through
+	//tx_buf[20] ^= 0x80000000;
 
 	//Send the actual data
 	//TODO: do split transactions
@@ -202,13 +205,25 @@ void JTAGNOCBridgeInterface::Cycle()
 
 	//Print out the first few inbound words
 	LogTrace("Got stuff\n");
-	for(int i=0; i<8; i += 2)
+	for(int i=0; i<64; i += 2)
 	{
 		//Verify the checksum
 		uint8_t expected = CRC8(&rx_buf[i], 7);
 		uint8_t actual = rx_buf[i+1] & 0xff;
 
-		LogTrace("    %08x %08x (%s)\n", rx_buf[i], rx_buf[i+1], (expected == actual) ? "OK" : "CRC FAIL");
+		AntikernelJTAGFrameHeader msg;
+		msg.words[0] = rx_buf[i];
+		msg.words[1] = rx_buf[i+1];
+
+		LogTrace("    %08x %08x (%s): ack=%d, nak=%d, seq=%d, nack = %d\n",
+			rx_buf[i],
+			rx_buf[i+1],
+			(expected == actual) ? "OK" : "CRC FAIL",
+			msg.bits.ack,
+			msg.bits.nak,
+			msg.bits.sequence,
+			msg.bits.ack_seq
+			);
 	}
 }
 
