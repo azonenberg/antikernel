@@ -192,16 +192,24 @@ void JTAGNOCBridgeInterface::Cycle()
 	//Sanity check
 	LogTrace("About to send %d words\n", (int)tx_buf.size());
 	for(int i=0; i<4; i++)
-		LogTrace("%08x\n", tx_buf[i]);
+		LogTrace("    %08x\n", tx_buf[i]);
 
 	//Send the actual data
 	//TODO: do split transactions
 	m_fpga->ScanDR((unsigned char*)&tx_buf[0], (unsigned char*)&rx_buf[0], tx_buf.size() * 32);
 
+	//Process the incoming data
+
 	//Print out the first few inbound words
 	LogTrace("Got stuff\n");
-	for(int i=0; i<4; i++)
-		LogTrace("%08x\n", rx_buf[i]);
+	for(int i=0; i<8; i += 2)
+	{
+		//Verify the checksum
+		uint8_t expected = CRC8(&rx_buf[i], 7);
+		uint8_t actual = rx_buf[i+1] & 0xff;
+
+		LogTrace("    %08x %08x (%s)\n", rx_buf[i], rx_buf[i+1], (expected == actual) ? "OK" : "CRC FAIL");
+	}
 }
 
 /**
