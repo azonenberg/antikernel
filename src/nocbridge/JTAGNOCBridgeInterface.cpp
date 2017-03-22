@@ -181,6 +181,7 @@ void JTAGNOCBridgeInterface::Cycle()
 	//TODO: retransmit logic etc
 
 	//Pad the buffer out to size with idle frames
+	LogTrace("Sending stuff...\n");
 	while(tx_buf.size() <= (tx_buf_len - 2) )
 	{
 		//Sequence number changes for each packet
@@ -193,12 +194,11 @@ void JTAGNOCBridgeInterface::Cycle()
 		//Save packet
 		tx_buf.push_back(idle_frame.words[0]);
 		tx_buf.push_back(idle_frame.words[1]);
-	}
 
-	//Print out the outbound messages
-	LogTrace("About to send %d words\n", (int)tx_buf.size());
-	for(int i=0; i<32; i++)
-		LogTrace("    %08x\n", tx_buf[i]);
+		//only print first few
+		if(tx_buf.size() < 64)
+			PrintMessageHeader(idle_frame);
+	}
 
 	//Send the actual data
 	//TODO: do split transactions
@@ -222,16 +222,7 @@ void JTAGNOCBridgeInterface::Cycle()
 		//Done with headers
 		i += 2;
 
-		//DEBUG log
-		LogTrace("    %08x %08x: ack = %d, nak = %d, seq = %d, nack = %d, payload = %d\n",
-			rx_buf[i],
-			rx_buf[i+1],
-			msg.bits.ack,
-			msg.bits.nak,
-			msg.bits.sequence,
-			msg.bits.ack_seq,
-			msg.bits.payload_present
-			);
+		PrintMessageHeader(msg);
 
 		//Process payload, if we have it
 		if(msg.bits.payload_present)
@@ -243,6 +234,22 @@ void JTAGNOCBridgeInterface::Cycle()
 		if(i >= 63)
 			break;
 	}
+}
+
+/**
+	@brief Print out a message
+ */
+void JTAGNOCBridgeInterface::PrintMessageHeader(const AntikernelJTAGFrameHeader& header)
+{
+	LogTrace("    %08x %08x: ack = %d, nak = %d, seq = %d, nack = %d, payload = %d\n",
+		header.words[0],
+		header.words[1],
+		header.bits.ack,
+		header.bits.nak,
+		header.bits.sequence,
+		header.bits.ack_seq,
+		header.bits.payload_present
+		);
 }
 
 /**

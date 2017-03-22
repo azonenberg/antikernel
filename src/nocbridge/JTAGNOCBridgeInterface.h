@@ -107,6 +107,8 @@ protected:
 	void ComputeHeaderChecksum(AntikernelJTAGFrameHeader& header);
 	bool VerifyHeaderChecksum(AntikernelJTAGFrameHeader header);
 
+	void PrintMessageHeader(const AntikernelJTAGFrameHeader& header);
+
 	uint8_t CRC8(uint32_t* data, unsigned int len);
 
 	/// The device we're debugging
