@@ -104,6 +104,9 @@ public:
 	void Cycle();
 
 protected:
+	void ComputeHeaderChecksum(AntikernelJTAGFrameHeader& header);
+	bool VerifyHeaderChecksum(AntikernelJTAGFrameHeader header);
+
 	uint8_t CRC8(uint32_t* data, unsigned int len);
 
 	/// The device we're debugging
@@ -111,6 +114,9 @@ protected:
 
 	/// Set of free addresses
 	std::set<uint16_t> m_freeAddresses;
+
+	/// Sequence number of the next packet to be sent
+	unsigned int m_nextSequence;
 };
 
 #endif

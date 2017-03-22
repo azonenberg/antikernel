@@ -86,6 +86,9 @@ JTAGNOCBridgeInterface::JTAGNOCBridgeInterface(JtagFPGA* pfpga)
 	LogTrace("Initializing JTAG port\n");
 	pfpga->ResetToIdle();
 	pfpga->SelectUserInstruction(1);
+
+	//Start out sending packets with a zero sequence number
+	m_nextSequence = 0;
 }
 
 JTAGNOCBridgeInterface::~JTAGNOCBridgeInterface()
@@ -164,10 +167,8 @@ void JTAGNOCBridgeInterface::Cycle()
 	//Generate an idle frame we can fill empty space in the TX buffer with
 	//TODO: Send different data once link is up!
 	AntikernelJTAGFrameHeader idle_frame;
-
 	idle_frame.bits.ack = 0;					//not acking anything
 	idle_frame.bits.nak = 0;					//not nacking anything
-	idle_frame.bits.sequence = 0;				//no sequence number
 	idle_frame.bits.credits = 0x3FF;			//we have no limit on buffer space, always report "max"
 	idle_frame.bits.ack_seq = 0;				//not acking anything
 	idle_frame.bits.payload_present = 0;		//no payload
@@ -176,15 +177,20 @@ void JTAGNOCBridgeInterface::Cycle()
 	idle_frame.bits.length = 0;					//empty payload
 	idle_frame.bits.reserved_zero = 0;			//nothing here
 
-	//Calculate checksum for idle frame.
-	//TODO: endianness issues abound! Are we doing this right?
-	idle_frame.bits.header_checksum = CRC8(idle_frame.words, 7);
-
 	//TODO: Send actual messages here
+	//TODO: retransmit logic etc
 
 	//Pad the buffer out to size with idle frames
 	while(tx_buf.size() <= (tx_buf_len - 2) )
 	{
+		//Sequence number changes for each packet
+		idle_frame.bits.sequence = m_nextSequence;	//Sequence number of the outbound packet
+		m_nextSequence ++;
+
+		//Update the CRC for the new headers
+		ComputeHeaderChecksum(idle_frame);
+
+		//Save packet
 		tx_buf.push_back(idle_frame.words[0]);
 		tx_buf.push_back(idle_frame.words[1]);
 	}
@@ -194,37 +200,65 @@ void JTAGNOCBridgeInterface::Cycle()
 	for(int i=0; i<32; i++)
 		LogTrace("    %08x\n", tx_buf[i]);
 
-	//DEBUG: Corrupt a message halfway through
-	//tx_buf[20] ^= 0x80000000;
-
 	//Send the actual data
 	//TODO: do split transactions
 	m_fpga->ScanDR((unsigned char*)&tx_buf[0], (unsigned char*)&rx_buf[0], tx_buf.size() * 32);
 
 	//Process the incoming data
-
-	//Print out the first few inbound words
 	LogTrace("Got stuff\n");
-	for(int i=0; i<64; i += 2)
+	for(int i=0; i<tx_buf_len; )
 	{
-		//Verify the checksum
-		uint8_t expected = CRC8(&rx_buf[i], 7);
-		uint8_t actual = rx_buf[i+1] & 0xff;
-
 		AntikernelJTAGFrameHeader msg;
 		msg.words[0] = rx_buf[i];
 		msg.words[1] = rx_buf[i+1];
 
-		LogTrace("    %08x %08x (%s): ack=%d, nak=%d, seq=%d, nack = %d\n",
+		//TODO: We need to reset link if this happens, handle it
+		if(!VerifyHeaderChecksum(msg))
+		{
+			LogError("Bad header CRC (at offset %d in buffer)\n", i);
+			break;
+		}
+
+		//Done with headers
+		i += 2;
+
+		//DEBUG log
+		LogTrace("    %08x %08x: ack = %d, nak = %d, seq = %d, nack = %d, payload = %d\n",
 			rx_buf[i],
 			rx_buf[i+1],
-			(expected == actual) ? "OK" : "CRC FAIL",
 			msg.bits.ack,
 			msg.bits.nak,
 			msg.bits.sequence,
-			msg.bits.ack_seq
+			msg.bits.ack_seq,
+			msg.bits.payload_present
 			);
+
+		//Process payload, if we have it
+		if(msg.bits.payload_present)
+		{
+			//TODO: print it out etc
+			i += msg.bits.length;
+		}
+
+		if(i >= 63)
+			break;
 	}
+}
+
+/**
+	@brief Calculate the header CRC for an outbound packet
+ */
+void JTAGNOCBridgeInterface::ComputeHeaderChecksum(AntikernelJTAGFrameHeader& header)
+{
+	header.bits.header_checksum = CRC8(header.words, 7);
+}
+
+/**
+	@brief Make sure an inbound packet has a good header CRC
+ */
+bool JTAGNOCBridgeInterface::VerifyHeaderChecksum(AntikernelJTAGFrameHeader header)
+{
+	return CRC8(header.words, 7) == header.bits.header_checksum;
 }
 
 /**
