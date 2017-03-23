@@ -87,8 +87,15 @@ JTAGNOCBridgeInterface::JTAGNOCBridgeInterface(JtagFPGA* pfpga)
 	pfpga->ResetToIdle();
 	pfpga->SelectUserInstruction(1);
 
+	//Switch to SHIFT-DR but don't send any data
+	pfpga->EnterShiftDR();
+
 	//Start out sending packets with a zero sequence number
 	m_nextSequence = 0;
+
+	//Not ACKing anything yet
+	m_acking = 0;
+	m_nextAck = 0;
 }
 
 JTAGNOCBridgeInterface::~JTAGNOCBridgeInterface()
@@ -167,10 +174,10 @@ void JTAGNOCBridgeInterface::Cycle()
 	//Generate an idle frame we can fill empty space in the TX buffer with
 	//TODO: Send different data once link is up!
 	AntikernelJTAGFrameHeader idle_frame;
-	idle_frame.bits.ack = 0;					//not acking anything
+	idle_frame.bits.ack = m_acking;				//Might be ACKing packets
 	idle_frame.bits.nak = 0;					//not nacking anything
 	idle_frame.bits.credits = 0x3FF;			//we have no limit on buffer space, always report "max"
-	idle_frame.bits.ack_seq = 0;				//not acking anything
+	idle_frame.bits.ack_seq = m_nextAck;		//ACK number
 	idle_frame.bits.payload_present = 0;		//no payload
 	idle_frame.bits.rpc = 0;					//no RPC payload
 	idle_frame.bits.dma = 0;					//no DMA payload
@@ -186,7 +193,11 @@ void JTAGNOCBridgeInterface::Cycle()
 	{
 		//Sequence number changes for each packet
 		idle_frame.bits.sequence = m_nextSequence;	//Sequence number of the outbound packet
-		m_nextSequence ++;
+		m_nextSequence = NextSeq(m_nextSequence);
+
+		//TODO: Send proper NAKs:
+		//One NAK with sequence number of the bad packet
+		//then ACK with sequence number of the last good packet (if any)
 
 		//Update the CRC for the new headers
 		ComputeHeaderChecksum(idle_frame);
@@ -202,7 +213,7 @@ void JTAGNOCBridgeInterface::Cycle()
 
 	//Send the actual data
 	//TODO: do split transactions
-	m_fpga->ScanDR((unsigned char*)&tx_buf[0], (unsigned char*)&rx_buf[0], tx_buf.size() * 32);
+	m_fpga->ShiftData((unsigned char*)&tx_buf[0], (unsigned char*)&rx_buf[0], tx_buf.size() * 32);
 
 	//Process the incoming data
 	LogTrace("Got stuff\n");
@@ -216,13 +227,14 @@ void JTAGNOCBridgeInterface::Cycle()
 		if(!VerifyHeaderChecksum(msg))
 		{
 			LogError("Bad header CRC (at offset %d in buffer)\n", i);
-			break;
+			//break;
 		}
 
 		//Done with headers
 		i += 2;
 
-		PrintMessageHeader(msg);
+		if(i < 63)
+			PrintMessageHeader(msg);
 
 		//Process payload, if we have it
 		if(msg.bits.payload_present)
@@ -231,8 +243,10 @@ void JTAGNOCBridgeInterface::Cycle()
 			i += msg.bits.length;
 		}
 
-		if(i >= 63)
-			break;
+		//If we get here the message was properly verified!
+		//Bump the ACK number
+		m_acking = true;
+		m_nextAck = msg.bits.sequence;
 	}
 }
 

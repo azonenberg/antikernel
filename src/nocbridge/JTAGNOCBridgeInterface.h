@@ -107,6 +107,22 @@ protected:
 	void ComputeHeaderChecksum(AntikernelJTAGFrameHeader& header);
 	bool VerifyHeaderChecksum(AntikernelJTAGFrameHeader header);
 
+	unsigned int NextSeq(unsigned int seq)
+	{
+		if(seq < 0x3ff)
+			return seq + 1;
+		else
+			return 0;
+	}
+
+	unsigned int PrevSeq(unsigned int seq)
+	{
+		if(seq > 0)
+			return seq - 1;
+		else
+			return 0x3ff;
+	}
+
 	void PrintMessageHeader(const AntikernelJTAGFrameHeader& header);
 
 	uint8_t CRC8(uint32_t* data, unsigned int len);
@@ -119,6 +135,14 @@ protected:
 
 	/// Sequence number of the next packet to be sent
 	unsigned int m_nextSequence;
+
+	/// ACK number of next packet to be sent
+	unsigned int m_nextAck;
+
+	///True if we're sending ACKs
+	bool m_acking;
+
+	///TODO: handle NAKs
 };
 
 #endif
