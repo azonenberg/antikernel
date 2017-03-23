@@ -161,7 +161,13 @@ void JTAGNOCBridgeInterface::Cycle()
 {
 	//Send up to 4KB (1K words) of data.
 	//Note that some of this may be idle frames rather than actual data if there's nothing to send
-	const int tx_buf_len = 1024;
+	//const int tx_buf_len = 1024;
+
+	//Shrink window size for testing
+	const int tx_buf_len = 32;
+
+	//TODO: we do NOT want to clear these buffers! Make them member variables and process stuff statefully
+	//so that messages can span multiple Cycle() calls
 
 	//Input/output data buffers
 	static vector<uint32_t> tx_buf;
@@ -185,6 +191,7 @@ void JTAGNOCBridgeInterface::Cycle()
 	idle_frame.bits.reserved_zero = 0;			//nothing here
 
 	//TODO: Send actual messages here
+
 	//TODO: retransmit logic etc
 
 	//Pad the buffer out to size with idle frames
@@ -209,6 +216,33 @@ void JTAGNOCBridgeInterface::Cycle()
 		//only print first few
 		if(tx_buf.size() < 64)
 			PrintMessageHeader(idle_frame);
+
+		//DEBUG: Send an RPC message after the first few idles
+		if(tx_buf.size() == 8)
+		{
+			//Send a single RPC message
+			AntikernelJTAGFrameHeader rpc_frame;
+			rpc_frame.bits.ack = m_acking;
+			rpc_frame.bits.nak = 0;
+			rpc_frame.bits.credits = 0x3ff;
+			rpc_frame.bits.ack_seq = m_nextAck;
+			rpc_frame.bits.payload_present = 1;
+			rpc_frame.bits.rpc = 1;
+			rpc_frame.bits.dma = 0;
+			rpc_frame.bits.length = 4;
+			rpc_frame.bits.reserved_zero = 0;
+			rpc_frame.bits.sequence = m_nextSequence;	//Sequence number of the outbound packet
+			m_nextSequence = NextSeq(m_nextSequence);
+			ComputeHeaderChecksum(rpc_frame);
+			PrintMessageHeader(rpc_frame);
+			tx_buf.push_back(rpc_frame.words[0]);		//header
+			tx_buf.push_back(rpc_frame.words[1]);
+			tx_buf.push_back(0x11111111);				//data
+			tx_buf.push_back(0x22222222);
+			tx_buf.push_back(0x33333333);
+			tx_buf.push_back(0x44444444);
+			tx_buf.push_back(0xcccccccc);				//crc32 of data (TODO compute)
+		}
 	}
 
 	//Send the actual data
@@ -255,13 +289,14 @@ void JTAGNOCBridgeInterface::Cycle()
  */
 void JTAGNOCBridgeInterface::PrintMessageHeader(const AntikernelJTAGFrameHeader& header)
 {
-	LogTrace("    %08x %08x: ack = %d, nak = %d, seq = %d, nack = %d, payload = %d\n",
+	LogTrace("    %08x %08x: ack = %d, nak = %d, seq = %d, nack = %d, credits=%d, payload = %d\n",
 		header.words[0],
 		header.words[1],
 		header.bits.ack,
 		header.bits.nak,
 		header.bits.sequence,
 		header.bits.ack_seq,
+		header.bits.credits,
 		header.bits.payload_present
 		);
 }
@@ -279,7 +314,12 @@ void JTAGNOCBridgeInterface::ComputeHeaderChecksum(AntikernelJTAGFrameHeader& he
  */
 bool JTAGNOCBridgeInterface::VerifyHeaderChecksum(AntikernelJTAGFrameHeader header)
 {
-	return CRC8(header.words, 7) == header.bits.header_checksum;
+	uint8_t expected = CRC8(header.words, 7);
+	uint8_t actual = header.bits.header_checksum;
+	bool ok = (expected == actual);
+	if(!ok)
+		LogTrace("expected: %02x, actual: %02x\n", expected, actual);
+	return ok;
 }
 
 /**
