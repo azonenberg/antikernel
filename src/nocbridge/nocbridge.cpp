@@ -284,18 +284,6 @@ void XilinxFPGA::DumpIndirect(int buswidth, std::string fname)
 	fclose(fp);
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// NoC helpers
-
-RPCNetworkInterface* XilinxFPGA::GetRPCNetworkInterface()
-{
-	return static_cast<RPCNetworkInterface*> (this);
-}
-
-DMANetworkInterface* XilinxFPGA::GetDMANetworkInterface()
-{
-	return static_cast<DMANetworkInterface*> (this);
-}
 */
 /**
 	@brief Push all pending OCD operations to the device and get data back
@@ -406,75 +394,8 @@ void XilinxFPGA::OCDPush()
 }
 */
 /*
-void XilinxFPGA::ProbeVirtualTAPs()
-{
-	//TODO: Figure out how to stream if there's >1 device in the chain
-	if(m_iface->GetDeviceCount() != 1)
-	{
-		throw JtagExceptionWrapper(
-			"Don't know how to handle >1 device in OCD mode",
-			"",
-			JtagException::EXCEPTION_TYPE_BOARD_FAULT);
-	}
-
-	//Flush buffers and try to synchronize
-	printf("    Synchronizing OCD link...\n");
-	ResetToIdle();
-	m_ocdtxbuf.clear();
-	m_ocdrxbuf.clear();
-	for(auto x : m_ocdrxframes)
-		delete x;
-	m_ocdrxframes.clear();
-
-	//Get ready to do OCD operations
-	//We want to enter SHIFT-DR and stay there
-	SetOCDInstruction();
-	m_iface->EnterShiftDR();
-
-	//Ask for the ID code (flush with a bunch of null words)
-	m_ocdtxbuf.push_back(JTAG_FRAME_PREAMBLE);
-	m_ocdtxbuf.push_back(JTAG_FRAME_TYPE_IDCODE << 29);	//length zero
-														//sequence 0 to resynchronize
-														//credits ignored from host to device
-	for(int i=0; i<32; i++)
-		m_ocdtxbuf.push_back(0);
-	OCDPush();
-
-	//Make sure we got the frame
-	if(m_ocdrxframes.empty())
-	{
-		printf("    No OCD IDCODE packet found (waited for 32 data words)\n");
-		ResetToIdle();	//don't leave bad jtag instruction if no virtual TAPs are present
-		return;
-	}
-
-	//Verify it's well-formed
-	AntikernelOCDFrame* frame = m_ocdrxframes[0];
-	if(frame->m_type != JTAG_FRAME_TYPE_IDCODE)
-		printf("    Invalid frame type %x on IDCODE packet\n", frame->m_type);
-	else if(frame->m_data.size() != 1)
-		printf("    Invalid frame length on IDCODE packet\n");
-	else if(frame->m_data[0] != JTAG_FRAME_MAGIC)
-		printf("    Invalid magic number on IDCODE packet\n");
-	else
-	{
-		printf("    Valid NoC endpoint detected\n");
-		m_bHasRPCInterface = true;
-		m_bHasDMAInterface = true;
-	}
-
-	//Done
-	m_ocdrxframes.erase(m_ocdrxframes.begin());
-	delete frame;
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // RPC network stuff
-
-bool XilinxFPGA::HasRPCInterface()
-{
-	return m_bHasRPCInterface;
-}
 
 unsigned int XilinxFPGA::GetActualCreditCount()
 {
@@ -568,11 +489,6 @@ bool XilinxFPGA::RecvRPCMessage(RPCMessage& rx_msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DMA network stuff
-
-bool XilinxFPGA::HasDMAInterface()
-{
-	return m_bHasDMAInterface;
-}
 
 void XilinxFPGA::SendDMAMessage(const DMAMessage& tx_msg)
 {
