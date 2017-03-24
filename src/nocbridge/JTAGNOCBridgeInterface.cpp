@@ -169,14 +169,6 @@ void JTAGNOCBridgeInterface::Cycle()
 	//TODO: we do NOT want to clear these buffers! Make them member variables and process stuff statefully
 	//so that messages can span multiple Cycle() calls
 
-	//Input/output data buffers
-	static vector<uint32_t> tx_buf;
-	static vector<uint32_t> rx_buf;
-	tx_buf.clear();
-	tx_buf.reserve(1024);
-	rx_buf.clear();
-	rx_buf.reserve(1024);
-
 	//Generate an idle frame we can fill empty space in the TX buffer with
 	//TODO: Send different data once link is up!
 	AntikernelJTAGFrameHeader idle_frame;
@@ -196,7 +188,7 @@ void JTAGNOCBridgeInterface::Cycle()
 
 	//Pad the buffer out to size with idle frames
 	LogTrace("Sending stuff...\n");
-	while(tx_buf.size() <= (tx_buf_len - 2) )
+	while(m_txBuffer.size() <= (tx_buf_len - 2) )
 	{
 		//Sequence number changes for each packet
 		idle_frame.bits.sequence = m_nextSequence;	//Sequence number of the outbound packet
@@ -210,15 +202,15 @@ void JTAGNOCBridgeInterface::Cycle()
 		ComputeHeaderChecksum(idle_frame);
 
 		//Save packet
-		tx_buf.push_back(idle_frame.words[0]);
-		tx_buf.push_back(idle_frame.words[1]);
+		m_txBuffer.push_back(idle_frame.words[0]);
+		m_txBuffer.push_back(idle_frame.words[1]);
 
 		//only print first few
-		if(tx_buf.size() < 64)
+		if(m_txBuffer.size() < 64)
 			PrintMessageHeader(idle_frame);
 
 		//DEBUG: Send an RPC message after the first few idles
-		if(tx_buf.size() == 8)
+		if(m_txBuffer.size() == 8)
 		{
 			//Send a single RPC message
 			AntikernelJTAGFrameHeader rpc_frame;
@@ -231,50 +223,82 @@ void JTAGNOCBridgeInterface::Cycle()
 			rpc_frame.bits.dma = 0;
 			rpc_frame.bits.length = 4;
 			rpc_frame.bits.reserved_zero = 0;
-			rpc_frame.bits.sequence = m_nextSequence;	//Sequence number of the outbound packet
+			rpc_frame.bits.sequence = m_nextSequence;		//Sequence number of the outbound packet
 			m_nextSequence = NextSeq(m_nextSequence);
 			ComputeHeaderChecksum(rpc_frame);
 			PrintMessageHeader(rpc_frame);
-			tx_buf.push_back(rpc_frame.words[0]);		//header
-			tx_buf.push_back(rpc_frame.words[1]);
-			tx_buf.push_back(0x11111111);				//data
-			tx_buf.push_back(0x22222222);
-			tx_buf.push_back(0x33333333);
-			tx_buf.push_back(0x44444444);
-			tx_buf.push_back(0xcccccccc);				//crc32 of data (TODO compute)
+			m_txBuffer.push_back(rpc_frame.words[0]);		//header
+			m_txBuffer.push_back(rpc_frame.words[1]);
+			m_txBuffer.push_back(0x11111111);				//data
+			m_txBuffer.push_back(0x22222222);
+			m_txBuffer.push_back(0x33333333);
+			m_txBuffer.push_back(0x44444444);
+			m_txBuffer.push_back(0xcccccccc);				//crc32 of data (TODO compute)
 		}
 	}
+
+	//Input/output data buffers (must be contiguous memory!)
+	vector<uint32_t> tx_buf;
+	vector<uint32_t> rx_buf;
+	tx_buf.reserve(m_txBuffer.size());
+	rx_buf.resize(m_txBuffer.size());
+
+	//Append our pending outbox data
+	for(auto b : m_txBuffer)
+		tx_buf.push_back(b);
+	m_txBuffer.clear();
 
 	//Send the actual data
 	//TODO: do split transactions
 	m_fpga->ShiftData((unsigned char*)&tx_buf[0], (unsigned char*)&rx_buf[0], tx_buf.size() * 32);
 
-	//Process the incoming data
-	LogTrace("Got stuff\n");
-	for(int i=0; i<tx_buf_len; )
+	//Append the new data to our existing RX buffer
+	for(auto b : rx_buf)
+		m_rxBuffer.push_back(b);
+
+	//Process the RX buffer
+	LogTrace("Got %d words (%d)\n", (int)rx_buf.size(), (int)m_rxBuffer.size());
+	int i = 0;
+	while(m_rxBuffer.size() > 1)
 	{
 		AntikernelJTAGFrameHeader msg;
-		msg.words[0] = rx_buf[i];
-		msg.words[1] = rx_buf[i+1];
+		msg.words[0] = *m_rxBuffer.begin();
+		m_rxBuffer.pop_front();
+		msg.words[1] = *m_rxBuffer.begin();
+		m_rxBuffer.pop_front();
 
-		//TODO: We need to reset link if this happens, handle it
+		//TODO: We need to reset link if this happens, handle it properly!
 		if(!VerifyHeaderChecksum(msg))
 		{
 			LogError("Bad header CRC (at offset %d in buffer)\n", i);
 			//break;
 		}
 
-		//Done with headers
-		i += 2;
-
-		if(i < 63)
+		//debug print
+		if(i++ < 63)
 			PrintMessageHeader(msg);
 
 		//Process payload, if we have it
 		if(msg.bits.payload_present)
 		{
-			//TODO: print it out etc
-			i += msg.bits.length;
+			//Do we have the full payload?
+			//If not, push the headers back onto the start of the buffer and stop.
+			if(m_rxBuffer.size() < msg.bits.length)
+			{
+				LogTrace("Need moar payload\n");
+				m_rxBuffer.push_front(msg.words[1]);
+				m_rxBuffer.push_front(msg.words[0]);
+				break;
+			}
+
+			//We have the payload, crunch it
+			//For now throw it away
+			//TODO: CRC it and do something useful
+			for(int i=0; i<msg.bits.length; i++)
+			{
+				LogTrace("%08x\n", *m_rxBuffer.begin());
+				m_rxBuffer.pop_front();
+			}
 		}
 
 		//If we get here the message was properly verified!
@@ -289,7 +313,7 @@ void JTAGNOCBridgeInterface::Cycle()
  */
 void JTAGNOCBridgeInterface::PrintMessageHeader(const AntikernelJTAGFrameHeader& header)
 {
-	LogTrace("    %08x %08x: ack = %d, nak = %d, seq = %d, nack = %d, credits=%d, payload = %d\n",
+	LogTrace("    %08x %08x: ack = %d, nak = %d, seq = %d, nack = %d, credits=%d, payload = %d, len=%d\n",
 		header.words[0],
 		header.words[1],
 		header.bits.ack,
@@ -297,7 +321,8 @@ void JTAGNOCBridgeInterface::PrintMessageHeader(const AntikernelJTAGFrameHeader&
 		header.bits.sequence,
 		header.bits.ack_seq,
 		header.bits.credits,
-		header.bits.payload_present
+		header.bits.payload_present,
+		header.bits.length
 		);
 }
 

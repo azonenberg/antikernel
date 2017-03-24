@@ -143,6 +143,14 @@ protected:
 	bool m_acking;
 
 	///TODO: handle NAKs
+
+	/// Data to be sent to the DUT
+	std::list<uint32_t> m_txBuffer;
+
+	/// Data that came back from the DUT
+	std::list<uint32_t> m_rxBuffer;
+
+	//TODO: retransmit buffer
 };
 
 #endif
