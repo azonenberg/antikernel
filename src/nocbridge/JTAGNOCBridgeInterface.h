@@ -68,11 +68,11 @@ union AntikernelJTAGFrameHeader
 		/// Checksum of the header
 		unsigned int header_checksum : 8;
 
-		/// Reserved, write as zero
-		unsigned int reserved_zero : 11;
-
 		/// Length (in words) of our payload
 		unsigned int length : 10;
+
+		/// Reserved, write as zero
+		unsigned int reserved_zero : 11;
 
 		/// 1 if payload is DMA packet, 0 otherwise
 		unsigned int dma : 1;
