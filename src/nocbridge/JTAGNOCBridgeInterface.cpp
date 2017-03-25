@@ -292,8 +292,10 @@ void JTAGNOCBridgeInterface::Cycle()
 			for(auto p : payload)
 				m_txBuffer.push_back(p);
 
-			m_txBuffer.push_back(
-				CRC32(&payload[0], payload.size()*4));	//crc32 of data
+			uint32_t crc = CRC32(&payload[0], payload.size()*4);
+			LogTrace("TX CRC: %08x\n", crc);
+
+			m_txBuffer.push_back(crc);						//crc32 of data
 		}
 	}
 
@@ -442,5 +444,10 @@ uint32_t JTAGNOCBridgeInterface::CRC32(uint32_t* data, unsigned int len)
 			d <<= 8;
 		}
 	}
+
+	//This CRC code has backwards endianness, so fix that
+	//TODO: Update the table to be proper endianness in the first place
+	FlipEndian32Array((unsigned char*)&crc, 4);
+
 	return ~crc;
 }
