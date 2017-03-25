@@ -345,7 +345,7 @@ void JTAGNOCBridgeInterface::Cycle()
 		{
 			//Do we have the full payload?
 			//If not, push the headers back onto the start of the buffer and stop.
-			if(m_rxBuffer.size() < msg.bits.length)
+			if(m_rxBuffer.size() <= msg.bits.length)
 			{
 				LogTrace("Need moar payload\n");
 				m_rxBuffer.push_front(msg.words[1]);
@@ -354,13 +354,23 @@ void JTAGNOCBridgeInterface::Cycle()
 			}
 
 			//We have the payload, crunch it
-			//For now throw it away
-			//TODO: CRC it and do something useful
+			vector<uint32_t> payload;
 			for(int i=0; i<msg.bits.length; i++)
 			{
-				LogTrace("%08x\n", *m_rxBuffer.begin());
+				payload.push_back(*m_rxBuffer.begin());
 				m_rxBuffer.pop_front();
 			}
+			uint32_t message_crc = *m_rxBuffer.begin();
+			m_rxBuffer.pop_front();
+			uint32_t actual_crc = CRC32(&payload[0], msg.bits.length * 4);
+
+			for(auto p : payload)
+				LogTrace("%08x\n", p);
+			LogTrace("CRC: expected %08x, got %08x\n", actual_crc, message_crc);
+			if(message_crc == actual_crc)
+				LogTrace("OK\n");
+			else
+				LogTrace("FAIL\n");
 		}
 
 		//If we get here the message was properly verified!
