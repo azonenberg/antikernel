@@ -68,10 +68,10 @@ recursive_config:
     # No default target architectures (must override for each target)
 
     # Generic flags that apply everywhere: use all warnings (except those flagged by Splash as false positives)
-    # and keep hierarchy through synthesis
+    # and keep hierarchy
     flags:
         - warning/max
-        - optimize/hierarchy/synth_only
+        - optimize/hierarchy/keep
 
     # Generic per-configuration flags
     configurations:
