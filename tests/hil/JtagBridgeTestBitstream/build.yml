@@ -46,10 +46,14 @@ JtagBridgeTestBitstream:
     # All source code for now, no automatic generation
     sources:
         - JtagBridgeTestBitstream.v
+        - ../../../antikernel-ipcores/clock/crossing/HandshakeSynchronizer.v
+        - ../../../antikernel-ipcores/clock/crossing/ThreeStageSynchronizer.v
+        - ../../../antikernel-ipcores/dataflow/CrossClockPacketFifo.v
         - ../../../antikernel-ipcores/debug/JtagDebugBridge.v
         - ../../../antikernel-ipcores/debug/JtagUserIdentifier.v
         - ../../../antikernel-ipcores/device_abstraction/ClockBuffer.v
         - ../../../antikernel-ipcores/device_abstraction/JtagTAP.v
         - ../../../antikernel-ipcores/math/CRC8_ATM.v
         - ../../../antikernel-ipcores/math/CRC32_Ethernet_x32.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v
         - ../../../antikernel-ipcores/processor/zynq/XilinxZynq7CPU.v

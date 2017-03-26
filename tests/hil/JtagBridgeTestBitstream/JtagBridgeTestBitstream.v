@@ -53,10 +53,40 @@ module JtagBridgeTestBitstream(
 	`endif
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Buffer the main system clock
+
+	wire clk_bufg;
+	ClockBuffer #(
+		.TYPE("GLOBAL"),
+		.CE("NO")
+	) sysclk_clkbuf (
+		.clkin(clk),
+		.clkout(clk_bufg),
+		.ce(1'b1)
+	);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // The debug bridge
 
-    JtagDebugBridge bridge(
-		.clk(clk),
+    wire		rpc_tx_en;
+    wire[31:0]	rpc_tx_data;
+    wire		rpc_tx_ready;
+
+    JtagDebugBridge #(
+		.NOC_DATA_WIDTH(32)
+    ) bridge(
+		.clk(clk_bufg),
+
+		//RPC loopback for testing
+		.rpc_tx_en(rpc_tx_en),
+		.rpc_tx_data(rpc_tx_data),
+		.rpc_tx_ready(rpc_tx_ready),
+
+		.rpc_rx_en(rpc_tx_en),
+		.rpc_rx_data(rpc_tx_data),
+		.rpc_rx_ready(rpc_tx_ready),
+
+		//Debug indicators
 		.led(led)
 	);
 
