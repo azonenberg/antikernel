@@ -421,18 +421,6 @@ unsigned int XilinxFPGA::GetActualCreditCount()
 	return credits;
 }
 
-void XilinxFPGA::SendRPCMessage(const RPCMessage& tx_msg)
-{
-	//Keep trying until it goes through
-	while(!SendRPCMessageNonblocking(tx_msg))
-	{
-		//Send a few nulls and try again
-		for(int i=0; i<32; i++)
-			m_ocdtxbuf.push_back(0);
-		OCDPush();
-	}
-}
-
 bool XilinxFPGA::SendRPCMessageNonblocking(const RPCMessage& tx_msg)
 {
 	//We need at least 5 credits (4 body + 1 header) free.
