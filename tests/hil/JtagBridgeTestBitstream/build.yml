@@ -55,5 +55,6 @@ JtagBridgeTestBitstream:
         - ../../../antikernel-ipcores/device_abstraction/JtagTAP.v
         - ../../../antikernel-ipcores/math/CRC8_ATM.v
         - ../../../antikernel-ipcores/math/CRC32_Ethernet_x32.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3EchoNode.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v
         - ../../../antikernel-ipcores/processor/zynq/XilinxZynq7CPU.v

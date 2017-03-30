@@ -72,22 +72,45 @@ module JtagBridgeTestBitstream(
     wire[31:0]	rpc_tx_data;
     wire		rpc_tx_ready;
 
+    wire		rpc_rx_en;
+    wire[31:0]	rpc_rx_data;
+    wire		rpc_rx_ready;
+
     JtagDebugBridge #(
-		.NOC_DATA_WIDTH(32)
+		.NOC_WIDTH(32)
     ) bridge(
 		.clk(clk_bufg),
 
-		//RPC loopback for testing
+		//RPC interface
 		.rpc_tx_en(rpc_tx_en),
 		.rpc_tx_data(rpc_tx_data),
 		.rpc_tx_ready(rpc_tx_ready),
 
-		.rpc_rx_en(rpc_tx_en),
-		.rpc_rx_data(rpc_tx_data),
-		.rpc_rx_ready(rpc_tx_ready),
+		.rpc_rx_en(rpc_rx_en),
+		.rpc_rx_data(rpc_rx_data),
+		.rpc_rx_ready(rpc_rx_ready),
 
 		//Debug indicators
 		.led(led)
 	);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Loopback core
+
+    RPCv3EchoNode #(
+		.NOC_WIDTH(32),
+		.NOC_ADDR(16'hfeed)
+	) echo (
+		.clk(clk_bufg),
+
+		.rpc_tx_en(rpc_rx_en),
+		.rpc_tx_data(rpc_rx_data),
+		.rpc_tx_ready(rpc_rx_ready),
+
+		.rpc_rx_en(rpc_tx_en),
+		.rpc_rx_data(rpc_tx_data),
+		.rpc_rx_ready(rpc_tx_ready)
+	);
+
 
 endmodule
