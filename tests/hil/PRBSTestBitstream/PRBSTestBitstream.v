@@ -74,7 +74,7 @@ module PRBSTestBitstream(
     wire		rpc_tx_ready;
 
     JtagDebugBridge #(
-		.NOC_DATA_WIDTH(32)
+		.NOC_WIDTH(32)
     ) bridge(
 		.clk(clk_bufg),
 
