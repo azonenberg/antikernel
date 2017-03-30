@@ -32,7 +32,7 @@
 	@author Andrew D. Zonenberg
 	@brief NoC switch board ping test
 	
-	Once RPCJtagTest is successful, repeat the test through nocswitch
+	Try pinging a board through nocswitch
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,20 +42,22 @@
 #include <list>
 #include <map>
 
-#include "../../src/jtaghal/jtaghal.h"
+#include "../../../src/jtaghal/jtaghal.h"
+/*
 #include "../../src/jtagboards/jtagboards.h"
 #include <RPCv2Router_type_constants.h>
 #include <RPCv2Router_ack_constants.h>
 
 #include <signal.h>
-
+*/
 using namespace std;
 
 int main(int argc, char* argv[])
 {
-	int err_code = 0;
+	int err_code = 0;//
 	try
 	{
+		/*
 		//Connect to the server
 		string server;
 		int port = 0;
@@ -175,11 +177,12 @@ int main(int argc, char* argv[])
 			minping * 1000,
 			(sumping / npack) * 1000,
 			maxping * 1000);
+		*/
 	}
 	
 	catch(const JtagException& ex)
 	{
-		printf("%s\n", ex.GetDescription().c_str());
+		//printf("%s\n", ex.GetDescription().c_str());
 		err_code = 1;
 	}
 
