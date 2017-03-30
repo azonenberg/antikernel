@@ -33,11 +33,8 @@
 	@brief Main thread procedure for handling connections from client
  */
 #include "nocswitch.h"
-#include "../jtaghal/jtaghal.h"
-#ifndef _WINDOWS
-#include <netinet/tcp.h>
-#endif
 
+/*
 using namespace std;
 
 extern Mutex g_sendmutex;
@@ -48,29 +45,26 @@ extern std::map<int, std::list<RPCMessage> > g_recvqueue;
 extern std::map<int, std::list<DMAMessage> > g_drecvqueue;
 
 extern bool g_quitting;
+*/
 
 /**
 	@brief Thread for handling connections
  */
-THREAD_PROTOTYPE(ConnectionThreadProc, _pData)
+void ConnectionThread(int sock)
 {
-	//Pull out the pointers
-	ConnectionThreadProcData* pData = reinterpret_cast<ConnectionThreadProcData*>(_pData);
-	Socket socket(pData->client_socket);
-	uint16_t sender = pData->addr;
+	Socket client(sock);
 
+	//uint16_t sender = pData->addr;
 	try
 	{
 		//Set no-delay flag
-		int flag = 1;
-		if(0 != setsockopt(socket, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag) ))
+		if(!client.DisableNagle())
 		{
 			throw JtagExceptionWrapper(
 				"Failed to set TCP_NODELAY",
-				"",
-				JtagException::EXCEPTION_TYPE_NETWORK);
+				"");
 		}
-
+		/*
 		//Sit around and wait for messages
 		uint16_t opcode;
 		while(true)
@@ -236,17 +230,12 @@ THREAD_PROTOTYPE(ConnectionThreadProc, _pData)
 			if(quit)
 				break;
 		}
+		*/
 	}
 	catch(const JtagException& ex)
 	{
-		printf("%s\n", ex.GetDescription().c_str());
+		LogError("%s\n", ex.GetDescription().c_str());
 	}
 
-	printf("Client quit\n");
-
-	//connection closed
-	delete pData;
-	close(socket);
-
-	THREAD_RETURN(0);
+	LogNotice("Client quit\n");
 }

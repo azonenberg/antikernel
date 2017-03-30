@@ -56,6 +56,7 @@
 #include "nocswitch_opcodes_enum.h"
 
 void JtagThread(JTAGNOCBridgeInterface* piface);
+void ConnectionThread(int sock);
 
 extern bool g_quitting;
 

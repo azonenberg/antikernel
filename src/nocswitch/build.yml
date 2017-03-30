@@ -34,7 +34,7 @@ nocswitch:
     sources:
         - main.cpp
         - JtagThread.cpp
-        #- ConnectionThread.cpp
+        - ConnectionThread.cpp
 
     constants:
         nocswitch_opcodes.yml:
