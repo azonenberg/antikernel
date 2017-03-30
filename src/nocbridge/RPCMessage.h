@@ -40,16 +40,15 @@
 #include <string>
 
 /**
-	@brief A single packet on the RPCv2 network
+	@brief A single packet on the RPCv3 network
 
-	The RPC network is a packet-switched NoC intended for low-latency control-plane operations in which high (25%)
+	The RPC network is a packet-switched NoC intended for low-latency control-plane operations in which high (~25%)
 	protocol overhead is acceptable as long as latency is minimized.
 
 	Reliable, in-order delivery is guaranteed by the network.
 
 	\ingroup libjtaghal
  */
-/*
 class RPCMessage
 {
 public:
@@ -70,14 +69,13 @@ public:
 	///Application-layer data. Note that only the low 21 bits of data[0] are transmitted; the high 11 must be all zeros.
 	uint32_t data[3];
 
-	void Pack(unsigned char* buf) const;
+	//void Pack(unsigned char* buf) const;
 	void Pack(uint32_t* buf) const;
-	void Unpack(unsigned char* buf);
+	//void Unpack(unsigned char* buf);
 	void Unpack(uint32_t* buf);
 
-	std::string Format() const;
+	//std::string Format() const;
 
 	bool operator==(const RPCMessage& rhs) const;
 };
-*/
 #endif

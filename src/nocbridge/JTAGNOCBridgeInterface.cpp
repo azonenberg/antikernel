@@ -202,6 +202,23 @@ void JTAGNOCBridgeInterface::FreeClientAddress(uint16_t addr)
 	m_freeAddresses.emplace(addr);
 }
 
+void JTAGNOCBridgeInterface::SendRPCMessage(const RPCMessage& tx_msg)
+{
+	lock_guard<mutex> lock(m_txMutex);
+	m_rpcTxFifo.push_back(tx_msg);
+}
+
+bool JTAGNOCBridgeInterface::RecvRPCMessage(RPCMessage& rx_msg)
+{
+	lock_guard<mutex> lock(m_rxMutex);
+	if(m_rpcRxFifo.empty())
+		return false;
+
+	rx_msg = *m_rpcRxFifo.begin();
+	m_rpcRxFifo.pop_front();
+	return true;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The actual JTAG bridge stuff
 
@@ -224,7 +241,6 @@ void JTAGNOCBridgeInterface::Cycle()
 	//so that messages can span multiple Cycle() calls
 
 	//Generate an idle frame we can fill empty space in the TX buffer with
-	//TODO: Send different data once link is up!
 	AntikernelJTAGFrameHeader idle_frame;
 	idle_frame.bits.ack = m_acking;				//Might be ACKing packets
 	idle_frame.bits.nak = 0;					//not nacking anything
@@ -236,12 +252,59 @@ void JTAGNOCBridgeInterface::Cycle()
 	idle_frame.bits.length = 0;					//empty payload
 	idle_frame.bits.reserved_zero = 0;			//nothing here
 
-	//TODO: Send actual messages here
+	//Send any RPC messages we have in the queue
+	LogTrace("Sending stuff...\n");
+	while(m_txBuffer.size() < (tx_buf_len - 7))
+	{
+		RPCMessage txm;
+
+		//Critical section to pull data from the shared buffer
+		{
+			lock_guard<mutex> rpclock(m_txMutex);
+
+			if(m_rpcTxFifo.empty())
+				break;
+
+			txm = *m_rpcTxFifo.begin();
+			m_rpcTxFifo.pop_front();
+		}
+
+		//TODO: Send proper NAKs:
+		//One NAK with sequence number of the bad packet
+		//then ACK with sequence number of the last good packet (if any)
+
+		//Format a header for it
+		AntikernelJTAGFrameHeader rpc_frame;
+		rpc_frame.bits.ack = m_acking;
+		rpc_frame.bits.nak = 0;
+		rpc_frame.bits.credits = 0x3ff;
+		rpc_frame.bits.ack_seq = m_nextAck;
+		rpc_frame.bits.payload_present = 1;
+		rpc_frame.bits.rpc = 1;
+		rpc_frame.bits.dma = 0;
+		rpc_frame.bits.length = 4;
+		rpc_frame.bits.reserved_zero = 0;
+		rpc_frame.bits.sequence = m_nextSequence;		//Sequence number of the outbound packet
+		m_nextSequence = NextSeq(m_nextSequence);
+		ComputeHeaderChecksum(rpc_frame);
+		PrintMessageHeader(rpc_frame);
+		m_txBuffer.push_back(rpc_frame.words[0]);		//header
+		m_txBuffer.push_back(rpc_frame.words[1]);
+
+		uint32_t payload[4];							//message body
+		txm.Pack(payload);
+		for(int i=0; i<4; i++)
+			m_txBuffer.push_back(payload[i]);
+
+		uint32_t crc = CRC32(&payload[0], 16);
+		LogTrace("TX CRC: %08x\n", crc);
+
+		m_txBuffer.push_back(crc);						//crc32 of data
+	}
 
 	//TODO: retransmit logic etc
 
 	//Pad the buffer out to size with idle frames
-	LogTrace("Sending stuff...\n");
 	while(m_txBuffer.size() <= (tx_buf_len - 2) )
 	{
 		//Sequence number changes for each packet
@@ -262,41 +325,6 @@ void JTAGNOCBridgeInterface::Cycle()
 		//only print first few
 		if(m_txBuffer.size() < 64)
 			PrintMessageHeader(idle_frame);
-
-		//DEBUG: Send an RPC message after the first few idles
-		if(m_txBuffer.size() == 8)
-		{
-			//Send a single RPC message
-			AntikernelJTAGFrameHeader rpc_frame;
-			rpc_frame.bits.ack = m_acking;
-			rpc_frame.bits.nak = 0;
-			rpc_frame.bits.credits = 0x3ff;
-			rpc_frame.bits.ack_seq = m_nextAck;
-			rpc_frame.bits.payload_present = 1;
-			rpc_frame.bits.rpc = 1;
-			rpc_frame.bits.dma = 0;
-			rpc_frame.bits.length = 4;
-			rpc_frame.bits.reserved_zero = 0;
-			rpc_frame.bits.sequence = m_nextSequence;		//Sequence number of the outbound packet
-			m_nextSequence = NextSeq(m_nextSequence);
-			ComputeHeaderChecksum(rpc_frame);
-			PrintMessageHeader(rpc_frame);
-			m_txBuffer.push_back(rpc_frame.words[0]);		//header
-			m_txBuffer.push_back(rpc_frame.words[1]);
-
-			vector<uint32_t> payload;						//message body
-			payload.push_back(0x11111111);
-			payload.push_back(0x22222222);
-			payload.push_back(0x33333333);
-			payload.push_back(0x44444444);
-			for(auto p : payload)
-				m_txBuffer.push_back(p);
-
-			uint32_t crc = CRC32(&payload[0], payload.size()*4);
-			LogTrace("TX CRC: %08x\n", crc);
-
-			m_txBuffer.push_back(crc);						//crc32 of data
-		}
 	}
 
 	//Input/output data buffers (must be contiguous memory!)
@@ -333,7 +361,7 @@ void JTAGNOCBridgeInterface::Cycle()
 		if(!VerifyHeaderChecksum(msg))
 		{
 			LogError("Bad header CRC (at offset %d in buffer)\n", i);
-			//break;
+			break;
 		}
 
 		//debug print
@@ -364,8 +392,9 @@ void JTAGNOCBridgeInterface::Cycle()
 			m_rxBuffer.pop_front();
 			uint32_t actual_crc = CRC32(&payload[0], msg.bits.length * 4);
 
+			LogDebug("Got a packet\n");
 			for(auto p : payload)
-				LogTrace("%08x\n", p);
+				LogDebug("%08x\n", p);
 			LogTrace("CRC: expected %08x, got %08x\n", actual_crc, message_crc);
 			if(message_crc == actual_crc)
 				LogTrace("OK\n");
@@ -449,9 +478,9 @@ uint32_t JTAGNOCBridgeInterface::CRC32(uint32_t* data, unsigned int len)
 		uint32_t d = data[i/4];
 		for(unsigned int j=i; j < len && j < (i+4); j++)
 		{
-			uint8_t b = (d >> 24) & 0xff;
+			uint8_t b = d & 0xff;
 			crc = g_crc32Table[ (crc ^ b) & 0xff] ^ (crc >> 8);
-			d <<= 8;
+			d >>= 8;
 		}
 	}
 

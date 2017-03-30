@@ -46,15 +46,16 @@
 #include <atomic>
 #include <signal.h>
 #include <thread>
-
-#include "../jtaghal/jtaghal.h"
+#include <mutex>
 
 #include "../log/log.h"
 #include "../xptools/Socket.h"
+#include "../jtaghal/jtaghal.h"
+#include "../nocbridge/nocbridge.h"
 
 #include "nocswitch_opcodes_enum.h"
 
-void JtagThread(JtagFPGA* pfpga);
+void JtagThread(JTAGNOCBridgeInterface* piface);
 
 extern bool g_quitting;
 

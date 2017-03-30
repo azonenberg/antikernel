@@ -39,6 +39,8 @@ nocswitch:
     constants:
         nocswitch_opcodes.yml:
             - c/enum
+        ../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver_types.yml:
+            - c/enum
 
     # pthread is optional since not all platforms have it!
     flags:

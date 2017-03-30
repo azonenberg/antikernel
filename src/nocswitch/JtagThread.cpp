@@ -36,102 +36,26 @@
 #include "../jtaghal/jtaghal.h"
 #include "../nocbridge/nocbridge.h"
 
-/*
 using namespace std;
-
-//Send queue - just a FIFO
-Mutex g_sendmutex;
-std::list<RPCMessage> g_sendqueue;
-std::list<DMAMessage> g_dsendqueue;
-
-//Receive queue - map of FIFOs by destination address
-Mutex g_recvmutex;
-std::map<int, std::list<RPCMessage> > g_recvqueue;
-std::map<int, std::list<DMAMessage> > g_drecvqueue;
-
-extern bool g_quitting;
-*/
 
 /**
 	@brief Thread for handling JTAG operations
  */
-void JtagThread(JtagFPGA* pfpga)
+void JtagThread(JTAGNOCBridgeInterface* piface)
 {
 	try
 	{
-		JTAGNOCBridgeInterface iface(pfpga);
 		while(!g_quitting)
 		{
-			iface.Cycle();
-			usleep(100 * 1000);	//debug
+			//Push pending messages, get whatever comes back
+			piface->Cycle();
+
+			//TODO: Dispatch them to the various threads in question
 		}
 	}
 	catch(const JtagException& ex)
 	{
 		LogError("%s\n", ex.GetDescription().c_str());
 	}
-
-	/*
-	JtagDevice* pdev = reinterpret_cast<JtagDevice*>(_pData);
-	FPGA* pfpga = dynamic_cast<FPGA*>(pdev);
-	if(pfpga == NULL)
-		THREAD_RETURN(0);
-	RPCNetworkInterface* prif = pfpga->GetRPCNetworkInterface();
-	DMANetworkInterface* pdif = pfpga->GetDMANetworkInterface();
-
-	try
-	{
-		while(!g_quitting)
-		{
-			//Send data, if any is available
-			{
-				MutexLock lock(g_sendmutex);
-				while(!g_sendqueue.empty())
-				{
-					RPCMessage msg = g_sendqueue.front();
-					prif->SendRPCMessage(msg);
-					g_sendqueue.pop_front();
-				}
-				while(!g_dsendqueue.empty())
-				{
-					DMAMessage msg = g_dsendqueue.front();
-
-					//Sent, remove from the list
-					if(pdif->SendDMAMessageNonblocking(msg))
-						g_dsendqueue.pop_front();
-
-					//Sender is busy, give up and try later
-					else
-						break;
-				}
-			}
-
-			//Poll for receive data
-			{
-				RPCMessage msg;
-				DMAMessage dmsg;
-
-				if(prif->RecvRPCMessage(msg))
-				{
-					MutexLock lock(g_recvmutex);
-					g_recvqueue[msg.to].push_back(msg);
-				}
-
-				if(pdif->RecvDMAMessage(dmsg))
-				{
-					MutexLock lock(g_recvmutex);
-					g_drecvqueue[dmsg.to].push_back(dmsg);
-				}
-			}
-		}
-	}
-	catch(const JtagException& ex)
-	{
-		printf("%s\n", ex.GetDescription().c_str());
-		exit(-1);
-	}
-
-	THREAD_RETURN(0);
-	*/
 }
 

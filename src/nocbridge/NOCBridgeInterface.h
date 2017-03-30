@@ -43,6 +43,28 @@ class NOCBridgeInterface
 public:
 	virtual ~NOCBridgeInterface();
 
+	/**
+		@brief Sends an RPCMessage
+
+		@throw JtagException if the send fails
+
+		@param tx_msg	Message to send
+	 */
+	virtual void SendRPCMessage(const RPCMessage& tx_msg)=0;
+
+	/**
+		@brief Checks if any RPCMessage objects are ready to read and performs a read if so
+
+		@throw JtagException if the read fails
+
+		@param rx_msg	Message buffer to read into
+
+		@return true if a message was received, false if no data was ready
+	 */
+	virtual bool RecvRPCMessage(RPCMessage& rx_msg) =0;
+
+	//TODO: blocking reads, timeouts, etc
+
 	virtual bool AllocateClientAddress(uint16_t& addr) =0;
 	virtual void FreeClientAddress(uint16_t addr) =0;
 };

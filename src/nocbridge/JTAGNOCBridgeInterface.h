@@ -101,6 +101,9 @@ public:
 	virtual bool AllocateClientAddress(uint16_t& addr);
 	virtual void FreeClientAddress(uint16_t addr);
 
+	virtual void SendRPCMessage(const RPCMessage& tx_msg);
+	virtual bool RecvRPCMessage(RPCMessage& rx_msg);
+
 	void Cycle();
 
 protected:
@@ -152,6 +155,20 @@ protected:
 	std::list<uint32_t> m_rxBuffer;
 
 	//TODO: retransmit buffer
+
+	/// Mutex for data going to the DUT
+	std::mutex m_txMutex;
+
+	/// Buffer of data going to the DUT
+	std::list<RPCMessage> m_rpcTxFifo;
+	//TODO: DMA
+
+	/// Mutex for data going to the host
+	std::mutex m_rxMutex;
+
+	/// Buffer of data going to the host
+	std::list<RPCMessage> m_rpcRxFifo;
+	//TODO: DMA
 };
 
 #endif

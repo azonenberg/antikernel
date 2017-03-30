@@ -36,13 +36,6 @@
 #include "nocbridge.h"
 #include "RPCv3Transceiver_types_enum.h"
 
-/*
-#include "jtaghal.h"
-#include <stdio.h>
-#include "RPCMessage.h"
-#include <RPCv2Router_type_constants.h>
-#include <RPCv2Router_ack_constants.h>
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // RPCMessage
 
@@ -68,7 +61,7 @@ bool RPCMessage::operator==(const RPCMessage& rhs) const
 		(data[1] == rhs.data[1]) &&
 		(data[2] == rhs.data[2]);
 }
-
+/*
 void RPCMessage::Pack(unsigned char* buf) const
 {
 	//Sanity check the high bits of d0 are all zero since only the low 21 are actually valid.
@@ -76,8 +69,7 @@ void RPCMessage::Pack(unsigned char* buf) const
 	{
 		throw JtagExceptionWrapper(
 			"The high 11 bits of data[0] in an RPC message must be all zero.",
-			"",
-			JtagException::EXCEPTION_TYPE_GIGO);
+			"");
 	}
 
 	buf[0] = from >> 8;
@@ -97,6 +89,7 @@ void RPCMessage::Pack(unsigned char* buf) const
 	buf[14] = (data[2] >> 8) & 0xff;
 	buf[15] = data[2] & 0xff;
 }
+*/
 
 void RPCMessage::Pack(uint32_t* buf) const
 {
@@ -116,7 +109,7 @@ void RPCMessage::Unpack(uint32_t* buf)
 	data[1] = buf[2];
 	data[2] = buf[3];
 }
-
+/*
 void RPCMessage::Unpack(unsigned char* buf)
 {
 	from = (buf[0] << 8) | buf[1];

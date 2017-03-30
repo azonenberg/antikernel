@@ -35,6 +35,7 @@
 #include "nocswitch.h"
 #include "../jtaghal/UserPID_enum.h"
 #include "../jtaghal/UserVID_enum.h"
+#include "RPCv3Transceiver_types_enum.h"
 
 using namespace std;
 
@@ -276,19 +277,30 @@ int main(int argc, char* argv[])
 
 		//Start the JTAG thread AFTER creating and binding the socket so we don't have problems with the JTAG interface
 		//mysteriously disappearing on us if the port is already used.
-		thread jtag(JtagThread, pfpga);
+		JTAGNOCBridgeInterface nface(pfpga);
+		thread jtag(JtagThread, &nface);
 
-		/*
+		//Send a test message
+		RPCMessage test_message;
+		test_message.from = 0x4141;
+		test_message.to = 0xfeed;
+		test_message.callnum = 0xcc;
+		test_message.type = RPC_TYPE_INTERRUPT;
+		test_message.data[0] = 0x1234;
+		test_message.data[1] = 0xaaaaaaaa;
+		test_message.data[2] = 0xcccccccc;
+		nface.SendRPCMessage(test_message);
+
 		//Wait for connections
-		std::vector<Thread> threads;
-		std::vector<int> sockets;
-		int cnocaddr = 0xc000;
+		vector<thread*> threads;
+		vector<int> sockets;
 		while(true)
 		{
 			try
 			{
 				Socket client = g_socket.Accept();
 
+				/*
 				//Allocate a new address to this node
 				//TODO: Provide interface for querying this address
 				int addr = cnocaddr;
@@ -309,6 +321,7 @@ int main(int argc, char* argv[])
 				sockets.push_back(data->client_socket);
 
 				threads.push_back(Thread(ConnectionThreadProc, data));
+				*/
 			}
 			catch(const JtagException& ex)
 			{
@@ -317,9 +330,11 @@ int main(int argc, char* argv[])
 		}
 
 		//We're terminating - wait for client threads to stop
-		for(size_t i=0; i<threads.size(); i++)
-			threads[i].WaitUntilTermination();
-		*/
+		for(auto t : threads)
+		{
+			t->join();
+			delete t;
+		}
 
 		//Wait for JTAG thread to stop
 		jtag.join();
@@ -358,7 +373,7 @@ void sig_handler(int sig)
 	switch(sig)
 	{
 		case SIGINT:
-			LogNotice("Quitting...\n");
+			//LogNotice("Quitting...\n");
 			close(g_socket);
 			g_socket = -1;
 			g_quitting = true;
