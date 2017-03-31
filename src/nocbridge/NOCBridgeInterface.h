@@ -63,6 +63,9 @@ public:
 	 */
 	virtual bool RecvRPCMessage(RPCMessage& rx_msg) =0;
 
+	//virtual bool RecvRPCMessageBlocking(RPCMessage& rx_msg) =0;
+	//virtual bool RecvRPCMessageBlockingWithTimeout(RPCMessage& rx_msg, double timeout) =0;
+
 	//TODO: blocking reads, timeouts, etc
 
 	virtual bool AllocateClientAddress(uint16_t& addr) =0;
