@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -43,9 +43,9 @@ class DMAMessage;
 
 /**
 	@brief A connection to a nocswitch instance
-	
+
 	Allows sending and receiving of RPC messages. DMA support will be added in the future.
-	
+
 	\ingroup libjtaghal
  */
 class NOCSwitchInterface : public RPCAndDMANetworkInterface
@@ -54,18 +54,18 @@ public:
 	NOCSwitchInterface();
 	NOCSwitchInterface(const std::string& server, uint16_t port);
 	~NOCSwitchInterface();
-	
+
 	void Connect(const std::string& server, uint16_t port);
 
 	virtual void SendRPCMessage(const RPCMessage& tx_msg);
 	virtual bool RecvRPCMessage(RPCMessage& rx_msg);
-	
+
 	virtual void SendDMAMessage(const DMAMessage& tx_msg);
 	virtual bool SendDMAMessageNonblocking(const DMAMessage& tx_msg);
 	virtual bool RecvDMAMessage(DMAMessage& rx_msg);
-	
+
 	uint16_t GetClientAddress();
-		
+
 protected:
 	///The socket connected to the server
 	Socket m_socket;

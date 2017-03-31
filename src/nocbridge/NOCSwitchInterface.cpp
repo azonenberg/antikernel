@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -52,14 +52,14 @@
 NOCSwitchInterface::NOCSwitchInterface()
 	: m_socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP)
 {
-	
+
 }
 
 /**
 	@brief Initializes this object to an empty state and connects to a server
-	
+
 	@throw JtagException if the connection fails
-	
+
 	@param server	Hostname of the server to connect to
 	@param port		Port number to connect to (host byte ordering)
  */
@@ -71,16 +71,16 @@ NOCSwitchInterface::NOCSwitchInterface(const std::string& server, uint16_t port)
 
 /**
 	@brief Connects to a nocswitch server
-	
+
 	@throw JtagException if the connection fails
-	
+
 	@param server	Hostname of the server to connect to
 	@param port		Port number to connect to (host byte ordering)
  */
 void NOCSwitchInterface::Connect(const std::string& server, uint16_t port)
 {
 	m_socket.Connect(server, port);
-	
+
 	//Set no-delay flag
 	int flag = 1;
 	if(0 != setsockopt(m_socket, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag) ))
@@ -115,7 +115,7 @@ void NOCSwitchInterface::SendRPCMessage(const RPCMessage& tx_msg)
 {
 	uint16_t op = NOCSWITCH_OP_SENDRPC;
 	m_socket.SendLooped((unsigned char*)&op, 2);
-	
+
 	unsigned char buf[16];
 	tx_msg.Pack(buf);
 	m_socket.SendLooped(buf, 16);
@@ -134,7 +134,7 @@ bool NOCSwitchInterface::RecvRPCMessage(RPCMessage& rx_msg)
 		rx_msg.Unpack(buf);
 		//printf("Got message: %s\n", rx_msg.Format().c_str());
 		return true;
-	}	
+	}
 	return false;
 }
 
@@ -151,17 +151,17 @@ void NOCSwitchInterface::SendDMAMessage(const DMAMessage& tx_msg)
 bool NOCSwitchInterface::RecvDMAMessage(DMAMessage& rx_msg)
 {
 	uint16_t op = NOCSWITCH_OP_RECVDMA;
-	
+
 	m_socket.SendLooped((unsigned char*)&op, 2);
 	uint8_t found = 0;
 	m_socket.RecvLooped((unsigned char*)&found, 1);
 	if(found)
-	{		
+	{
 		uint32_t buf[515];
 		m_socket.RecvLooped((unsigned char*)buf, 515*4);
 		rx_msg.Unpack(buf);
 		return true;
-	}	
+	}
 	return false;
 }
 
@@ -179,7 +179,7 @@ uint16_t NOCSwitchInterface::GetClientAddress()
 {
 	uint16_t op = NOCSWITCH_OP_GET_ADDR;
 	m_socket.SendLooped((unsigned char*)&op, 2);
-	
+
 	uint16_t addr;
 	m_socket.RecvLooped((unsigned char*)&addr, 2);
 	return addr;
