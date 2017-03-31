@@ -42,7 +42,7 @@ PRBSTestBitstream:
     pins:
         clk: 1
         led: 4
-        pmod_d: 8
+        pmod_c: 8
 
     # All source code for now, no automatic generation
     sources:

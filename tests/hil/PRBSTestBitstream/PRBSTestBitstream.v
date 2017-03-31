@@ -30,7 +30,7 @@
 module PRBSTestBitstream(
 	input wire clk,
     output reg[3:0] led = 0,
-    inout wire[7:0] pmod_d
+    inout wire[7:0] pmod_c
     );
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,21 +97,21 @@ module PRBSTestBitstream(
     reg	prbs_out	= 0;	//Drive low by default since nothing interesting is happening
 
     //Drive PRBS single ended, tie off the adjacent signal to prevent noise from coupling into it
-    assign pmod_d[0] = prbs_out;
-    assign pmod_d[1] = 1'b0;
+    assign pmod_c[0] = prbs_out;
+    assign pmod_c[1] = 1'b0;
 
     reg		cmp_le = 1;
 
     OBUFDS obuf_cmp_le(
 		.I(cmp_le),
-		.O(pmod_d[4]),
-		.OB(pmod_d[5])
+		.O(pmod_c[4]),
+		.OB(pmod_c[5])
 	);
 
 	wire	cmp_out;
 	IBUFDS ibuf_cmp_out(
-		.I(pmod_d[6]),
-		.IB(pmod_d[7]),
+		.I(pmod_c[6]),
+		.IB(pmod_c[7]),
 		.O(cmp_out)
 	);
 
@@ -139,8 +139,8 @@ module PRBSTestBitstream(
 		.clk(clk_bufg),
 		.clkdiv(16'd1000),		//125 kHz
 
-		.i2c_scl(pmod_d[3]),
-		.i2c_sda(pmod_d[2]),
+		.i2c_scl(pmod_c[3]),
+		.i2c_sda(pmod_c[2]),
 
 		.tx_en(i2c_tx_en),
 		.tx_ack(i2c_tx_ack),
