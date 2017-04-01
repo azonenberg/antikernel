@@ -50,13 +50,14 @@ extern bool g_quitting;
 /**
 	@brief Thread for handling connections
  */
-void ConnectionThread(int sock)
+void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 {
 	Socket client(sock);
 
-	//uint16_t sender = pData->addr;
 	try
 	{
+		LogNotice("Got a connection\n");
+
 		//Set no-delay flag
 		if(!client.DisableNagle())
 		{
@@ -64,17 +65,46 @@ void ConnectionThread(int sock)
 				"Failed to set TCP_NODELAY",
 				"");
 		}
-		/*
+
 		//Sit around and wait for messages
-		uint16_t opcode;
+		uint8_t opcode;
 		while(true)
 		{
-			socket.RecvLooped((unsigned char*)&opcode, 2);
+			client.RecvLooped((unsigned char*)&opcode, 1);
 
 			bool quit = g_quitting;
 
 			switch(opcode)
 			{
+			case NOCSWITCH_OP_ALLOC_ADDR:
+				{
+					LogNotice("Allocate-address request\n");
+
+					//Send back the opcode
+					client.SendLooped((unsigned char*)&opcode, 1);
+
+					//Try to allocate the address and tell the client how it went
+					uint16_t addr;
+					uint8_t ok = iface->AllocateClientAddress(addr);
+					client.SendLooped(&ok, 1);
+
+					LogDebug("ok = %d, addr = %04x\n", ok, addr);
+
+					//If it worked, send the actual data.
+					//Note that we don't send the address field if the allocation failed
+					if(ok)
+						client.SendLooped((unsigned char*)&addr, 2);
+				}
+				break;
+
+			case NOCSWITCH_OP_FREE_ADDR:
+				{
+					//TODO: implement this
+					LogWarning("NOCSWITCH_OP_FREE_ADDR not implemented yet\n");
+				}
+				break;
+
+			/*
 			case NOCSWITCH_OP_SENDRPC:
 				{
 					//Read the message
@@ -213,24 +243,23 @@ void ConnectionThread(int sock)
 			case NOCSWITCH_OP_GET_ADDR:
 				socket.SendLooped((unsigned char*)&sender, 2);
 				break;
-
+			*/
 			case NOCSWITCH_OP_QUIT:
+				LogVerbose("Client disconnecting\n");
 				quit = true;
-				return 0;
+				break;
 
 			default:
 				{
 					throw JtagExceptionWrapper(
 						"Unrecognized opcode received from client",
-						"",
-						JtagException::EXCEPTION_TYPE_GIGO);
+						"");
 				}
 			}
 
 			if(quit)
 				break;
 		}
-		*/
 	}
 	catch(const JtagException& ex)
 	{

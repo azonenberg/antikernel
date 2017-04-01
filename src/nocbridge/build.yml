@@ -36,11 +36,14 @@ nocbridge:
             - c/enum
         ../../antikernel-ipcores/debug/JtagDebugBridge_addresses.yml:
             - c/enum
+        ../nocswitch/nocswitch_opcodes.yml:
+            - c/enum
 
     sources:
         - nocbridge.cpp
         - JTAGNOCBridgeInterface.cpp
         - NOCBridgeInterface.cpp
+        - NOCSwitchInterface.cpp
         - RPCMessage.cpp
 
     flags:
@@ -48,3 +51,4 @@ nocbridge:
         - output/reloc
         - library/target/log
         - library/target/jtaghal
+        - library/target/xptools

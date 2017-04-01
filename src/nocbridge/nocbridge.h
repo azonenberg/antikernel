@@ -40,11 +40,13 @@
 
 #include "../log/log.h"
 #include "../jtaghal/jtaghal.h"
+#include "../xptools/Socket.h"
 
 #include "RPCMessage.h"
 
 #include "NOCBridgeInterface.h"
 #include "JTAGNOCBridgeInterface.h"
+#include "NOCSwitchInterface.h"
 
 /**
 	@brief A single on-chip debug frame (TODO: move to separate file?)

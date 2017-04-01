@@ -35,11 +35,7 @@
 #ifndef NOCSwitchInterface_h
 #define NOCSwitchInterface_h
 
-#include <string>
-class RPCMessage;
-class DMAMessage;
-
-#include "RPCAndDMANetworkInterface.h"
+//class DMAMessage;
 
 /**
 	@brief A connection to a nocswitch instance
@@ -48,7 +44,7 @@ class DMAMessage;
 
 	\ingroup libjtaghal
  */
-class NOCSwitchInterface : public RPCAndDMANetworkInterface
+class NOCSwitchInterface : public NOCBridgeInterface
 {
 public:
 	NOCSwitchInterface();
@@ -59,16 +55,21 @@ public:
 
 	virtual void SendRPCMessage(const RPCMessage& tx_msg);
 	virtual bool RecvRPCMessage(RPCMessage& rx_msg);
-
+	/*
 	virtual void SendDMAMessage(const DMAMessage& tx_msg);
 	virtual bool SendDMAMessageNonblocking(const DMAMessage& tx_msg);
 	virtual bool RecvDMAMessage(DMAMessage& rx_msg);
+	*/
 
-	uint16_t GetClientAddress();
+	virtual bool AllocateClientAddress(uint16_t& addr);
+	virtual void FreeClientAddress(uint16_t addr);
 
 protected:
 	///The socket connected to the server
 	Socket m_socket;
+
+	///Read frames until we get one of the correct type
+	void ReadFramesUntil(uint8_t type);
 };
 
 #endif

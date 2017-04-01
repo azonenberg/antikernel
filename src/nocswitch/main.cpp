@@ -281,6 +281,7 @@ int main(int argc, char* argv[])
 		thread jtag(JtagThread, &nface);
 
 		//Send a test message
+		/*
 		RPCMessage test_message;
 		test_message.from = 0x4141;
 		test_message.to = 0xfeed;
@@ -290,6 +291,7 @@ int main(int argc, char* argv[])
 		test_message.data[1] = 0xaaaaaaaa;
 		test_message.data[2] = 0xcccccccc;
 		nface.SendRPCMessage(test_message);
+		*/
 
 		//Wait for connections
 		vector<thread*> threads;
@@ -299,29 +301,13 @@ int main(int argc, char* argv[])
 			try
 			{
 				Socket client = g_socket.Accept();
-				threads.push_back(new thread(ConnectionThread, client.Detach()));
+				threads.push_back(new thread(ConnectionThread, client.Detach(), &nface));
 
 				/*
-				//Allocate a new address to this node
-				//TODO: Provide interface for querying this address
-				int addr = cnocaddr;
-				cnocaddr ++;
-				if(cnocaddr >= 0xFFFF)
-					printf("All addresses allocated, no new connections possible (see #147)\n");
-				printf("Allocating address 0x%04x to new client\n", addr);
-				fflush(stdout);
-
-				//Spawn a thread to handle this connection
-				ConnectionThreadProcData* data = new ConnectionThreadProcData;
-				data->addr = addr;
-				data->client_socket = client.Detach();
 				#ifndef _WINDOWS
 				if(0 != setsockopt(data->client_socket, SOL_SOCKET, SO_LINGER, &sol, sizeof(sol)))
 					printf("[nocswitch] WARNING: Failed to set SOL_LINGER on client socket, connection reuse may not be possible\n");
 				#endif
-				sockets.push_back(data->client_socket);
-
-				threads.push_back(Thread(ConnectionThreadProc, data));
 				*/
 			}
 			catch(const JtagException& ex)

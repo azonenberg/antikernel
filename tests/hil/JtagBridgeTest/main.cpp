@@ -43,13 +43,10 @@
 #include <map>
 
 #include "../../../src/jtaghal/jtaghal.h"
-/*
-#include "../../src/jtagboards/jtagboards.h"
-#include <RPCv2Router_type_constants.h>
-#include <RPCv2Router_ack_constants.h>
+#include "../../../src/nocbridge/nocbridge.h"
 
-#include <signal.h>
-*/
+#include "RPCv3Transceiver_types_enum.h"
+
 using namespace std;
 
 int main(int argc, char* argv[])
@@ -57,6 +54,7 @@ int main(int argc, char* argv[])
 	int err_code = 0;
 	try
 	{
+		Severity console_verbosity = Severity::NOTICE;
 		string server;
 		int port = 0;
 
@@ -93,20 +91,30 @@ int main(int argc, char* argv[])
 		}
 
 		LogNotice("Connecting to nocswitch server...\n");
-		/*NOCSwitchInterface iface;
+		NOCSwitchInterface iface;
 		iface.Connect(server, port);
 
+		//Allocate an address for us
+		uint16_t addr;
+		if(!iface.AllocateClientAddress(addr))
+		{
+			LogError("Couldn't allocate an address\n");
+			return 1;
+		}
+		LogNotice("Got address %04x\n", addr);
+
 		//Address lookup
-		printf("Looking up address of RPC pinger\n");
-		NameServer nameserver(&iface);
-		uint16_t pingaddr = nameserver.ForwardLookup("rpcping");
-		printf("Pinger is at %04x\n", pingaddr);
+		//printf("Looking up address of RPC pinger\n");
+		//NameServer nameserver(&iface);
+		//uint16_t pingaddr = nameserver.ForwardLookup("rpcping");
+		uint16_t pingaddr = 0xfeed;
+		LogNotice("Pinger is at %04x\n", pingaddr);
 
 		//Needs to be deterministic for testing
 		srand(0);
 
 		//Send a bunch of messages and make sure we get the same thing back
-		printf("Sending ping packets...\n");
+		LogNotice("Sending ping packets...\n");
 		double start = GetTime();
 		int npack = 1000;
 		double sumping = 0;
@@ -115,8 +123,9 @@ int main(int argc, char* argv[])
 		for(int i=0; i<npack; i++)
 		{
 			if( (i % 100) == 0)
-				printf("Message %d\n", i);
+				LogNotice("Message %d\n", i);
 
+			/*
 			RPCMessage msg;
 			msg.from = 0xc000;
 			msg.to = 0x8002;
@@ -166,31 +175,34 @@ int main(int argc, char* argv[])
 					"",
 					JtagException::EXCEPTION_TYPE_FIRMWARE);
 			}
+			*/
+
+			//Done
+			break;
 		}
 
 		int packets_sent = npack * 2;
-		int header_size = packets_sent * 32;
-		int payload_size = packets_sent * 96;
+		int header_size = packets_sent * 96;
+		int payload_size = packets_sent * 128;
 
 		//Print statistics
 		double end = GetTime();
 		double dt = end - start;
-		printf("Done, all OK\n");
-		printf("%d packets sent in %.2f ms (%.2f Kbps raw, %.2f Kbps after overhead)\n",
+		LogNotice("Done, all OK\n");
+		LogNotice("%d packets sent in %.2f ms (%.2f Kbps raw, %.2f Kbps after overhead)\n",
 			packets_sent,
 			dt * 1000,
 			(payload_size + header_size) / (1000 * dt),
 			(payload_size) / (1000 * dt));
-		printf("RTT latency: %.2f ms min / %.2f ms avg / %.2f max\n",
+		LogNotice("RTT latency: %.2f ms min / %.2f ms avg / %.2f max\n",
 			minping * 1000,
 			(sumping / npack) * 1000,
 			maxping * 1000);
-		*/
 	}
 
 	catch(const JtagException& ex)
 	{
-		//printf("%s\n", ex.GetDescription().c_str());
+		LogError("%s\n", ex.GetDescription().c_str());
 		err_code = 1;
 	}
 

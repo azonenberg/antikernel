@@ -32,18 +32,8 @@
 	@author Andrew D. Zonenberg
 	@brief Implementation of NOCSwitchInterfac
  */
-#include "jtaghal.h"
-#include "NOCSwitchInterface.h"
-#include "../nocswitch/nocswitch_messages.h"
-
-#ifndef _WINDOWS
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#endif
-
+#include "nocbridge.h"
+#include "nocswitch_opcodes_enum.h"
 #include <memory.h>
 
 /**
@@ -80,16 +70,7 @@ NOCSwitchInterface::NOCSwitchInterface(const std::string& server, uint16_t port)
 void NOCSwitchInterface::Connect(const std::string& server, uint16_t port)
 {
 	m_socket.Connect(server, port);
-
-	//Set no-delay flag
-	int flag = 1;
-	if(0 != setsockopt(m_socket, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag) ))
-	{
-		throw JtagExceptionWrapper(
-			"Failed to set TCP_NODELAY",
-			"",
-			JtagException::EXCEPTION_TYPE_NETWORK);
-	}
+	m_socket.DisableNagle();
 }
 
 /**
@@ -101,8 +82,8 @@ NOCSwitchInterface::~NOCSwitchInterface()
 	{
 		if(m_socket)
 		{
-			uint16_t op = NOCSWITCH_OP_QUIT;
-			m_socket.SendLooped((unsigned char*)&op, 2);
+			uint8_t op = NOCSWITCH_OP_QUIT;
+			m_socket.SendLooped((unsigned char*)&op, 1);
 		}
 	}
 	catch(const JtagException& ex)
@@ -113,16 +94,17 @@ NOCSwitchInterface::~NOCSwitchInterface()
 
 void NOCSwitchInterface::SendRPCMessage(const RPCMessage& tx_msg)
 {
-	uint16_t op = NOCSWITCH_OP_SENDRPC;
-	m_socket.SendLooped((unsigned char*)&op, 2);
+	uint8_t op = NOCSWITCH_OP_RPC;
+	m_socket.SendLooped((unsigned char*)&op, 1);
 
 	unsigned char buf[16];
 	tx_msg.Pack(buf);
 	m_socket.SendLooped(buf, 16);
 }
 
-bool NOCSwitchInterface::RecvRPCMessage(RPCMessage& rx_msg)
+bool NOCSwitchInterface::RecvRPCMessage(RPCMessage& /*rx_msg*/)
 {
+	/*
 	uint16_t op = NOCSWITCH_OP_RECVRPC;
 	m_socket.SendLooped((unsigned char*)&op, 2);
 	uint8_t found = 0;
@@ -134,10 +116,10 @@ bool NOCSwitchInterface::RecvRPCMessage(RPCMessage& rx_msg)
 		rx_msg.Unpack(buf);
 		//printf("Got message: %s\n", rx_msg.Format().c_str());
 		return true;
-	}
+	}*/
 	return false;
 }
-
+/*
 void NOCSwitchInterface::SendDMAMessage(const DMAMessage& tx_msg)
 {
 	uint16_t op = NOCSWITCH_OP_SENDDMA;
@@ -171,16 +153,48 @@ bool NOCSwitchInterface::SendDMAMessageNonblocking(const DMAMessage& tx_msg)
 	SendDMAMessage(tx_msg);
 	return true;
 }
+*/
 
-/**
-	@brief Gets the address nocswitch assigned to us
- */
-uint16_t NOCSwitchInterface::GetClientAddress()
+bool NOCSwitchInterface::AllocateClientAddress(uint16_t& addr)
 {
-	uint16_t op = NOCSWITCH_OP_GET_ADDR;
-	m_socket.SendLooped((unsigned char*)&op, 2);
+	//Send the request
+	uint8_t op = NOCSWITCH_OP_ALLOC_ADDR;
+	m_socket.SendLooped((unsigned char*)&op, 1);
 
-	uint16_t addr;
-	m_socket.RecvLooped((unsigned char*)&addr, 2);
-	return addr;
+	//Block until we get a packet of the right type
+	ReadFramesUntil(NOCSWITCH_OP_ALLOC_ADDR);
+
+	//Next byte is OK/fail value
+	uint8_t ok = 0;
+	if(!m_socket.RecvLooped((unsigned char*)&ok, 1))
+		return false;
+	if(!ok)
+		return false;
+
+	//Now we have 2 bytes (little endian) of address
+	if(!m_socket.RecvLooped((unsigned char*)&addr, 2))
+		return false;
+
+	//All good if we get here
+	return true;
+}
+
+void NOCSwitchInterface::FreeClientAddress(uint16_t /*addr*/)
+{
+}
+
+void NOCSwitchInterface::ReadFramesUntil(uint8_t type)
+{
+	while(true)
+	{
+		//Get a header and see if it's the right type
+		uint8_t op = 0;
+		if(!m_socket.RecvLooped((unsigned char*)&op, 1))
+			return;
+		if(op == type)
+			break;
+
+		//Wrong type! Probably an inbound message, push it into our queue
+		LogWarning("Don't know what to do with message of type %x\n", op);
+	}
 }

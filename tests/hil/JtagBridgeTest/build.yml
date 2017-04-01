@@ -31,6 +31,10 @@ JtagBridgeTest:
     toolchain:      c++/generic
     type:           exe
 
+    constants:
+        ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver_types.yml:
+            - c/enum
+
     sources:
         - main.cpp
 
