@@ -69,7 +69,7 @@ public:
 	///Application-layer data. Note that only the low 21 bits of data[0] are transmitted; the high 11 must be all zeros.
 	uint32_t data[3];
 
-	//void Pack(unsigned char* buf) const;
+	void Pack(uint8_t* buf) const;
 	void Pack(uint32_t* buf) const;
 	//void Unpack(unsigned char* buf);
 	void Unpack(uint32_t* buf);

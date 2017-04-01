@@ -61,16 +61,12 @@ bool RPCMessage::operator==(const RPCMessage& rhs) const
 		(data[1] == rhs.data[1]) &&
 		(data[2] == rhs.data[2]);
 }
-/*
-void RPCMessage::Pack(unsigned char* buf) const
+
+void RPCMessage::Pack(uint8_t* buf) const
 {
 	//Sanity check the high bits of d0 are all zero since only the low 21 are actually valid.
 	if( (data[0] & 0x1fffff) != data[0])
-	{
-		throw JtagExceptionWrapper(
-			"The high 11 bits of data[0] in an RPC message must be all zero.",
-			"");
-	}
+		LogWarning("The high 11 bits of data[0] in an RPC message must be all zero. (got %08x)\n", data[0]);
 
 	buf[0] = from >> 8;
 	buf[1] = from & 0xff;
@@ -89,10 +85,13 @@ void RPCMessage::Pack(unsigned char* buf) const
 	buf[14] = (data[2] >> 8) & 0xff;
 	buf[15] = data[2] & 0xff;
 }
-*/
 
 void RPCMessage::Pack(uint32_t* buf) const
 {
+	//Sanity check the high bits of d0 are all zero since only the low 21 are actually valid.
+	if( (data[0] & 0x1fffff) != data[0])
+		LogWarning("The high 11 bits of data[0] in an RPC message must be all zero. (got %08x)\n", data[0]);
+
 	buf[0] = (from << 16) | to;
 	buf[1] = (callnum << 24) | (type << 21) | data[0];
 	buf[2] = data[1];
