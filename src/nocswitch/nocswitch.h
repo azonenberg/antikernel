@@ -60,4 +60,13 @@ void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface);
 
 extern bool g_quitting;
 
+//Data leaving the DUT
+//extern Mutex g_recvmutex;
+//extern std::map<int, std::list<RPCMessage> > g_recvqueue;
+
+/*
+extern std::list<DMAMessage> g_dsendqueue;
+extern std::map<int, std::list<DMAMessage> > g_drecvqueue;
+*/
+
 #endif

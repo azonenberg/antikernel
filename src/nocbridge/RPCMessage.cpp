@@ -108,8 +108,8 @@ void RPCMessage::Unpack(uint32_t* buf)
 	data[1] = buf[2];
 	data[2] = buf[3];
 }
-/*
-void RPCMessage::Unpack(unsigned char* buf)
+
+void RPCMessage::Unpack(uint8_t* buf)
 {
 	from = (buf[0] << 8) | buf[1];
 	to = (buf[2] << 8) | buf[3];
@@ -119,7 +119,7 @@ void RPCMessage::Unpack(unsigned char* buf)
 	data[1] = (buf[8] << 24) | (buf[9] << 16) | (buf[10] << 8) | buf[11];
 	data[2] = (buf[12] << 24) | (buf[13] << 16) | (buf[14] << 8) | buf[15];
 }
-*/
+
 /**
 	@brief Returns a printable version of the message
  */

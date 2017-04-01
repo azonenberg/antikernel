@@ -71,7 +71,7 @@ public:
 
 	void Pack(uint8_t* buf) const;
 	void Pack(uint32_t* buf) const;
-	//void Unpack(unsigned char* buf);
+	void Unpack(uint8_t* buf);
 	void Unpack(uint32_t* buf);
 
 	//std::string Format() const;

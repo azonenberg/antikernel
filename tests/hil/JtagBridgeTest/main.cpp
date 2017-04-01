@@ -95,13 +95,13 @@ int main(int argc, char* argv[])
 		iface.Connect(server, port);
 
 		//Allocate an address for us
-		uint16_t addr;
-		if(!iface.AllocateClientAddress(addr))
+		uint16_t ouraddr;
+		if(!iface.AllocateClientAddress(ouraddr))
 		{
 			LogError("Couldn't allocate an address\n");
 			return 1;
 		}
-		LogNotice("Got address %04x\n", addr);
+		LogNotice("Got address %04x\n", ouraddr);
 
 		//Address lookup
 		//printf("Looking up address of RPC pinger\n");
@@ -125,10 +125,9 @@ int main(int argc, char* argv[])
 			if( (i % 100) == 0)
 				LogNotice("Message %d\n", i);
 
-			/*
 			RPCMessage msg;
-			msg.from = 0xc000;
-			msg.to = 0x8002;
+			msg.from = ouraddr;
+			msg.to = pingaddr;
 			msg.type = RPC_TYPE_INTERRUPT;
 			msg.callnum = rand() & 0xff;
 			msg.data[0] = rand() & 0x001fffff;
@@ -137,6 +136,7 @@ int main(int argc, char* argv[])
 			double tsend = GetTime();
 			iface.SendRPCMessage(msg);
 
+			/*
 			RPCMessage rxm;
 			if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 5))
 			{
@@ -148,6 +148,7 @@ int main(int argc, char* argv[])
 					"",
 					JtagException::EXCEPTION_TYPE_FIRMWARE);
 			}
+			*/
 
 			double trcv = GetTime();
 			double rtt = (trcv - tsend);
@@ -157,6 +158,7 @@ int main(int argc, char* argv[])
 			if(maxping < rtt)
 				maxping = rtt;
 
+			/*
 			if( (rxm.from == pingaddr) &&
 				(rxm.data[0] == msg.data[0]) &&
 				(rxm.data[1] == msg.data[1]) &&
@@ -165,7 +167,6 @@ int main(int argc, char* argv[])
 			{
 				//printf("Message %d OK\n", i);
 			}
-
 			else
 			{
 				printf("Message %d FAIL\n", i);

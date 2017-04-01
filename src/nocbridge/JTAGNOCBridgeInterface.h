@@ -101,6 +101,7 @@ public:
 	virtual bool AllocateClientAddress(uint16_t& addr);
 	virtual void FreeClientAddress(uint16_t addr);
 
+	///IMPORTANT: These functions DO NOT call Cycle()!
 	virtual void SendRPCMessage(const RPCMessage& tx_msg);
 	virtual bool RecvRPCMessage(RPCMessage& rx_msg);
 

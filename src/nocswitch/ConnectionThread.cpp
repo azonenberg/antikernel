@@ -33,19 +33,16 @@
 	@brief Main thread procedure for handling connections from client
  */
 #include "nocswitch.h"
+#include "JtagDebugBridge_addresses_enum.h"
 
-/*
 using namespace std;
 
-extern Mutex g_sendmutex;
-extern std::list<RPCMessage> g_sendqueue;
-extern std::list<DMAMessage> g_dsendqueue;
-extern Mutex g_recvmutex;
-extern std::map<int, std::list<RPCMessage> > g_recvqueue;
-extern std::map<int, std::list<DMAMessage> > g_drecvqueue;
+bool IsInDebugSubnet(int addr);
 
-extern bool g_quitting;
-*/
+bool IsInDebugSubnet(int addr)
+{
+	return (addr <= DEBUG_HIGH_ADDR) && (addr >= DEBUG_LOW_ADDR);
+}
 
 /**
 	@brief Thread for handling connections
@@ -53,6 +50,9 @@ extern bool g_quitting;
 void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 {
 	Socket client(sock);
+
+	//The set of addresses assigned to THIS socket
+	set<uint16_t> our_addresses;
 
 	try
 	{
@@ -88,12 +88,14 @@ void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 					uint8_t ok = iface->AllocateClientAddress(addr);
 					client.SendLooped(&ok, 1);
 
-					LogDebug("ok = %d, addr = %04x\n", ok, addr);
-
 					//If it worked, send the actual data.
-					//Note that we don't send the address field if the allocation failed
+					//(Note that we don't send the address field if the allocation failed!)
+					//Also record the address so we know to check stuff destined to it in the future
 					if(ok)
+					{
 						client.SendLooped((unsigned char*)&addr, 2);
+						our_addresses.emplace(addr);
+					}
 				}
 				break;
 
@@ -104,42 +106,40 @@ void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 				}
 				break;
 
-			/*
-			case NOCSWITCH_OP_SENDRPC:
+			case NOCSWITCH_OP_RPC:
 				{
 					//Read the message
 					unsigned char buf[16];
-					socket.RecvLooped(buf, 16);
+					client.RecvLooped(buf, 16);
 					RPCMessage msg;
 					msg.Unpack(buf);
 
 					//Patch in source address
+					/*
 					if(msg.from == 0x0000)
 						msg.from = sender;
-					else if( (msg.from >> 14) != 3)
+					else*/ if(!IsInDebugSubnet(msg.from))
 					{
 						throw JtagExceptionWrapper(
 							"Spoofed source address received on inbound packet, dropping connection",
-							"",
-							JtagException::EXCEPTION_TYPE_GIGO);
+							"");
 					}
 
-					//If the message is destined for the debug subnet (0xC000/2) send it here instead
-					if((msg.to >> 14) == 3)
+					//If the message is destined for the debug subnet send it here instead
+					if(IsInDebugSubnet(msg.to))
 					{
-						MutexLock lock(g_recvmutex);
-						g_recvqueue[msg.to].push_back(msg);
+						LogError("Loopback to debug addresses not yet implemented\n");
+						//MutexLock lock(g_recvmutex);
+						//g_recvqueue[msg.to].push_back(msg);
 					}
 
-					//Put it on the queue for the JTAG link
+					//Nope, put it on the queue for the JTAG link
 					else
-					{
-						MutexLock lock(g_sendmutex);
-						g_sendqueue.push_back(msg);
-					}
+						iface->SendRPCMessage(msg);
 				}
 				break;
 
+			/*
 			case NOCSWITCH_OP_RECVRPC:
 				{
 					//printf("%04x: polling for RPC messages\n", sender);

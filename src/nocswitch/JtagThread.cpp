@@ -50,7 +50,7 @@ void JtagThread(JTAGNOCBridgeInterface* piface)
 			//Push pending messages, get whatever comes back
 			piface->Cycle();
 
-			//TODO: Dispatch them to the various threads in question
+			//TODO: Dispatch returned data to the various threads in question
 		}
 	}
 	catch(const JtagException& ex)

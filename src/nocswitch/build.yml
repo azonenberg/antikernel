@@ -41,6 +41,8 @@ nocswitch:
             - c/enum
         ../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver_types.yml:
             - c/enum
+        ../../antikernel-ipcores/debug/JtagDebugBridge_addresses.yml:
+            - c/enum
 
     # pthread is optional since not all platforms have it!
     flags:
