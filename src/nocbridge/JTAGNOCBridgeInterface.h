@@ -134,6 +134,9 @@ protected:
 	/// The device we're debugging
 	JtagFPGA* m_fpga;
 
+	/// Mutex for address list
+	std::mutex m_addressMutex;
+
 	/// Set of free addresses
 	std::set<uint16_t> m_freeAddresses;
 
@@ -168,6 +171,7 @@ protected:
 
 	/// Buffer of data going to the host
 	std::list<RPCMessage> m_rpcRxFifo;
+
 	//TODO: DMA
 };
 

@@ -162,6 +162,8 @@ JTAGNOCBridgeInterface::~JTAGNOCBridgeInterface()
 
 bool JTAGNOCBridgeInterface::AllocateClientAddress(uint16_t& addr)
 {
+	lock_guard<mutex> lock(m_addressMutex);
+
 	//Pop free list, if we have anything there
 	if(m_freeAddresses.empty())
 		return false;
@@ -174,6 +176,8 @@ bool JTAGNOCBridgeInterface::AllocateClientAddress(uint16_t& addr)
 
 void JTAGNOCBridgeInterface::FreeClientAddress(uint16_t addr)
 {
+	lock_guard<mutex> lock(m_addressMutex);
+
 	//Disable "comparison is always false due to limited range of data type" warnings for here
 	//If DEBUG_*_ADDR are at the low/high ends of the address range some comparisons are pointless
 	//but we need them there to keep the code generic.
