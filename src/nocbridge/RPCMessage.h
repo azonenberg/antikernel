@@ -74,7 +74,7 @@ public:
 	void Unpack(uint8_t* buf);
 	void Unpack(uint32_t* buf);
 
-	//std::string Format() const;
+	std::string Format() const;
 
 	bool operator==(const RPCMessage& rhs) const;
 };
