@@ -73,15 +73,19 @@ module PRBSTestBitstream(
     wire[31:0]	rpc_tx_data;
     wire		rpc_tx_ready;
 
+    wire		rpc_rx_en;
+    wire[31:0]	rpc_rx_data;
+    wire		rpc_rx_ready;
+
     JtagDebugBridge #(
 		.NOC_WIDTH(32)
     ) bridge(
 		.clk(clk_bufg),
 
-		//RPC loopback for testing
-		.rpc_tx_en(rpc_tx_en),
-		.rpc_tx_data(rpc_tx_data),
-		.rpc_tx_ready(rpc_tx_ready),
+		//Point to point crossover connection
+		.rpc_tx_en(rpc_rx_en),
+		.rpc_tx_data(rpc_rx_data),
+		.rpc_tx_ready(rpc_rx_ready),
 
 		.rpc_rx_en(rpc_tx_en),
 		.rpc_rx_data(rpc_tx_data),
@@ -114,9 +118,6 @@ module PRBSTestBitstream(
 		.IB(pmod_c[7]),
 		.O(cmp_out)
 	);
-
-	always @(*)
-		led[0]	<= cmp_out;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // I2C stuff
@@ -158,19 +159,180 @@ module PRBSTestBitstream(
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Blink the output
+    // RPC transceiver for talking to the host
 
-    reg[22:0] count = 0;
+    reg			rpc_fab_tx_en		= 0;
+	wire		rpc_fab_tx_busy;
+	reg[15:0]	rpc_fab_tx_dst_addr	= 0;
+	reg[7:0]	rpc_fab_tx_callnum	= 0;
+	reg[2:0]	rpc_fab_tx_type		= 0;
+	reg[20:0]	rpc_fab_tx_d0		= 0;
+	reg[31:0]	rpc_fab_tx_d1		= 0;
+	reg[31:0]	rpc_fab_tx_d2		= 0;
+	wire		rpc_fab_tx_done;
+
+	reg			rpc_fab_rx_ready	= 1;	//start out ready
+	wire		rpc_fab_rx_busy;
+	wire		rpc_fab_rx_en;
+	wire[15:0]	rpc_fab_rx_src_addr;
+	wire[15:0]	rpc_fab_rx_dst_addr;
+	wire[7:0]	rpc_fab_rx_callnum;
+	wire[2:0]	rpc_fab_rx_type;
+	wire[20:0]	rpc_fab_rx_d0;
+	wire[31:0]	rpc_fab_rx_d1;
+	wire[31:0]	rpc_fab_rx_d2;
+
+	RPCv3Transceiver #(
+		.DATA_WIDTH(/*NOC_WIDTH*/32),
+		.QUIET_WHEN_IDLE(1),
+		.LEAF_NODE(1),
+		.NODE_ADDR(16'hfe00)
+	) rpc_txvr (
+		.clk(clk),
+
+		//Network side
+		.rpc_tx_en(rpc_tx_en),
+		.rpc_tx_data(rpc_tx_data),
+		.rpc_tx_ready(rpc_tx_ready),
+		.rpc_rx_en(rpc_rx_en),
+		.rpc_rx_data(rpc_rx_data),
+		.rpc_rx_ready(rpc_rx_ready),
+
+		//Fabric side
+		.rpc_fab_tx_en(rpc_fab_tx_en),
+		.rpc_fab_tx_busy(rpc_fab_tx_busy),
+		.rpc_fab_tx_src_addr(16'h0000),
+		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
+		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
+		.rpc_fab_tx_type(rpc_fab_tx_type),
+		.rpc_fab_tx_d0(rpc_fab_tx_d0),
+		.rpc_fab_tx_d1(rpc_fab_tx_d1),
+		.rpc_fab_tx_d2(rpc_fab_tx_d2),
+		.rpc_fab_tx_done(rpc_fab_tx_done),
+
+		.rpc_fab_rx_ready(rpc_fab_rx_ready),
+		.rpc_fab_rx_busy(rpc_fab_rx_busy),
+		.rpc_fab_rx_en(rpc_fab_rx_en),
+		.rpc_fab_rx_src_addr(rpc_fab_rx_src_addr),
+		.rpc_fab_rx_dst_addr(rpc_fab_rx_dst_addr),
+		.rpc_fab_rx_callnum(rpc_fab_rx_callnum),
+		.rpc_fab_rx_type(rpc_fab_rx_type),
+		.rpc_fab_rx_d0(rpc_fab_rx_d0),
+		.rpc_fab_rx_d1(rpc_fab_rx_d1),
+		.rpc_fab_rx_d2(rpc_fab_rx_d2)
+		);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Main state machine
+
+	localparam STATE_IDLE		= 0;
+	localparam STATE_DAC_WAIT	= 1;
+	localparam STATE_CAPTURE	= 2;
+
+    reg[7:0]	state = STATE_IDLE;
+
+    reg			dac_wr_en	= 0;
+    reg[15:0]	dac_code	= 0;
+    reg			dac_done	= 0;
+
+    `include "RPCv3Transceiver_types_localparam.vh"
+
+    reg[3:0] prbs_count = 0;
+    reg[7:0] sample_count = 0;
+
     always @(posedge clk_bufg) begin
-		count <= count + 1;
-		if(count == 0)
-			prbs_out = ~prbs_out;
+
+		//Fake PRBS generator (squarewave)
+		prbs_count <= prbs_count + 1'h1;
+		if(prbs_count == 0)
+			prbs_out <= ~prbs_out;
+
+		dac_wr_en		<= 0;
+		rpc_fab_tx_en	<= 0;
+
+		if(rpc_fab_rx_en)
+			rpc_fab_rx_ready	<= 0;
+
+		case(state)
+
+			STATE_IDLE: begin
+
+				//Don't send anything
+				prbs_out		<= 0;
+
+				//Wait for a message
+				if(rpc_fab_rx_en) begin
+
+					//Prepare to send response
+					rpc_fab_tx_dst_addr	<= rpc_fab_rx_src_addr;
+					rpc_fab_tx_type		<= rpc_fab_rx_type;
+					rpc_fab_tx_callnum	<= rpc_fab_rx_callnum;
+					rpc_fab_tx_d0		<= rpc_fab_rx_d0;
+					rpc_fab_tx_d1		<= 1;
+					rpc_fab_tx_d2		<= 2;
+
+					if(rpc_fab_rx_type == RPC_TYPE_CALL) begin
+
+						case(rpc_fab_rx_callnum)
+
+							//Set up DAC
+							0: begin
+								dac_wr_en		<= 1;
+								dac_code		<= rpc_fab_rx_d0[15:0];
+								state			<= STATE_DAC_WAIT;
+
+								//Prepare to return response
+								rpc_fab_tx_type	<= RPC_TYPE_RETURN_SUCCESS;
+							end
+
+							//Capture a waveform
+							1: begin
+								sample_count	<= 0;
+								prbs_count		<= 0;
+								state			<= STATE_CAPTURE;
+								rpc_fab_tx_type	<= RPC_TYPE_RETURN_SUCCESS;
+							end
+						endcase
+					end
+
+				end
+
+			end	//end STATE_IDLE
+
+			//Wait for DAC to be done
+			STATE_DAC_WAIT: begin
+				if(dac_done) begin
+					rpc_fab_rx_ready	<= 1;
+					rpc_fab_tx_en		<= 1;
+					state				<= STATE_IDLE;
+				end
+			end	//end STATE_DAC_WAIT
+
+			STATE_CAPTURE: begin
+				sample_count			<= sample_count + 1'h1;
+
+				//Record 64 samples
+				if(sample_count < 32)
+					rpc_fab_tx_d1[sample_count[4:0]]	<= cmp_out;
+				else if(sample_count < 64)
+					rpc_fab_tx_d2[sample_count[4:0]]	<= cmp_out;
+
+				//Done capturing
+				else begin
+					rpc_fab_rx_ready	<= 1;
+					rpc_fab_tx_en		<= 1;
+					state				<= STATE_IDLE;
+				end
+
+			end	//end STATE_CAPTURE
+
+		endcase
     end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Configure the DAC to drive mid-scale
+    // Control the DAC
 
-    reg[3:0] state = 0;
+    reg[2:0] dac_state = 0;
 
     always @(posedge clk_bufg) begin
 
@@ -182,18 +344,22 @@ module PRBSTestBitstream(
 
 		i2c_rx_ack		<= 1;
 
-		case(state)
+		dac_done		<= 0;
+
+		case(dac_state)
 
 			0: begin
-				i2c_start_en	<= 1;
-				state			<= 1;
+				if(dac_wr_en) begin
+					i2c_start_en	<= 1;
+					dac_state		<= 1;
+				end
 			end
 
 			1: begin
 				if(!i2c_start_en && !i2c_busy) begin
 					i2c_tx_en	<= 1;
 					i2c_tx_data	<= {4'b1100, 3'b000, 1'b0};			//Write to an MCP47x6A0 (address LSBs 3'b000)
-					state		<= 2;
+					dac_state	<= 2;
 				end
 			end
 
@@ -204,35 +370,32 @@ module PRBSTestBitstream(
 																	//Vref = Vdd
 																	//not powering down
 																	//gain of 1
-					state		<= 3;
+					dac_state	<= 3;
 				end
 			end
 
 			3: begin
 				if(!i2c_tx_en && !i2c_busy) begin
 					i2c_tx_en	<= 1;
-					i2c_tx_data	<= 8'h40;	//eight high bits of DAC (left justified)
-					state		<= 4;
+					i2c_tx_data	<= dac_code[15:8];	//eight high bits of DAC (left justified)
+					dac_state	<= 4;
 				end
 			end
 
 			4: begin
 				if(!i2c_tx_en && !i2c_busy) begin
 					i2c_tx_en	<= 1;
-					i2c_tx_data	<= 8'h00;	//four low bits of DAC (left justified)
-					state		<= 5;
+					i2c_tx_data	<= dac_code[7:0];	//four low bits of DAC (left justified)
+					dac_state	<= 5;
 				end
 			end
 
 			5: begin
 				if(!i2c_tx_en && !i2c_busy) begin
 					i2c_stop_en	<= 1;
-					state		<= 6;
+					dac_state	<= 0;
+					dac_done	<= 1;
 				end
-			end
-
-			6: begin
-				//hang forever
 			end
 
 		endcase
