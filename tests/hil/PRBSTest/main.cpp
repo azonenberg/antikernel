@@ -111,56 +111,91 @@ int main(int argc, char* argv[])
 		//Sweep the DAC in a sawtooth pattern
 		//(note: actual DAC resolution is 12 bits, we send 16 for future proofing.
 		//Do 256 steps to speed edge rate for now
-		const unsigned int navg = 32;
-		unsigned int sample_values[64][navg] = {0};
-		for(unsigned int j=0; j<navg; j++)
+		const unsigned int navg = 1;/*32*/;
+		const unsigned int nphase = 32;
+		unsigned int sample_values[256 * nphase][navg] = {0};
+		for(unsigned int i=0; i<65536; i += 256)
 		{
-			for(unsigned int i=0; i<65536; i += 256)
+			//Set up the DAC
+			RPCMessage msg;
+			msg.from = ouraddr;
+			msg.to = scopeaddr;
+			msg.type = RPC_TYPE_CALL;
+			msg.callnum = 0;
+			msg.data[0] = i;
+			msg.data[1] = 0;
+			msg.data[2] = 0;
+			iface.SendRPCMessage(msg);
+			//LogDebug("Sending: %s\n", msg.Format().c_str());
+
+			RPCMessage rxm;
+			if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 1))
 			{
-				RPCMessage msg;
-				msg.from = ouraddr;
-				msg.to = scopeaddr;
-				msg.type = RPC_TYPE_CALL;
-				msg.callnum = 0;
-				msg.data[0] = i;
+				LogError("Timeout! expected response within 1 sec but nothing arrived\n");
+				LogVerbose("Sent:\n    %s\n\n", msg.Format().c_str());
+				return -1;
+			}
+			//should just be an acknowledgement
+			//LogDebug("Got: %s\n", rxm.Format().c_str());
+
+			//Set up the PLL
+			//VCO runs at 1 GHz for now (1000 ps)
+			//Sample clock is 250 MHz (4000 ps)
+			//Measurement unit is 1/8 VCO period (125 ps)
+			//Total sweep range is 0...31
+			for(unsigned int phase = 0; phase < nphase; phase ++)
+			{
+				//Set up the PLL
+				msg.callnum = 2;
+				msg.data[0] = phase;
 				msg.data[1] = 0;
 				msg.data[2] = 0;
 				iface.SendRPCMessage(msg);
 				//LogDebug("Sending: %s\n", msg.Format().c_str());
 
-				RPCMessage rxm;
 				if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 1))
 				{
-					LogError("Timeout expected response within 1 sec but nothing arrived\n");
+					LogError("Timeout! expected response within 1 sec but nothing arrived\n");
 					LogVerbose("Sent:\n    %s\n\n", msg.Format().c_str());
 					return -1;
 				}
 				//should just be an acknowledgement
 				//LogDebug("Got: %s\n", rxm.Format().c_str());
 
-				//DAC is set up! Send a PRBS and return the results
-				//Initial test: no PLL, 125 MHz sample rate. This is 8 ns per sample
-				//Record for 64 samples (512 ns / ~0.5 us) in one RPC message
-				msg.callnum = 1;
-				msg.data[0] = 0;
-				msg.data[1] = 0;
-				msg.data[2] = 0;
-				iface.SendRPCMessage(msg);
-
-				if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 1))
+				//Repeat for a couple of averages
+				for(unsigned int j=0; j<navg; j++)
 				{
-					LogError("Timeout expected response within 1 sec but nothing arrived\n");
-					LogVerbose("Sent:\n    %s\n\n", msg.Format().c_str());
-					return -1;
-				}
+					//DAC is set up! Send a PRBS and return the results
+					//Record for 64 samples in one RPC message
+					msg.callnum = 1;
+					msg.data[0] = 0;
+					msg.data[1] = 0;
+					msg.data[2] = 0;
+					iface.SendRPCMessage(msg);
 
-				//This is the readings from our current test! Print them out
-				for(int k=0; k<32; k++)
-				{
-					if(rxm.data[1] >> k)
-						sample_values[k][j] = i;
-					if(rxm.data[2] >> k)
-						sample_values[k + 32][j] = i;
+					//Read 4 blocks of samples
+					for(int m=0; m<4; m++)
+					{
+						if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 1))
+						{
+							LogError("Timeout! expected response within 1 sec but nothing arrived\n");
+							LogVerbose("Sent:\n    %s\n\n", msg.Format().c_str());
+							return -1;
+						}
+
+						//This is the readings from our current test! Print them out
+						int base = 64*m;				//Number of samples per RPC result
+						for(int k=0; k<32; k++)
+						{
+							int bk = base + k;			//Number of the sample we're looking at
+														//(within this phase)
+
+							if( (rxm.data[1] >> k) & 1 )
+								sample_values[bk * nphase + phase][j] = i;
+							if( (rxm.data[2] >> k) & 1 )
+								sample_values[(bk + 32) * nphase + phase][j] = i;
+						}
+					}
 				}
 			}
 		}
@@ -171,10 +206,14 @@ int main(int argc, char* argv[])
 
 		//Do final CSV export
 		LogDebug("time (ns),voltage\n");
-		for(int t=0; t<64; t++)
+		for(unsigned int t=0; t<256*nphase; t++)
 		{
+			//Actual time for the raw waveform
+			//We sample at 125 ps now
+			float tns = 0.125f * t;
+
 			for(unsigned int n=0; n<navg; n++)
-				LogDebug("%d, %.3f\n", t*8, sample_values[t][n] * scale);
+				LogDebug("%.3f, %.3f\n", tns, sample_values[t][n] * scale);
 		}
 	}
 

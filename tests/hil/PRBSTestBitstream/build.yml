@@ -54,6 +54,7 @@ PRBSTestBitstream:
         - PRBSTestBitstream.v
         - ../../../antikernel-ipcores/clock/crossing/HandshakeSynchronizer.v
         - ../../../antikernel-ipcores/clock/crossing/ThreeStageSynchronizer.v
+        - ../../../antikernel-ipcores/clock/pll/ReconfigurablePLL.v
         - ../../../antikernel-ipcores/dataflow/CrossClockPacketFifo.v
         - ../../../antikernel-ipcores/debug/JtagDebugBridge.v
         - ../../../antikernel-ipcores/debug/JtagUserIdentifier.v
