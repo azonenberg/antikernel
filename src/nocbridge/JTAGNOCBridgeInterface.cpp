@@ -412,10 +412,10 @@ void JTAGNOCBridgeInterface::Cycle()
 			{
 				RPCMessage rxm;
 				rxm.Unpack(&payload[0]);
+				//LogTrace("Got: %s\n", rxm.Format().c_str());
 
-				//TODO: Send this message where it belongs
-
-				LogDebug("Got: %s\n", rxm.Format().c_str());
+				lock_guard<mutex> rpclock(m_rxMutex);
+				m_rpcRxFifo.push_back(rxm);
 			}
 		}
 

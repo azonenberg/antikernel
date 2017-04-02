@@ -30,53 +30,23 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Declaration of NOCSwitchInterface
+	@brief Declaration of ConnectionContext
  */
-#ifndef NOCSwitchInterface_h
-#define NOCSwitchInterface_h
-
-//class DMAMessage;
+#ifndef ConnectionContext_h
+#define ConnectionContext_h
 
 /**
-	@brief A connection to a nocswitch instance
-
-	Allows sending and receiving of RPC messages. DMA support will be added in the future.
-
-	\ingroup libjtaghal
+	@brief A single connection
  */
-class NOCSwitchInterface : public NOCBridgeInterface
+class ConnectionContext
 {
 public:
-	NOCSwitchInterface();
-	NOCSwitchInterface(const std::string& server, uint16_t port);
-	~NOCSwitchInterface();
+	ConnectionContext(unsigned int nsock);
+	virtual ~ConnectionContext();
 
-	void Connect(const std::string& server, uint16_t port);
-
-	virtual void SendRPCMessage(const RPCMessage& tx_msg);
-	virtual bool RecvRPCMessage(RPCMessage& rx_msg);
-	virtual void RecvRPCMessageBlocking(RPCMessage& rx_msg);
-	virtual bool RecvRPCMessageBlockingWithTimeout(RPCMessage& rx_msg, double timeout);
-
-	/*
-	virtual void SendDMAMessage(const DMAMessage& tx_msg);
-	virtual bool SendDMAMessageNonblocking(const DMAMessage& tx_msg);
-	virtual bool RecvDMAMessage(DMAMessage& rx_msg);
-	*/
-
-	virtual bool AllocateClientAddress(uint16_t& addr);
-	virtual void FreeClientAddress(uint16_t addr);
-
-protected:
-	///The socket connected to the server
+	std::mutex m_mutex;
 	Socket m_socket;
-
-	///Read frames until we get one of the correct type
-	void ReadFramesUntil(uint8_t type);
-
-	///Queue of inbound messages waiting for the client to read them
-	//TODO: multiple queues for multiple clients?
-	std::list<RPCMessage> m_rxqueue;
 };
 
 #endif
+

@@ -53,20 +53,16 @@
 #include "../jtaghal/jtaghal.h"
 #include "../nocbridge/nocbridge.h"
 
+#include "ConnectionContext.h"
 #include "nocswitch_opcodes_enum.h"
 
 void JtagThread(JTAGNOCBridgeInterface* piface);
 void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface);
+bool IsInDebugSubnet(int addr);
+
+extern std::mutex g_contextMutex;
+extern std::map<uint16_t, ConnectionContext*> g_contextMap;
 
 extern bool g_quitting;
-
-//Data leaving the DUT
-//extern Mutex g_recvmutex;
-//extern std::map<int, std::list<RPCMessage> > g_recvqueue;
-
-/*
-extern std::list<DMAMessage> g_dsendqueue;
-extern std::map<int, std::list<DMAMessage> > g_drecvqueue;
-*/
 
 #endif

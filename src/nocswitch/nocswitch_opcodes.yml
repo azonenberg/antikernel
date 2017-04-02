@@ -48,3 +48,6 @@ nocswitch_opcodes:
         # Ask the server to close the connection cleanly
         # (a FIN/RST will log unexpected-termination warnings)
         NOCSWITCH_OP_QUIT: 04
+
+        # Keep-alive (blocks until server has flushed transmit buffer etc)
+        NOCSWITCH_OP_PING: 05

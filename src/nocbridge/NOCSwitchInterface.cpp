@@ -102,23 +102,83 @@ void NOCSwitchInterface::SendRPCMessage(const RPCMessage& tx_msg)
 	m_socket.SendLooped(buf, 16);
 }
 
-bool NOCSwitchInterface::RecvRPCMessage(RPCMessage& /*rx_msg*/)
+bool NOCSwitchInterface::RecvRPCMessage(RPCMessage& rx_msg)
 {
-	/*
-	uint16_t op = NOCSWITCH_OP_RECVRPC;
-	m_socket.SendLooped((unsigned char*)&op, 2);
-	uint8_t found = 0;
-	m_socket.RecvLooped((unsigned char*)&found, 1);
-	if(found)
+	//Read from the FIFO, if there's stuff there don't even bother hitting the server
+	if(!m_rxqueue.empty())
 	{
-		unsigned char buf[16];
-		m_socket.RecvLooped(buf, 16);
-		rx_msg.Unpack(buf);
-		//printf("Got message: %s\n", rx_msg.Format().c_str());
+		rx_msg = *m_rxqueue.begin();
+		m_rxqueue.pop_front();
 		return true;
-	}*/
+	}
+
+	//If there's nothing in the FIFO, send the server a ping and wait for a reply
+	//We know that a ping reply will always come as soon as the server is available, so this won't block for long.
+	//However, anything in its transmit queue will be flushed to us first
+	uint8_t op = NOCSWITCH_OP_PING;
+	m_socket.SendLooped((unsigned char*)&op, 1);
+	ReadFramesUntil(op);
+
+	//We got the ping back, check the FIFO again to see if anything was in line ahead of the ping
+	if(!m_rxqueue.empty())
+	{
+		rx_msg = *m_rxqueue.begin();
+		m_rxqueue.pop_front();
+		return true;
+	}
+
+	//Nothing ready for us to read at this point
 	return false;
 }
+
+void NOCSwitchInterface::RecvRPCMessageBlocking(RPCMessage& rx_msg)
+{
+	//If there's anything in the RX FIFO, return it immediately
+	if(!m_rxqueue.empty())
+	{
+		rx_msg = *m_rxqueue.begin();
+		m_rxqueue.pop_front();
+		return;
+	}
+
+	//Nothing there, wait until we get an RPC message
+	ReadFramesUntil(NOCSWITCH_OP_RPC);
+
+	//Read the message
+	unsigned char buf[16];
+	m_socket.RecvLooped(buf, 16);
+	rx_msg.Unpack(buf);
+}
+
+bool NOCSwitchInterface::RecvRPCMessageBlockingWithTimeout(RPCMessage& rx_msg, double timeout)
+{
+	double tstart = GetTime();
+
+	//Start out by doing a single nonblocking read to see what happens
+	if(RecvRPCMessage(rx_msg))
+		return true;
+
+	//Nope, keep trying until we hit the timeout
+	int delay_us = 5;
+	while(true)
+	{
+		if(RecvRPCMessage(rx_msg))
+			return true;
+
+		//Wait for a bit if nothing was there.
+		//Retry at exponentially increasing intervals (up to 100 ms)
+		usleep(delay_us);
+		if(delay_us < 100000)
+			delay_us *= 5;
+
+		//If timeout elapses, give up
+		if( (GetTime() - tstart) > timeout)
+			break;
+	}
+
+	return false;
+}
+
 /*
 void NOCSwitchInterface::SendDMAMessage(const DMAMessage& tx_msg)
 {
@@ -195,6 +255,23 @@ void NOCSwitchInterface::ReadFramesUntil(uint8_t type)
 			break;
 
 		//Wrong type! Probably an inbound message, push it into our queue
-		LogWarning("Don't know what to do with message of type %x\n", op);
+		switch(op)
+		{
+			case NOCSWITCH_OP_RPC:
+				{
+					//It's an RPC message! Read the message
+					unsigned char buf[16];
+					m_socket.RecvLooped(buf, 16);
+					RPCMessage rx_msg;
+					rx_msg.Unpack(buf);
+
+					//Push this into our RX queue
+					m_rxqueue.push_back(rx_msg);
+				}
+				break;
+
+			default:
+				LogWarning("Don't know what to do with message of type %x\n", op);
+		}
 	}
 }

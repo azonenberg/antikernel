@@ -50,7 +50,33 @@ void JtagThread(JTAGNOCBridgeInterface* piface)
 			//Push pending messages, get whatever comes back
 			piface->Cycle();
 
-			//TODO: Dispatch returned data to the various threads in question
+			//Dispatch returned data to the various clients
+			RPCMessage rxm;
+			while(piface->RecvRPCMessage(rxm))
+			{
+				//Look up the context for this address
+				lock_guard<mutex> mapmutex(g_contextMutex);
+				if(g_contextMap.find(rxm.to) == g_contextMap.end())
+				{
+					LogWarning("Got a message addressed to 0x%04x, but we don't have an active client there\n", rxm.to);
+					LogWarning("Message was: %s\n", rxm.Format().c_str());
+					continue;
+				}
+				ConnectionContext* pctx = g_contextMap[rxm.to];
+
+				//We found the context, map mutex is still locked (important, will prevent thread from terminating!)
+				//Now we have to lock the socket (wait for any pending sends to finish) before sending our data
+				lock_guard<mutex> sockmutex(pctx->m_mutex);
+
+				//and now we can finally send the message
+				uint8_t opcode = NOCSWITCH_OP_RPC;
+				pctx->m_socket.SendLooped(&opcode, 1);
+				unsigned char buf[16];
+				rxm.Pack(buf);
+				pctx->m_socket.SendLooped(buf, 16);
+			}
+
+			//TODO: Repeat for DMA
 		}
 	}
 	catch(const JtagException& ex)

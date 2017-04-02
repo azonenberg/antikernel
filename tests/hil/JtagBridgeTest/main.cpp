@@ -135,21 +135,19 @@ int main(int argc, char* argv[])
 			msg.data[2] = rand();
 			double tsend = GetTime();
 			iface.SendRPCMessage(msg);
-			LogDebug("Sending: %s\n", msg.Format().c_str());
+			//LogDebug("Sending: %s\n", msg.Format().c_str());
 
-			/*
 			RPCMessage rxm;
 			if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 5))
 			{
-				printf("Timeout on message %d - expected response within 5 sec but nothing arrived\n", i);
-				printf("Sent:\n    %s\n\n", msg.Format().c_str());
+				LogError("Timeout on message %d - expected response within 5 sec but nothing arrived\n", i);
+				LogVerbose("Sent:\n    %s\n\n", msg.Format().c_str());
 
 				throw JtagExceptionWrapper(
 					"Message timeout",
-					"",
-					JtagException::EXCEPTION_TYPE_FIRMWARE);
+					"");
 			}
-			*/
+			//LogDebug("Got: %s\n", rxm.Format().c_str());
 
 			double trcv = GetTime();
 			double rtt = (trcv - tsend);
@@ -159,28 +157,22 @@ int main(int argc, char* argv[])
 			if(maxping < rtt)
 				maxping = rtt;
 
-			/*
 			if( (rxm.from == pingaddr) &&
 				(rxm.data[0] == msg.data[0]) &&
 				(rxm.data[1] == msg.data[1]) &&
 				(rxm.data[2] == msg.data[2])
 			)
 			{
-				//printf("Message %d OK\n", i);
+				//LogDebug("Message %d OK\n", i);
 			}
 			else
 			{
-				printf("Message %d FAIL\n", i);
-				printf("Sent:\n    %s\nReceived:\n    %s\n", msg.Format().c_str(), rxm.Format().c_str());
+				LogError("Message %d FAIL\n", i);
+				LogError("Sent:\n    %s\nReceived:\n    %s\n", msg.Format().c_str(), rxm.Format().c_str());
 				throw JtagExceptionWrapper(
 					"Invalid message came back",
-					"",
-					JtagException::EXCEPTION_TYPE_FIRMWARE);
+					"");
 			}
-			*/
-
-			//Done
-			break;
 		}
 
 		int packets_sent = npack * 2;

@@ -37,19 +37,23 @@
 
 using namespace std;
 
-bool IsInDebugSubnet(int addr);
-
 bool IsInDebugSubnet(int addr)
 {
 	return (addr <= DEBUG_HIGH_ADDR) && (addr >= DEBUG_LOW_ADDR);
 }
+
+///Mutex for g_contextMap
+mutex g_contextMutex;
+
+///Map from node address to connection context
+map<uint16_t, ConnectionContext*> g_contextMap;
 
 /**
 	@brief Thread for handling connections
  */
 void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 {
-	Socket client(sock);
+	ConnectionContext ctx(sock);
 
 	//The set of addresses assigned to THIS socket
 	set<uint16_t> our_addresses;
@@ -59,7 +63,7 @@ void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 		LogNotice("Got a connection\n");
 
 		//Set no-delay flag
-		if(!client.DisableNagle())
+		if(!ctx.m_socket.DisableNagle())
 		{
 			throw JtagExceptionWrapper(
 				"Failed to set TCP_NODELAY",
@@ -70,7 +74,7 @@ void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 		uint8_t opcode;
 		while(true)
 		{
-			client.RecvLooped((unsigned char*)&opcode, 1);
+			ctx.m_socket.RecvLooped(&opcode, 1);
 
 			bool quit = g_quitting;
 
@@ -80,21 +84,28 @@ void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 				{
 					LogNotice("Allocate-address request\n");
 
+					//Lock the context mutex so we can send the whole packet without interruption
+					lock_guard<mutex> lock(ctx.m_mutex);
+
 					//Send back the opcode
-					client.SendLooped((unsigned char*)&opcode, 1);
+					ctx.m_socket.SendLooped(&opcode, 1);
 
 					//Try to allocate the address and tell the client how it went
 					uint16_t addr;
 					uint8_t ok = iface->AllocateClientAddress(addr);
-					client.SendLooped(&ok, 1);
+					ctx.m_socket.SendLooped(&ok, 1);
 
 					//If it worked, send the actual data.
 					//(Note that we don't send the address field if the allocation failed!)
 					//Also record the address so we know to check stuff destined to it in the future
 					if(ok)
 					{
-						client.SendLooped((unsigned char*)&addr, 2);
+						ctx.m_socket.SendLooped((unsigned char*)&addr, 2);
+
 						our_addresses.emplace(addr);
+
+						lock_guard<mutex> lock(g_contextMutex);
+						g_contextMap[addr] = &ctx;
 					}
 				}
 				break;
@@ -110,7 +121,7 @@ void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 				{
 					//Read the message
 					unsigned char buf[16];
-					client.RecvLooped(buf, 16);
+					ctx.m_socket.RecvLooped(buf, 16);
 					RPCMessage msg;
 					msg.Unpack(buf);
 
@@ -139,40 +150,17 @@ void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 				}
 				break;
 
-			/*
-			case NOCSWITCH_OP_RECVRPC:
+			case NOCSWITCH_OP_PING:
 				{
-					//printf("%04x: polling for RPC messages\n", sender);
+					//Lock the context mutex so we can send the whole packet without interruption
+					lock_guard<mutex> lock(ctx.m_mutex);
 
-					//See if there are any messages to be found
-					RPCMessage msg;
-					uint8_t found = 0;
-					{
-						MutexLock lock(g_recvmutex);
-						if(!g_recvqueue[sender].empty())
-						{
-							found = 1;
-							msg = g_recvqueue[sender].front();
-							g_recvqueue[sender].pop_front();
-						}
-					}
-
-					socket.SendLooped(&found, 1);
-
-					if(found)
-					{
-						unsigned char buf[16];
-						msg.Pack(buf);
-						socket.SendLooped(buf, 16);
-
-						//printf("Sending RPC message to client (%s)\n", msg.Format().c_str());
-					}
-
-					//if(found)
-					//	printf("%d: poll returned, found = %d\n", k, found);
+					//Send back the opcode (that's all there is to it)
+					ctx.m_socket.SendLooped(&opcode, 1);
 				}
 				break;
 
+			/*
 			case NOCSWITCH_OP_SENDDMA:
 				{
 					//Read the message
@@ -239,11 +227,8 @@ void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 					//	printf("%d: poll returned, found = %d\n", k, found);
 				}
 				break;
-
-			case NOCSWITCH_OP_GET_ADDR:
-				socket.SendLooped((unsigned char*)&sender, 2);
-				break;
 			*/
+
 			case NOCSWITCH_OP_QUIT:
 				LogVerbose("Client disconnecting\n");
 				quit = true;
@@ -264,6 +249,13 @@ void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 	catch(const JtagException& ex)
 	{
 		LogError("%s\n", ex.GetDescription().c_str());
+	}
+
+	//Clean up the global context table so no other threads try to send to our addresses.
+	{
+		lock_guard<mutex> lock(g_contextMutex);
+		for(auto addr : our_addresses)
+			g_contextMap.erase(addr);
 	}
 
 	LogNotice("Client quit\n");
