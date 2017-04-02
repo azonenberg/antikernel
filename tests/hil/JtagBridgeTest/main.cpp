@@ -135,6 +135,7 @@ int main(int argc, char* argv[])
 			msg.data[2] = rand();
 			double tsend = GetTime();
 			iface.SendRPCMessage(msg);
+			LogDebug("Sending: %s\n", msg.Format().c_str());
 
 			/*
 			RPCMessage rxm;

@@ -396,15 +396,30 @@ void JTAGNOCBridgeInterface::Cycle()
 			m_rxBuffer.pop_front();
 			uint32_t actual_crc = CRC32(&payload[0], msg.bits.length * 4);
 
-			LogDebug("Got a packet\n");
-			for(auto p : payload)
-				LogDebug("%08x\n", p);
-			LogTrace("CRC: expected %08x, got %08x\n", actual_crc, message_crc);
-			if(message_crc == actual_crc)
-				LogTrace("OK\n");
+			//If the CRC is bad, skip it (TODO send NAK etc)
+			if(message_crc != actual_crc)
+			{
+				LogWarning("CRC mismatch! expected %08x, got %08x\n", actual_crc, message_crc);
+				continue;
+			}
+
+			//See what it is! If it's not an RPC packet ignore it and warn
+			if(!msg.bits.rpc || msg.bits.dma || (msg.bits.length != 4) )
+				LogWarning("Don't know what to do with payloads other than RPC at this time\n");
+
+			//It's RPC if we get here. Process it.
 			else
-				LogTrace("FAIL\n");
+			{
+				RPCMessage rxm;
+				rxm.Unpack(&payload[0]);
+
+				//TODO: Send this message where it belongs
+
+				LogDebug("Got: %s\n", rxm.Format().c_str());
+			}
 		}
+
+		//TODO: credit / sequence number processing
 
 		//If we get here the message was properly verified!
 		//Bump the ACK number
