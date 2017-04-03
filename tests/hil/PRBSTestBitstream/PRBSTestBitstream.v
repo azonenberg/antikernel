@@ -69,12 +69,13 @@ module PRBSTestBitstream(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // PLL for clocking everything
 
-	wire[5:0]	pll_clkout;
-	wire		pll_locked;
+	wire[2:0]	unused_clkout;
 
-	wire		clk_noc		= pll_clkout[0];
-	wire		clk_prbs	= pll_clkout[1];
-	wire		clk_sample	= pll_clkout[2];
+	wire		clk_noc;
+	wire		clk_prbs;
+	wire		clk_sample;
+
+	wire		pll_locked;
 
 	wire		pll_busy;
 	reg			reconfig_start			= 0;
@@ -106,9 +107,9 @@ module PRBSTestBitstream(
 		.ACTIVE_ON_START(1'b1),			//TEMP: Start doing stuff right off the bat
 		.PRINT_CONFIG(1'b0)				//Don't print our default config since we're about to change it anyway
 	) pll (
-		.clkin({clk_bufg, clk_bufg}),
+		.clkin({clk, clk}),				//feed PLL with clock before the BUFG so we get a new timing name
 		.clksel(1'b0),
-		.clkout(pll_clkout),
+		.clkout({unused_clkout, clk_sample, clk_prbs, clk_noc}),
 		.reset(1'b0),
 		.locked(pll_locked),
 
@@ -218,7 +219,7 @@ module PRBSTestBitstream(
 						2: begin
 							reconfig_output_en		<= 1;
 							reconfig_output_div		<= 4;	//250 MHz sampling
-							reconfig_output_phase	<= 0;	//No phase shift yet
+							reconfig_output_phase	<= 0;
 						end
 
 						3: begin
@@ -271,7 +272,7 @@ module PRBSTestBitstream(
 
 			PLL_STATE_SHIFT_0: begin
 				reconfig_output_en		<= 1;
-				reconfig_output_idx		<= 2;	//reconfigure the sampling clock
+				reconfig_output_idx		<= 2;	//delay the sampling clock so we sample later in the waveform
 				reconfig_output_div		<= 4;
 				reconfig_output_phase	<= phase_off;
 				pll_state				<= PLL_STATE_SHIFT_1;
@@ -460,16 +461,22 @@ module PRBSTestBitstream(
 
     reg			prbs_reset 	= 0;
     reg[1:0]	prbs_count	= 0;
+    reg[6:0]	prbs_shreg	= 1;
 
 	always @(posedge clk_prbs) begin
 
 		//Fake PRBS generator (squarewave at 31 MHz)
-		prbs_count		<= prbs_count + 1'h1;
-		if(prbs_count == 0)
-			prbs_out	<= ~prbs_out;
+		//prbs_count		<= prbs_count + 1'h1;
+		//if(prbs_count == 0)
+		//	prbs_out	<= ~prbs_out;
+
+		//PRBS7 generator
+		prbs_shreg	<= { prbs_shreg[5:0], prbs_shreg[6] ^ prbs_shreg[5] };
+		prbs_out	<= prbs_shreg[0];
 
 		if(prbs_reset) begin
 			prbs_count	<= 0;
+			prbs_shreg	<= 1;
 			prbs_out	<= 0;
 		end
 
@@ -623,7 +630,9 @@ module PRBSTestBitstream(
 			end
 
 			STATE_CAPTURE: begin
+				led[1]					<= 1;
 				if(sample_done_noc) begin
+					led[2]					<= 1;
 
 					//Send our 256 samples, 64 at a time, over 4 messages.
 					//Kick off the first one now
@@ -640,7 +649,9 @@ module PRBSTestBitstream(
 
 				if(rpc_fab_tx_done) begin
 
-					block_count			<= block_count + 1'h1;
+					led[3]						<= 1;
+
+					block_count					<= block_count + 1'h1;
 
 					case(block_count)
 
@@ -662,6 +673,7 @@ module PRBSTestBitstream(
 							rpc_fab_tx_en		<= 1;
 
 							//done after this
+							rpc_fab_rx_ready	<= 1;
 							state				<= STATE_IDLE;
 						end
 

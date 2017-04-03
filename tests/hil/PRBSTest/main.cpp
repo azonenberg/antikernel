@@ -111,9 +111,9 @@ int main(int argc, char* argv[])
 		//Sweep the DAC in a sawtooth pattern
 		//(note: actual DAC resolution is 12 bits, we send 16 for future proofing.
 		//Do 256 steps to speed edge rate for now
-		const unsigned int navg = 1;/*32*/;
+		const unsigned int navg = 1;//32;
 		const unsigned int nphase = 32;
-		unsigned int sample_values[256 * nphase][navg] = {0};
+		unsigned int sample_values[256][nphase][navg] = {0};
 		for(unsigned int i=0; i<65536; i += 256)
 		{
 			//Set up the DAC
@@ -178,7 +178,7 @@ int main(int argc, char* argv[])
 					{
 						if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 1))
 						{
-							LogError("Timeout! expected response within 1 sec but nothing arrived\n");
+							LogError("Timeout! expected response %d within 1 sec but nothing arrived\n", m);
 							LogVerbose("Sent:\n    %s\n\n", msg.Format().c_str());
 							return -1;
 						}
@@ -189,11 +189,10 @@ int main(int argc, char* argv[])
 						{
 							int bk = base + k;			//Number of the sample we're looking at
 														//(within this phase)
-
 							if( (rxm.data[1] >> k) & 1 )
-								sample_values[bk * nphase + phase][j] = i;
+								sample_values[bk][phase][j] = i;
 							if( (rxm.data[2] >> k) & 1 )
-								sample_values[(bk + 32) * nphase + phase][j] = i;
+								sample_values[bk + 32][phase][j] = i;
 						}
 					}
 				}
@@ -201,19 +200,32 @@ int main(int argc, char* argv[])
 		}
 
 		//DAC code scale: 3.3V is full scale DAC output
-		//Input is attenuated by a factor of 2 so compensate for that
-		float scale = (3.3f / 65536.0f) * 2;
+		//Input is attenuated by a factor of 2 (3 dB) so compensate for that
+		float scale = (3.3f / 65535.0f) * 2;
 
 		//Do final CSV export
 		LogDebug("time (ns),voltage\n");
-		for(unsigned int t=0; t<256*nphase; t++)
+		for(unsigned int t=0; t<256; t++)
 		{
-			//Actual time for the raw waveform
-			//We sample at 125 ps now
-			float tns = 0.125f * t;
+			//Real-time sampling rate is 4 ns
+			float basetime = 4*t;
 
-			for(unsigned int n=0; n<navg; n++)
-				LogDebug("%.3f, %.3f\n", tns, sample_values[t][n] * scale);
+			for(unsigned int phase=0; phase<nphase; phase++)
+			{
+				//float ns = basetime + phase * 0.125f;
+
+				//Convert time to UIs and center it
+				//PRBS is one bit per T cycle
+				float ns = (phase * 0.125f) - 2;
+
+				for(unsigned int n=0; n<navg; n++)
+				{
+					//Render the sample here, then left and right one UI (4 ns) to make a full eye
+					LogDebug("%.3f, %.3f\n", ns, sample_values[t][phase][n] * scale);
+					LogDebug("%.3f, %.3f\n", ns - 4, sample_values[t][phase][n] * scale);
+					LogDebug("%.3f, %.3f\n", ns + 4, sample_values[t][phase][n] * scale);
+				}
+			}
 		}
 	}
 
