@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
 		//Sweep the DAC in a sawtooth pattern
 		//(note: actual DAC resolution is 12 bits, we send 16 for future proofing.
 		//Do 256 steps to speed edge rate for now
-		const unsigned int navg = 2;//32;
+		const unsigned int navg = 8;//32;
 		const unsigned int nphase = 40;
 		unsigned int sample_values[256][nphase][navg] = {0};
 		for(unsigned int i=0; i<65536; i += 256)
@@ -201,10 +201,11 @@ int main(int argc, char* argv[])
 
 		//DAC code scale: 3.3V is full scale DAC output
 		//Input is attenuated by a factor of 2 (3 dB) so compensate for that
-		float scale = (3.3f / 65535.0f) * 2;
+		//float scale = (3.3f / 65535.0f) * 2;
+		float scale = 1 / 256.0f;
 
 		//Do final CSV export
-		LogDebug("time (ns),voltage\n");
+		//LogDebug("time (ps),voltage\n");
 		for(unsigned int t=0; t<256; t++)
 		{
 			//Real-time sampling rate is 4 ns
@@ -215,15 +216,21 @@ int main(int argc, char* argv[])
 				//float ns = basetime + phase * 0.1f;
 
 				//Convert time to UIs and center it
-				//PRBS is one bit per T cycle
-				float ns = (phase * 0.1f) - 2;
+				//PRBS is 2 bits per T cycle so divide by 2
+				float ns = (phase * 0.1f) - 1;
+
+				//There's some delay in the wires etc. Add a further phase shift to center our eye in the plot
+				ns -= 0.7;
+
+				//Convert to picoseconds so we have a nicer looking label
+				float ps = ns * 1000;
 
 				for(unsigned int n=0; n<navg; n++)
 				{
-					//Render the sample here, then left and right one UI (4 ns) to make a full eye
-					LogDebug("%.3f, %.3f\n", ns, sample_values[t][phase][n] * scale);
-					LogDebug("%.3f, %.3f\n", ns - 4, sample_values[t][phase][n] * scale);
-					LogDebug("%.3f, %.3f\n", ns + 4, sample_values[t][phase][n] * scale);
+					//Render the sample here, then left and right one UI (2 ns) to make a full eye
+					LogDebug("%.3f, %.3f\n", ps, sample_values[t][phase][n] * scale);
+					LogDebug("%.3f, %.3f\n", ps - 2000, sample_values[t][phase][n] * scale);
+					LogDebug("%.3f, %.3f\n", ps + 2000, sample_values[t][phase][n] * scale);
 				}
 			}
 		}

@@ -70,6 +70,7 @@ PRBSTestBitstream:
         - ../../../antikernel-ipcores/debug/JtagDebugBridge.v
         - ../../../antikernel-ipcores/debug/JtagUserIdentifier.v
         - ../../../antikernel-ipcores/device_abstraction/ClockBuffer.v
+        - ../../../antikernel-ipcores/device_abstraction/DDROutputBuffer.v
         - ../../../antikernel-ipcores/device_abstraction/JtagTAP.v
         - ../../../antikernel-ipcores/interface/i2c/I2CTransceiver.v
         - ../../../antikernel-ipcores/math/CRC8_ATM.v

@@ -330,10 +330,7 @@ module PRBSTestBitstream(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // I/O buffers
 
-    reg	prbs_out	= 0;	//Drive low by default since nothing interesting is happening
-
     //Drive PRBS single ended, tie off the adjacent signal to prevent noise from coupling into it
-    assign pmod_c[0] = prbs_out;
     assign pmod_c[1] = 1'b0;
 
     reg		cmp_le = 1;
@@ -463,6 +460,21 @@ module PRBSTestBitstream(
     reg[1:0]	prbs_count	= 0;
     reg[6:0]	prbs_shreg	= 1;
 
+	//Step the PRBS shift register by TWO bits per clock
+    wire[6:0]	prbs_shreg_next = { prbs_shreg[5:0], prbs_shreg[6] ^ prbs_shreg[5] };
+    wire[6:0]	prbs_shreg_next2 = { prbs_shreg_next[5:0], prbs_shreg_next[6] ^ prbs_shreg_next[5] };
+
+	//and drive them out the pin at double rate
+    DDROutputBuffer #(
+		.WIDTH(1)
+	) prbs_ddrbuf (
+		.clk_p(clk_prbs),
+		.clk_n(!clk_prbs),
+		.din0(prbs_shreg[0]),
+		.din1(prbs_shreg_next[0]),
+		.dout(pmod_c[0])
+	);
+
 	always @(posedge clk_prbs) begin
 
 		//Fake PRBS generator (squarewave at 31 MHz)
@@ -471,13 +483,12 @@ module PRBSTestBitstream(
 		//	prbs_out	<= ~prbs_out;
 
 		//PRBS7 generator
-		prbs_shreg	<= { prbs_shreg[5:0], prbs_shreg[6] ^ prbs_shreg[5] };
-		prbs_out	<= prbs_shreg[0];
+		prbs_shreg	<= prbs_shreg_next2;
 
+		//Reset the shreg
 		if(prbs_reset) begin
 			prbs_count	<= 0;
 			prbs_shreg	<= 1;
-			prbs_out	<= 0;
 		end
 
     end
