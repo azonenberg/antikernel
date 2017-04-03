@@ -186,7 +186,7 @@ module PRBSTestBitstream(
 			//Reconfigure the VCO
 			PLL_STATE_INIT_1: begin
 				reconfig_vco_en			<= 1;
-				reconfig_vco_mult		<= 8;	//1 GHz Fvco (1000 ps per tick)
+				reconfig_vco_mult		<= 10;	//1.25 GHz Fvco (800 ps per tick)
 				reconfig_vco_indiv		<= 1;
 				reconfig_vco_bandwidth	<= 1;
 
@@ -206,37 +206,37 @@ module PRBSTestBitstream(
 
 						0: begin
 							reconfig_output_en		<= 1;
-							reconfig_output_div		<= 8;	//125 MHz NoC
+							reconfig_output_div		<= 10;	//125 MHz NoC
 							reconfig_output_phase	<= 0;
 						end
 
 						1: begin
 							reconfig_output_en		<= 1;
-							reconfig_output_div		<= 4;	//250 MHz PRBS
+							reconfig_output_div		<= 5;	//250 MHz PRBS
 							reconfig_output_phase	<= 0;
 						end
 
 						2: begin
 							reconfig_output_en		<= 1;
-							reconfig_output_div		<= 4;	//250 MHz sampling
+							reconfig_output_div		<= 5;	//250 MHz sampling
 							reconfig_output_phase	<= 0;
 						end
 
 						3: begin
 							reconfig_output_en		<= 1;
-							reconfig_output_div		<= 8;	//125 MHz unused
+							reconfig_output_div		<= 10;	//125 MHz unused
 							reconfig_output_phase	<= 0;
 						end
 
 						4: begin
 							reconfig_output_en		<= 1;
-							reconfig_output_div		<= 8;	//125 MHz unused
+							reconfig_output_div		<= 10;	//125 MHz unused
 							reconfig_output_phase	<= 0;
 						end
 
 						5: begin
 							reconfig_output_en		<= 1;
-							reconfig_output_div		<= 8;	//125 MHz unused
+							reconfig_output_div		<= 10;	//125 MHz unused
 							reconfig_output_phase	<= 0;
 						end
 
@@ -273,7 +273,7 @@ module PRBSTestBitstream(
 			PLL_STATE_SHIFT_0: begin
 				reconfig_output_en		<= 1;
 				reconfig_output_idx		<= 2;	//delay the sampling clock so we sample later in the waveform
-				reconfig_output_div		<= 4;
+				reconfig_output_div		<= 10;
 				reconfig_output_phase	<= phase_off;
 				pll_state				<= PLL_STATE_SHIFT_1;
 			end	//end PLL_STATE_SHIFT_0

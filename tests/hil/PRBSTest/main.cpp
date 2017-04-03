@@ -111,8 +111,8 @@ int main(int argc, char* argv[])
 		//Sweep the DAC in a sawtooth pattern
 		//(note: actual DAC resolution is 12 bits, we send 16 for future proofing.
 		//Do 256 steps to speed edge rate for now
-		const unsigned int navg = 1;//32;
-		const unsigned int nphase = 32;
+		const unsigned int navg = 2;//32;
+		const unsigned int nphase = 40;
 		unsigned int sample_values[256][nphase][navg] = {0};
 		for(unsigned int i=0; i<65536; i += 256)
 		{
@@ -139,10 +139,10 @@ int main(int argc, char* argv[])
 			//LogDebug("Got: %s\n", rxm.Format().c_str());
 
 			//Set up the PLL
-			//VCO runs at 1 GHz for now (1000 ps)
+			//VCO runs at 1.25 GHz for now (800 ps)
 			//Sample clock is 250 MHz (4000 ps)
-			//Measurement unit is 1/8 VCO period (125 ps)
-			//Total sweep range is 0...31
+			//Measurement unit is 1/8 VCO period (100 ps)
+			//Total sweep range is 0...40
 			for(unsigned int phase = 0; phase < nphase; phase ++)
 			{
 				//Set up the PLL
@@ -208,15 +208,15 @@ int main(int argc, char* argv[])
 		for(unsigned int t=0; t<256; t++)
 		{
 			//Real-time sampling rate is 4 ns
-			float basetime = 4*t;
+			//float basetime = 4*t;
 
 			for(unsigned int phase=0; phase<nphase; phase++)
 			{
-				//float ns = basetime + phase * 0.125f;
+				//float ns = basetime + phase * 0.1f;
 
 				//Convert time to UIs and center it
 				//PRBS is one bit per T cycle
-				float ns = (phase * 0.125f) - 2;
+				float ns = (phase * 0.1f) - 2;
 
 				for(unsigned int n=0; n<navg; n++)
 				{
