@@ -111,10 +111,11 @@ int main(int argc, char* argv[])
 		//Sweep the DAC in a sawtooth pattern
 		//(note: actual DAC resolution is 12 bits, we send 16 for future proofing.
 		//Do 256 steps to speed edge rate for now
-		const unsigned int navg = 8;//32;
+		const unsigned int navg = 4;//32;
 		const unsigned int nphase = 40;
 		unsigned int sample_values[256][nphase][navg] = {0};
-		for(unsigned int i=0; i<65536; i += 256)
+		unsigned int sample_blocks[256][nphase][navg] = {0};
+		for(unsigned int adc_code=0; adc_code<65536; adc_code += 256)
 		{
 			//Set up the DAC
 			RPCMessage msg;
@@ -122,7 +123,7 @@ int main(int argc, char* argv[])
 			msg.to = scopeaddr;
 			msg.type = RPC_TYPE_CALL;
 			msg.callnum = 0;
-			msg.data[0] = i;
+			msg.data[0] = adc_code;
 			msg.data[1] = 0;
 			msg.data[2] = 0;
 			iface.SendRPCMessage(msg);
@@ -163,7 +164,7 @@ int main(int argc, char* argv[])
 				//LogDebug("Got: %s\n", rxm.Format().c_str());
 
 				//Repeat for a couple of averages
-				for(unsigned int j=0; j<navg; j++)
+				for(unsigned int avg_pass=0; avg_pass<navg; avg_pass++)
 				{
 					//DAC is set up! Send a PRBS and return the results
 					//Record for 64 samples in one RPC message
@@ -174,25 +175,28 @@ int main(int argc, char* argv[])
 					iface.SendRPCMessage(msg);
 
 					//Read 4 blocks of samples
-					for(int m=0; m<4; m++)
+					for(int nblock=0; nblock<4; nblock++)
 					{
 						if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 1))
 						{
-							LogError("Timeout! expected response %d within 1 sec but nothing arrived\n", m);
+							LogError("Timeout! expected response %d within 1 sec but nothing arrived\n", nblock);
 							LogVerbose("Sent:\n    %s\n\n", msg.Format().c_str());
 							return -1;
 						}
 
-						//This is the readings from our current test! Print them out
-						int base = 64*m;				//Number of samples per RPC result
-						for(int k=0; k<32; k++)
+						//This is the readings from our current test! Record them
+						int base = 64*nblock;				//Number of samples per RPC result
+						for(int nbit=0; nbit<32; nbit++)
 						{
-							int bk = base + k;			//Number of the sample we're looking at
+							int bk = base + nbit;		//Number of the sample we're looking at
 														//(within this phase)
-							if( (rxm.data[1] >> k) & 1 )
-								sample_values[bk][phase][j] = i;
-							if( (rxm.data[2] >> k) & 1 )
-								sample_values[bk + 32][phase][j] = i;
+							if( (rxm.data[1] >> nbit) & 1 )
+								sample_values[bk][phase][avg_pass] = adc_code;
+							if( (rxm.data[2] >> nbit) & 1 )
+								sample_values[bk + 32][phase][avg_pass] = adc_code;
+
+							sample_blocks[bk][phase][avg_pass] = nblock*2;
+							sample_blocks[bk + 32][phase][avg_pass] = nblock*2 + 1;
 						}
 					}
 				}
@@ -206,31 +210,42 @@ int main(int argc, char* argv[])
 
 		//Do final CSV export
 		//LogDebug("time (ps),voltage\n");
+		LogDebug("time (ns), voltage, nscan, phase, block\n");
 		for(unsigned int t=0; t<256; t++)
 		{
 			//Real-time sampling rate is 4 ns
-			//float basetime = 4*t;
+			float basetime = 4*t;
 
 			for(unsigned int phase=0; phase<nphase; phase++)
 			{
-				//float ns = basetime + phase * 0.1f;
+				//Raw time for a waveform plot instead of an eye
+				float ns = basetime + phase * 0.1f;
 
-				//Convert time to UIs and center it
-				//PRBS is 2 bits per T cycle so divide by 2
-				float ns = (phase * 0.1f) - 1;
-
+				//Convert time to UIs
 				//There's some delay in the wires etc. Add a further phase shift to center our eye in the plot
-				ns -= 0.7;
+				//float ns = (phase * 0.1f) - 1.7;
+
+				//float ns = (t%8)*4 + phase*0.1f;
+				//ns -= 6;
 
 				//Convert to picoseconds so we have a nicer looking label
 				float ps = ns * 1000;
 
 				for(unsigned int n=0; n<navg; n++)
 				{
+					LogDebug("%.3f, %.3f, %d, %d, %d\n",
+						ns,
+						sample_values[t][phase][n] * scale,
+						n,
+						phase,
+						sample_blocks[t][phase][n]);
+					//LogDebug("%.3f, %.3f\n", ns-4, sample_values[t][phase][n] * scale);
+					//LogDebug("%.3f, %.3f\n", ns+16, sample_values[t][phase][n] * scale);
+
 					//Render the sample here, then left and right one UI (2 ns) to make a full eye
-					LogDebug("%.3f, %.3f\n", ps, sample_values[t][phase][n] * scale);
-					LogDebug("%.3f, %.3f\n", ps - 2000, sample_values[t][phase][n] * scale);
-					LogDebug("%.3f, %.3f\n", ps + 2000, sample_values[t][phase][n] * scale);
+					//LogDebug("%.3f, %.3f\n", ps, sample_values[t][phase][n] * scale);
+					//LogDebug("%.3f, %.3f\n", ps - 2000, sample_values[t][phase][n] * scale);
+					//LogDebug("%.3f, %.3f\n", ps + 2000, sample_values[t][phase][n] * scale);
 				}
 			}
 		}

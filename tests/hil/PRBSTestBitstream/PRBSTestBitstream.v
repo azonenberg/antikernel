@@ -69,11 +69,12 @@ module PRBSTestBitstream(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // PLL for clocking everything
 
-	wire[2:0]	unused_clkout;
+	wire[1:0]	unused_clkout;
 
 	wire		clk_noc;
 	wire		clk_prbs;
 	wire		clk_sample;
+	wire		clk_latch;
 
 	wire		pll_locked;
 
@@ -93,15 +94,15 @@ module PRBSTestBitstream(
 	reg[8:0]	reconfig_output_phase	= 0;
 
     ReconfigurablePLL #(
-		.OUTPUT_GATE(6'b000111),		//Gate the outputs we use when not in use
-		.OUTPUT_BUF_GLOBAL(6'b000111),	//Use BUFGs on everything
+		.OUTPUT_GATE(6'b001111),		//Gate the outputs we use when not in use
+		.OUTPUT_BUF_GLOBAL(6'b001111),	//Use BUFGs on everything
 		.OUTPUT_BUF_LOCAL(6'b000000),	//Don't use BUFHs
 		.IN0_PERIOD(8.000),				//125 MHz input
 		.IN1_PERIOD(8.000),				//unused, but same as IN0
 		.OUT0_MIN_PERIOD(8.000),		//125 MHz output for NoC
 		.OUT1_MIN_PERIOD(4.000),		//250 MHz output for PRBS generation
 		.OUT2_MIN_PERIOD(4.000),		//250 MHz output for sampling clock
-		.OUT3_MIN_PERIOD(8.000),		//125 MHz output (unused)
+		.OUT3_MIN_PERIOD(4.000),		//250 MHz output for comparator latch
 		.OUT4_MIN_PERIOD(8.000),		//125 MHz output (unused)
 		.OUT5_MIN_PERIOD(8.000),		//125 MHz output (unused)
 		.ACTIVE_ON_START(1'b1),			//TEMP: Start doing stuff right off the bat
@@ -109,7 +110,7 @@ module PRBSTestBitstream(
 	) pll (
 		.clkin({clk, clk}),				//feed PLL with clock before the BUFG so we get a new timing name
 		.clksel(1'b0),
-		.clkout({unused_clkout, clk_sample, clk_prbs, clk_noc}),
+		.clkout({unused_clkout, clk_latch, clk_sample, clk_prbs, clk_noc}),
 		.reset(1'b0),
 		.locked(pll_locked),
 
@@ -139,6 +140,7 @@ module PRBSTestBitstream(
 	localparam	PLL_STATE_SHIFT_0			= 5;
 	localparam	PLL_STATE_SHIFT_1			= 6;
 	localparam	PLL_STATE_SHIFT_2			= 7;
+	localparam	PLL_STATE_SHIFT_3			= 8;
 
 	reg[3:0]	pll_state					= PLL_STATE_INIT_0;
 
@@ -213,7 +215,7 @@ module PRBSTestBitstream(
 						1: begin
 							reconfig_output_en		<= 1;
 							reconfig_output_div		<= 5;	//250 MHz PRBS
-							reconfig_output_phase	<= 0;
+							reconfig_output_phase	<= 6;	//Fixed delay of 600 ps for debugging
 						end
 
 						2: begin
@@ -224,7 +226,7 @@ module PRBSTestBitstream(
 
 						3: begin
 							reconfig_output_en		<= 1;
-							reconfig_output_div		<= 10;	//125 MHz unused
+							reconfig_output_div		<= 5;	//250 MHz latch
 							reconfig_output_phase	<= 0;
 						end
 
@@ -280,17 +282,28 @@ module PRBSTestBitstream(
 
 			PLL_STATE_SHIFT_1: begin
 				if(reconfig_cmd_done) begin
-					reconfig_finish		<= 1;
-					pll_state			<= PLL_STATE_SHIFT_2;
+					reconfig_output_en		<= 1;
+					reconfig_output_idx		<= 3;	//delay the latch clock by 1/2 VCO cycle (400 ps)
+													//so it doesn't toggle until we sample
+					reconfig_output_div		<= 10;
+					reconfig_output_phase	<= phase_off + 8'd4;
+					pll_state				<= PLL_STATE_SHIFT_2;
 				end
 			end	//end PLL_STATE_SHIFT_1
 
 			PLL_STATE_SHIFT_2: begin
+				if(reconfig_cmd_done) begin
+					reconfig_finish		<= 1;
+					pll_state			<= PLL_STATE_SHIFT_3;
+				end
+			end	//end PLL_STATE_SHIFT_2
+
+			PLL_STATE_SHIFT_3: begin
 				if(pll_locked) begin
 					pll_state			<= PLL_STATE_IDLE;
 					phase_done			<= 1;
 				end
-			end	//end PLL_STATE_SHIFT_2
+			end	//end PLL_STATE_SHIFT_3
 
 		endcase
 
@@ -333,7 +346,7 @@ module PRBSTestBitstream(
     //Drive PRBS single ended, tie off the adjacent signal to prevent noise from coupling into it
     assign pmod_c[1] = 1'b0;
 
-    reg		cmp_le = 1;
+    wire	cmp_le;
 
     OBUFDS obuf_cmp_le(
 		.I(cmp_le),
@@ -348,7 +361,17 @@ module PRBSTestBitstream(
 		.O(cmp_out)
 	);
 
-	//TODO: OSERDES for driving the PRBS at higher than fabric clock rates
+	//Drive comparator latch enable with a delayed version of our sampling clock.
+	//This way it's nice and stable when we're ready to read it
+    DDROutputBuffer #(
+		.WIDTH(1)
+	) le_ddrbuf (
+		.clk_p(clk_latch),
+		.clk_n(!clk_latch),
+		.din0(1'b0),
+		.din1(1'b1),
+		.dout(cmp_le)
+	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // I2C stuff
@@ -456,9 +479,8 @@ module PRBSTestBitstream(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // PRBS generator (locked to and higher speed than NoC clock)
 
-    reg			prbs_reset 	= 0;
-    reg[1:0]	prbs_count	= 0;
-    reg[6:0]	prbs_shreg	= 1;
+    reg[4:0]	prbs_count		= 0;
+    reg[6:0]	prbs_shreg		= 1;
 
 	//Step the PRBS shift register by TWO bits per clock
     wire[6:0]	prbs_shreg_next = { prbs_shreg[5:0], prbs_shreg[6] ^ prbs_shreg[5] };
@@ -471,22 +493,30 @@ module PRBSTestBitstream(
 		.clk_p(clk_prbs),
 		.clk_n(!clk_prbs),
 		.din0(prbs_shreg[0]),
-		.din1(prbs_shreg_next[0]),
+		.din1(prbs_shreg[0]),
+		//.din1(prbs_shreg_next[0]),
 		.dout(pmod_c[0])
 	);
 
 	always @(posedge clk_prbs) begin
 
-		//Fake PRBS generator (squarewave at 31 MHz)
-		//prbs_count		<= prbs_count + 1'h1;
-		//if(prbs_count == 0)
-		//	prbs_out	<= ~prbs_out;
-
 		//PRBS7 generator
-		prbs_shreg	<= prbs_shreg_next2;
+		//prbs_shreg	<= prbs_shreg_next2;
+		/*
+		prbs_count	<= prbs_count + 1'h1;
+		if(prbs_count == 0)
+			prbs_shreg	<= prbs_shreg_next;
+		*/
+
+		//Squarewave (5 bit counter means 2^5 = 32 clocks per bit, 4 ns so 128 ns)
+		prbs_count	<= prbs_count + 1'h1;
+		if(prbs_count == 0)
+			prbs_shreg		<= ~prbs_shreg;
 
 		//Reset the shreg
-		if(prbs_reset) begin
+		//Our clock is phase locked to, and faster than,  the NoC clock so this should be safe to use in the PRBS domain
+		//(We're double speed so we're going to be held in reset for 2 clk_prbs cycles)
+		if(sample_start_noc) begin
 			prbs_count	<= 0;
 			prbs_shreg	<= 1;
 		end
@@ -506,7 +536,7 @@ module PRBSTestBitstream(
 		.clk_a(clk_noc),
 		.en_a(sample_start_noc),
 		.ack_a(sample_done_noc),
-		.busy_a(),	//we don't need the busy flag
+		.busy_a(),					//we don't need the busy flag
 
 		.clk_b(clk_sample),
 		.en_b(sample_start),
@@ -518,6 +548,8 @@ module PRBSTestBitstream(
 	reg			sample_busy			= 0;
 	reg[8:0]	sample_count		= 0;
 	always @(posedge clk_sample) begin
+
+		sample_done			<= 0;
 
 		//Load samples into the shift register
 		if(sample_busy) begin
@@ -536,10 +568,6 @@ module PRBSTestBitstream(
 			sample_busy		<= 1;
 			sample_count	<= 0;
 		end
-
-		//Reset the PRBS generator as needed
-		//TODO: synchronize this once we get to larger phase offsets
-		prbs_reset	<= !sample_busy;
 
 	end
 
@@ -643,10 +671,10 @@ module PRBSTestBitstream(
 			STATE_CAPTURE: begin
 				led[1]					<= 1;
 				if(sample_done_noc) begin
-					led[2]					<= 1;
+					led[2]				<= 1;
 
 					//Send our 256 samples, 64 at a time, over 4 messages.
-					//Kick off the first one now
+					//Kick off the first one now and do the rest in the next state
 					rpc_fab_tx_d1		<= samples[0 +: 32];
 					rpc_fab_tx_d2		<= samples[32 +: 32];
 					rpc_fab_tx_en		<= 1;
