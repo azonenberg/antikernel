@@ -280,19 +280,6 @@ int main(int argc, char* argv[])
 		JTAGNOCBridgeInterface nface(pfpga);
 		thread jtag(JtagThread, &nface);
 
-		//Send a test message
-		/*
-		RPCMessage test_message;
-		test_message.from = 0x4141;
-		test_message.to = 0xfeed;
-		test_message.callnum = 0xcc;
-		test_message.type = RPC_TYPE_INTERRUPT;
-		test_message.data[0] = 0x1234;
-		test_message.data[1] = 0xaaaaaaaa;
-		test_message.data[2] = 0xcccccccc;
-		nface.SendRPCMessage(test_message);
-		*/
-
 		//Wait for connections
 		vector<thread*> threads;
 		vector<int> sockets;
