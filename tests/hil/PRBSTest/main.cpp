@@ -213,13 +213,10 @@ int main(int argc, char* argv[])
 		LogDebug("time (ns), voltage, nscan, phase, block\n");
 		for(unsigned int t=0; t<256; t++)
 		{
-			//Real-time sampling rate is 4 ns
-			float basetime = 4*t;
-
 			for(unsigned int phase=0; phase<nphase; phase++)
 			{
 				//Raw time for a waveform plot instead of an eye
-				float ns = basetime + phase * 0.1f;
+				float ns = 4*t + phase * 0.1f;
 
 				//Convert time to UIs
 				//There's some delay in the wires etc. Add a further phase shift to center our eye in the plot
@@ -229,7 +226,7 @@ int main(int argc, char* argv[])
 				//ns -= 6;
 
 				//Convert to picoseconds so we have a nicer looking label
-				float ps = ns * 1000;
+				//float ps = ns * 1000;
 
 				for(unsigned int n=0; n<navg; n++)
 				{

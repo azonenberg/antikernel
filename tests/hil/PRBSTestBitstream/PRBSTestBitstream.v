@@ -215,7 +215,7 @@ module PRBSTestBitstream(
 						1: begin
 							reconfig_output_en		<= 1;
 							reconfig_output_div		<= 5;	//250 MHz PRBS
-							reconfig_output_phase	<= 6;	//Fixed delay of 600 ps for debugging
+							reconfig_output_phase	<= 0;	//No phase delay here
 						end
 
 						2: begin
@@ -283,10 +283,10 @@ module PRBSTestBitstream(
 			PLL_STATE_SHIFT_1: begin
 				if(reconfig_cmd_done) begin
 					reconfig_output_en		<= 1;
-					reconfig_output_idx		<= 3;	//delay the latch clock by 1/2 VCO cycle (400 ps)
+					reconfig_output_idx		<= 3;	//delay the latch clock by 1/4 sampling clock (1000 ps)
 													//so it doesn't toggle until we sample
 					reconfig_output_div		<= 10;
-					reconfig_output_phase	<= phase_off + 8'd4;
+					reconfig_output_phase	<= phase_off + 8'd10;
 					pll_state				<= PLL_STATE_SHIFT_2;
 				end
 			end	//end PLL_STATE_SHIFT_1
@@ -479,7 +479,7 @@ module PRBSTestBitstream(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // PRBS generator (locked to and higher speed than NoC clock)
 
-    reg[4:0]	prbs_count		= 0;
+    reg[1:0]	prbs_count		= 0;
     reg[6:0]	prbs_shreg		= 1;
 
 	//Step the PRBS shift register by TWO bits per clock
@@ -500,18 +500,21 @@ module PRBSTestBitstream(
 
 	always @(posedge clk_prbs) begin
 
-		//PRBS7 generator
+		//DDR PRBS7 generator
 		//prbs_shreg	<= prbs_shreg_next2;
-		/*
+
+		//SDR PRBS7 generator
+		//prbs_shreg	<= prbs_shreg_next;
+
+		//Slow PRBS7 generator
 		prbs_count	<= prbs_count + 1'h1;
 		if(prbs_count == 0)
 			prbs_shreg	<= prbs_shreg_next;
-		*/
 
-		//Squarewave (5 bit counter means 2^5 = 32 clocks per bit, 4 ns so 128 ns)
-		prbs_count	<= prbs_count + 1'h1;
-		if(prbs_count == 0)
-			prbs_shreg		<= ~prbs_shreg;
+		//Squarewave (2 bit counter means 2^2 = 4 clocks per bit, 4 ns so 16 ns)
+		//prbs_count	<= prbs_count + 1'h1;
+		//if(prbs_count == 0)
+		//	prbs_shreg		<= ~prbs_shreg;
 
 		//Reset the shreg
 		//Our clock is phase locked to, and faster than,  the NoC clock so this should be safe to use in the PRBS domain
