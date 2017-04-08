@@ -53,12 +53,12 @@ PRBSTestBitstream:
     # It's annoying... we have to use the auto-generated timespec name, which isn't very useful!
     crossclocks:
         pll/clkout_raw[0]:
-            pll/clkout_raw[1]: 4 ns
-            pll/clkout_raw[2]: 4 ns
-            clk_bufg: 4 ns
+            pll/clkout_raw[1]: 3 ns
+            pll/clkout_raw[2]: 3 ns
+            clk_bufg: 3 ns
 
         pll/clkout_raw[1]:
-            pll/clkout_raw[2]: 4 ns
+            pll/clkout_raw[2]: 3 ns
 
     # All source code for now, no automatic generation
     sources:

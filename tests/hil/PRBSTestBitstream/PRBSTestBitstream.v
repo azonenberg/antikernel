@@ -275,7 +275,7 @@ module PRBSTestBitstream(
 			PLL_STATE_SHIFT_0: begin
 				reconfig_output_en		<= 1;
 				reconfig_output_idx		<= 2;	//delay the sampling clock so we sample later in the waveform
-				reconfig_output_div		<= 10;
+				reconfig_output_div		<= 5;
 				reconfig_output_phase	<= phase_off;
 				pll_state				<= PLL_STATE_SHIFT_1;
 			end	//end PLL_STATE_SHIFT_0
@@ -285,7 +285,7 @@ module PRBSTestBitstream(
 					reconfig_output_en		<= 1;
 					reconfig_output_idx		<= 3;	//delay the latch clock by 1/4 sampling clock (1000 ps)
 													//so it doesn't toggle until we sample
-					reconfig_output_div		<= 10;
+					reconfig_output_div		<= 5;
 					reconfig_output_phase	<= phase_off + 8'd10;
 					pll_state				<= PLL_STATE_SHIFT_2;
 				end
@@ -479,7 +479,7 @@ module PRBSTestBitstream(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // PRBS generator (locked to and higher speed than NoC clock)
 
-    reg[1:0]	prbs_count		= 0;
+    reg[2:0]	prbs_count		= 0;
     reg[6:0]	prbs_shreg		= 1;
 
 	//Step the PRBS shift register by TWO bits per clock
@@ -492,26 +492,28 @@ module PRBSTestBitstream(
 	) prbs_ddrbuf (
 		.clk_p(clk_prbs),
 		.clk_n(!clk_prbs),
+		//.din0(1'b0),
+		//.din1(1'b1),
 		.din0(prbs_shreg[0]),
-		.din1(prbs_shreg[0]),
-		//.din1(prbs_shreg_next[0]),
+		//.din1(prbs_shreg[0]),
+		.din1(prbs_shreg_next[0]),
 		.dout(pmod_c[0])
 	);
 
 	always @(posedge clk_prbs) begin
 
 		//DDR PRBS7 generator
-		//prbs_shreg	<= prbs_shreg_next2;
+		prbs_shreg	<= prbs_shreg_next2;
 
 		//SDR PRBS7 generator
 		//prbs_shreg	<= prbs_shreg_next;
 
 		//Slow PRBS7 generator
-		prbs_count	<= prbs_count + 1'h1;
-		if(prbs_count == 0)
-			prbs_shreg	<= prbs_shreg_next;
+		//prbs_count	<= prbs_count + 1'h1;
+		//if(prbs_count == 0)
+		//	prbs_shreg	<= prbs_shreg_next;
 
-		//Squarewave (2 bit counter means 2^2 = 4 clocks per bit, 4 ns so 16 ns)
+		//Squarewave at 1/4 rate
 		//prbs_count	<= prbs_count + 1'h1;
 		//if(prbs_count == 0)
 		//	prbs_shreg		<= ~prbs_shreg;

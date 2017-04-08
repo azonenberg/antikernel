@@ -88,7 +88,7 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 
-		LogNotice("Connecting to nocswitch server...\n");
+		//LogNotice("Connecting to nocswitch server...\n");
 		NOCSwitchInterface iface;
 		iface.Connect(server, port);
 
@@ -99,22 +99,22 @@ int main(int argc, char* argv[])
 			LogError("Couldn't allocate an address\n");
 			return 1;
 		}
-		LogNotice("Got address %04x\n", ouraddr);
+		//LogNotice("Got address %04x\n", ouraddr);
 
 		//Address lookup
 		//printf("Looking up address of RPC pinger\n");
 		//NameServer nameserver(&iface);
 		//uint16_t pingaddr = nameserver.ForwardLookup("rpcping");
 		uint16_t scopeaddr = 0xfe00;
-		LogNotice("Scope is at %04x\n", scopeaddr);
+		//LogNotice("Scope is at %04x\n", scopeaddr);
 
 		//Sweep the DAC in a sawtooth pattern
 		//(note: actual DAC resolution is 12 bits, we send 16 for future proofing.
 		//Do 256 steps to speed edge rate for now
-		const unsigned int navg = 4;//32;
+		const unsigned int navg = 4;
 		const unsigned int nphase = 40;
 		unsigned int sample_values[256][nphase][navg] = {0};
-		unsigned int sample_blocks[256][nphase][navg] = {0};
+		//unsigned int sample_blocks[256][nphase][navg] = {0};
 		for(unsigned int adc_code=0; adc_code<65536; adc_code += 256)
 		{
 			//Set up the DAC
@@ -195,8 +195,8 @@ int main(int argc, char* argv[])
 							if( (rxm.data[2] >> nbit) & 1 )
 								sample_values[bk + 32][phase][avg_pass] = adc_code;
 
-							sample_blocks[bk][phase][avg_pass] = nblock*2;
-							sample_blocks[bk + 32][phase][avg_pass] = nblock*2 + 1;
+							//sample_blocks[bk][phase][avg_pass] = nblock*2;
+							//sample_blocks[bk + 32][phase][avg_pass] = nblock*2 + 1;
 						}
 					}
 				}
@@ -210,7 +210,7 @@ int main(int argc, char* argv[])
 
 		//Do final CSV export
 		//LogDebug("time (ps),voltage\n");
-		LogDebug("time (ns), voltage, nscan, phase, block\n");
+		LogDebug("time (ns), voltage, nscan, phase\n");
 		for(unsigned int t=0; t<256; t++)
 		{
 			for(unsigned int phase=0; phase<nphase; phase++)
@@ -218,31 +218,49 @@ int main(int argc, char* argv[])
 				//Raw time for a waveform plot instead of an eye
 				float ns = 4*t + phase * 0.1f;
 
-				//Convert time to UIs
-				//There's some delay in the wires etc. Add a further phase shift to center our eye in the plot
-				//float ns = (phase * 0.1f) - 1.7;
+				//DEBUG WORKAROUND: Shift first few phases by one full cycle
+				//TODO: seems like variable synchronizer latency? Have to calibrate somehow
+				if(phase < 7)
+					ns += 4;
 
-				//float ns = (t%8)*4 + phase*0.1f;
+				//There's some delay in the wires etc. Add a further phase shift to center our eye in the plot
+				ns -= 1;
+
+				//float ns = (phase * 0.1f) - 1.7;
+				//float ns = (t%4)*4 + phase*0.1f;
 				//ns -= 6;
+
+				//Convert time to UIs
+				const float eye_width = 2;
+				const float halfwidth = eye_width / 2;
+				ns = fmodf(ns, eye_width);
+
+				//Center it fully
+				ns -= halfwidth;
 
 				//Convert to picoseconds so we have a nicer looking label
 				//float ps = ns * 1000;
 
 				for(unsigned int n=0; n<navg; n++)
 				{
-					LogDebug("%.3f, %.3f, %d, %d, %d\n",
+					LogDebug("%.3f, %.3f, %d, %d\n",
 						ns,
 						sample_values[t][phase][n] * scale,
 						n,
-						phase,
-						sample_blocks[t][phase][n]);
-					//LogDebug("%.3f, %.3f\n", ns-4, sample_values[t][phase][n] * scale);
-					//LogDebug("%.3f, %.3f\n", ns+16, sample_values[t][phase][n] * scale);
+						phase);
 
-					//Render the sample here, then left and right one UI (2 ns) to make a full eye
-					//LogDebug("%.3f, %.3f\n", ps, sample_values[t][phase][n] * scale);
-					//LogDebug("%.3f, %.3f\n", ps - 2000, sample_values[t][phase][n] * scale);
-					//LogDebug("%.3f, %.3f\n", ps + 2000, sample_values[t][phase][n] * scale);
+					//Make copies left and right to complete the eye
+					LogDebug("%.3f, %.3f, %d, %d\n",
+						ns - eye_width,
+						sample_values[t][phase][n] * scale,
+						n,
+						phase);
+
+					LogDebug("%.3f, %.3f, %d, %d\n",
+						ns + eye_width,
+						sample_values[t][phase][n] * scale,
+						n,
+						phase);
 				}
 			}
 		}
