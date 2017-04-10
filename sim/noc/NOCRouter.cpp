@@ -30,61 +30,18 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief NoC topology simulator
+	@brief A router on one of the networks
  */
+
 #include "nocsim.h"
 
-void CreateRouters();
-void CreateHosts();
-void RunSimulation();
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Construction / destruction
 
-using namespace std;
-
-int main(int argc, char* argv[])
+NOCRouter::NOCRouter()
 {
-	Severity console_verbosity = Severity::NOTICE;
-
-	//Parse command-line arguments
-	for(int i=1; i<argc; i++)
-	{
-		string s(argv[i]);
-
-		//Let the logger eat its args first
-		if(ParseLoggerArguments(i, argc, argv, console_verbosity))
-			continue;
-
-		if(false)
-		{}
-		else
-		{
-			printf("Unrecognized command-line argument \"%s\"\n", s.c_str());
-			return 1;
-		}
-	}
-
-	//Set up logging
-	g_log_sinks.emplace(g_log_sinks.begin(), new ColoredSTDLogSink(console_verbosity));
-
-	//Fun stuff here!
-	CreateRouters();
-	CreateHosts();
-	RunSimulation();
-
-	//All good
-	return 0;
 }
 
-void CreateRouters()
+NOCRouter::~NOCRouter()
 {
-
-}
-
-void CreateHosts()
-{
-
-}
-
-void RunSimulation()
-{
-
 }

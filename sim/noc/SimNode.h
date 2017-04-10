@@ -30,61 +30,19 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief NoC topology simulator
+	@brief An object in the simulation (host or router)
  */
-#include "nocsim.h"
+#ifndef SimNode_h
+#define SimNode_h
 
-void CreateRouters();
-void CreateHosts();
-void RunSimulation();
-
-using namespace std;
-
-int main(int argc, char* argv[])
+class SimNode
 {
-	Severity console_verbosity = Severity::NOTICE;
+public:
+	SimNode();
+	virtual ~SimNode();
 
-	//Parse command-line arguments
-	for(int i=1; i<argc; i++)
-	{
-		string s(argv[i]);
+	virtual void Timestep() = 0;
+};
 
-		//Let the logger eat its args first
-		if(ParseLoggerArguments(i, argc, argv, console_verbosity))
-			continue;
+#endif
 
-		if(false)
-		{}
-		else
-		{
-			printf("Unrecognized command-line argument \"%s\"\n", s.c_str());
-			return 1;
-		}
-	}
-
-	//Set up logging
-	g_log_sinks.emplace(g_log_sinks.begin(), new ColoredSTDLogSink(console_verbosity));
-
-	//Fun stuff here!
-	CreateRouters();
-	CreateHosts();
-	RunSimulation();
-
-	//All good
-	return 0;
-}
-
-void CreateRouters()
-{
-
-}
-
-void CreateHosts()
-{
-
-}
-
-void RunSimulation()
-{
-
-}

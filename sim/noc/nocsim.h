@@ -35,6 +35,16 @@
 #ifndef nocsim_h
 #define nocsim_h
 
+#include <stdint.h>
+
+#include <string>
+
 #include "../../src/log/log.h"
+
+#include "SimNode.h"
+
+#include "NOCPacket.h"
+#include "NOCHost.h"
+#include "NOCRouter.h"
 
 #endif

@@ -33,6 +33,10 @@ nocsim:
 
     sources:
         - main.cpp
+        - NOCHost.cpp
+        - NOCPacket.cpp
+        - NOCRouter.cpp
+        - SimNode.cpp
 
     flags:
         - global
