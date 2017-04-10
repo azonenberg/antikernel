@@ -36,6 +36,7 @@ nocsim:
         - NOCHost.cpp
         - NOCPacket.cpp
         - NOCRouter.cpp
+        - QuadtreeRouter.cpp
         - SimNode.cpp
 
     flags:

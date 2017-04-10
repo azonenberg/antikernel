@@ -32,15 +32,16 @@
 	@author Andrew D. Zonenberg
 	@brief A router on one of the networks
  */
-#ifndef NOCRouter_h
-#define NOCRouter_h
 
-class NOCRouter : public SimNode
+#include "nocsim.h"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Construction / destruction
+
+QuadtreeRouter::QuadtreeRouter()
 {
-public:
-	NOCRouter();
-	virtual ~NOCRouter();
-};
+}
 
-#endif
-
+QuadtreeRouter::~QuadtreeRouter()
+{
+}

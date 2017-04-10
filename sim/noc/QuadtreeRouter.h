@@ -32,14 +32,20 @@
 	@author Andrew D. Zonenberg
 	@brief A router on one of the networks
  */
-#ifndef NOCRouter_h
-#define NOCRouter_h
+#ifndef QuadtreeRouter_h
+#define QuadtreeRouter_h
 
-class NOCRouter : public SimNode
+class QuadtreeRouter : public NOCRouter
 {
 public:
-	NOCRouter();
-	virtual ~NOCRouter();
+	QuadtreeRouter();
+	virtual ~QuadtreeRouter();
+
+protected:
+	bool m_leaf;
+
+	QuadtreeRouter* m_parentRouter;
+	SimNode* m_children[4];
 };
 
 #endif

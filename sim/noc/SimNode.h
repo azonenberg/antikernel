@@ -41,6 +41,10 @@ public:
 	SimNode();
 	virtual ~SimNode();
 
+	//All sim nodes are able to accept messages, whether nodes or routers
+	virtual void AcceptMessage(NOCPacket packet, SimNode* from) =0;
+
+	//Process events occuring in one simulated clock cycle
 	virtual void Timestep() = 0;
 };
 

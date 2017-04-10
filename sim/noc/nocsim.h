@@ -41,10 +41,13 @@
 
 #include "../../src/log/log.h"
 
+#include "NOCPacket.h"
+
 #include "SimNode.h"
 
-#include "NOCPacket.h"
 #include "NOCHost.h"
 #include "NOCRouter.h"
+
+#include "QuadtreeRouter.h"
 
 #endif
