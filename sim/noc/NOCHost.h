@@ -43,8 +43,11 @@ public:
 	NOCHost(uint16_t addr, NOCRouter* parent);
 	virtual ~NOCHost();
 
-	virtual void AcceptMessage(NOCPacket packet, SimNode* from);
+	virtual bool AcceptMessage(NOCPacket packet, SimNode* from);
 	virtual void Timestep();
+
+	uint16_t GetAddress()
+	{ return m_address; }
 
 protected:
 	uint16_t m_address;

@@ -38,7 +38,7 @@
 class NOCRouter : public SimNode
 {
 public:
-	NOCRouter(unsigned int low, unsigned int high);
+	NOCRouter(uint16_t low, uint16_t high);
 	virtual ~NOCRouter();
 
 	/**
@@ -53,11 +53,13 @@ public:
 	unsigned int GetSubnetBase()
 	{ return m_subnetLow; }
 
+	virtual void AddChild(SimNode* child) =0;
+
 protected:
 
 	//Addresses of nodes/routers under us
-	unsigned int m_subnetLow;
-	unsigned int m_subnetHigh;
+	uint16_t m_subnetLow;
+	uint16_t m_subnetHigh;
 };
 
 #endif

@@ -50,4 +50,7 @@
 
 #include "QuadtreeRouter.h"
 
+extern unsigned int g_hostCount;
+extern unsigned int g_time;
+
 #endif

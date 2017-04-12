@@ -36,10 +36,12 @@
 
 using namespace std;
 
+unsigned int g_hostCount = 256;
+unsigned int g_time = 0;
+
 set<SimNode*> g_simNodes;
 
 void CreateQuadtreeNetwork();
-
 void RunSimulation();
 
 int main(int argc, char* argv[])
@@ -80,13 +82,19 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
+/**
+	@brief Create a network using the quadtree topology
+ */
 void CreateQuadtreeNetwork()
 {
 	set<QuadtreeRouter*> routers;
 	set<QuadtreeRouter*> new_routers;
 
 	//Seed things by creating a root router
-	auto root = new QuadtreeRouter(NULL, 0, 0xff, 0xff00);
+	unsigned int size = g_hostCount;
+	unsigned int mask = 0xffff & ~(size - 1);
+	unsigned int base = 0;
+	auto root = new QuadtreeRouter(NULL, base, base + size - 1, mask);
 	g_simNodes.emplace(root);
 	routers.emplace(root);
 
@@ -105,9 +113,9 @@ void CreateQuadtreeNetwork()
 		for(auto r : routers)
 		{
 			//Figure out the new subnet size and mask
-			unsigned int size = r->GetSubnetSize() / 4;
-			unsigned int mask = 0xffff & ~(size - 1);
-			unsigned int base = r->GetSubnetBase();
+			size = r->GetSubnetSize() / 4;
+			mask = 0xffff & ~(size - 1);
+			base = r->GetSubnetBase();
 
 			//Create the new routers
 			for(int i=0; i<4; i++)
@@ -145,6 +153,14 @@ void CreateQuadtreeNetwork()
 	LogVerbose("Created %d hosts\n", nhosts);
 }
 
+/**
+	@brief Run the discrete event simulation
+ */
 void RunSimulation()
 {
+	for(g_time = 0; g_time < 100; g_time ++)
+	{
+		for(auto n : g_simNodes)
+			n->Timestep();
+	}
 }

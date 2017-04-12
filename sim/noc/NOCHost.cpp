@@ -42,6 +42,7 @@ NOCHost::NOCHost(uint16_t addr, NOCRouter* parent)
 	: m_address(addr)
 	, m_parent(parent)
 {
+	m_parent->AddChild(this);
 }
 
 NOCHost::~NOCHost()
@@ -51,8 +52,10 @@ NOCHost::~NOCHost()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Simulation
 
-void NOCHost::AcceptMessage(NOCPacket packet, SimNode* from)
+bool NOCHost::AcceptMessage(NOCPacket packet, SimNode* from)
 {
+	//silently discard
+	return true;
 }
 
 void NOCHost::Timestep()
