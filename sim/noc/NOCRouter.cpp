@@ -38,7 +38,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-NOCRouter::NOCRouter()
+NOCRouter::NOCRouter(unsigned int low, unsigned int high)
+	: m_subnetLow(low)
+	, m_subnetHigh(high)
 {
 }
 

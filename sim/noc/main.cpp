@@ -34,11 +34,13 @@
  */
 #include "nocsim.h"
 
-void CreateRouters();
-void CreateHosts();
-void RunSimulation();
-
 using namespace std;
+
+set<SimNode*> g_simNodes;
+
+void CreateQuadtreeNetwork();
+
+void RunSimulation();
 
 int main(int argc, char* argv[])
 {
@@ -66,25 +68,83 @@ int main(int argc, char* argv[])
 	g_log_sinks.emplace(g_log_sinks.begin(), new ColoredSTDLogSink(console_verbosity));
 
 	//Fun stuff here!
-	CreateRouters();
-	CreateHosts();
+	CreateQuadtreeNetwork();
 	RunSimulation();
+
+	//Clean up
+	for(auto p : g_simNodes)
+		delete p;
+	g_simNodes.clear();
 
 	//All good
 	return 0;
 }
 
-void CreateRouters()
+void CreateQuadtreeNetwork()
 {
+	set<QuadtreeRouter*> routers;
+	set<QuadtreeRouter*> new_routers;
 
-}
+	//Seed things by creating a root router
+	auto root = new QuadtreeRouter(NULL, 0, 0xff, 0xff00);
+	g_simNodes.emplace(root);
+	routers.emplace(root);
 
-void CreateHosts()
-{
+	LogNotice("Creating network (quadtree topology) with %d hosts\n", root->GetSubnetSize());
+	LogIndenter li;
 
+	//Create each row of the tree
+	bool done = false;
+	int nrouters = 0;
+	int nhosts = 0;
+	while(!done)
+	{
+		new_routers.clear();
+
+		//For each parent router in our list, add four child nodes
+		for(auto r : routers)
+		{
+			//Figure out the new subnet size and mask
+			unsigned int size = r->GetSubnetSize() / 4;
+			unsigned int mask = 0xffff & ~(size - 1);
+			unsigned int base = r->GetSubnetBase();
+
+			//Create the new routers
+			for(int i=0; i<4; i++)
+			{
+				unsigned int cbase = base + i*size;
+
+				//If child subnet size is 1, create hosts instead
+				if(size == 1)
+				{
+					auto child = new NOCHost(cbase, r);
+					g_simNodes.emplace(child);
+					nhosts ++;
+					//LogDebug("Creating host at %u\n", cbase);
+				}
+
+				else
+				{
+					auto child = new QuadtreeRouter(r, cbase, cbase + size - 1, mask);
+					//LogDebug("Creating router at %u (size %u)\n", cbase, size);
+					g_simNodes.emplace(child);
+					new_routers.emplace(child);
+					nrouters ++;
+				}
+			}
+
+			//Finish after this iteration if we're creating hosts
+			if(size == 1)
+				done = true;
+		}
+
+		routers = new_routers;
+	}
+
+	LogVerbose("Created %d routers\n", nrouters);
+	LogVerbose("Created %d hosts\n", nhosts);
 }
 
 void RunSimulation()
 {
-
 }

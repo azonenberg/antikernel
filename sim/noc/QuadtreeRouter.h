@@ -38,11 +38,14 @@
 class QuadtreeRouter : public NOCRouter
 {
 public:
-	QuadtreeRouter();
+	QuadtreeRouter(QuadtreeRouter* parent, unsigned int low, unsigned int high, unsigned int mask);
 	virtual ~QuadtreeRouter();
 
+	virtual void AcceptMessage(NOCPacket packet, SimNode* from);
+	virtual void Timestep();
+
 protected:
-	bool m_leaf;
+	unsigned int m_subnetMask;
 
 	QuadtreeRouter* m_parentRouter;
 	SimNode* m_children[4];

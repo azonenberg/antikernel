@@ -38,8 +38,26 @@
 class NOCRouter : public SimNode
 {
 public:
-	NOCRouter();
+	NOCRouter(unsigned int low, unsigned int high);
 	virtual ~NOCRouter();
+
+	/**
+		@brief Get the total number of addresses in the subnet
+	 */
+	unsigned int GetSubnetSize()
+	{ return m_subnetHigh - m_subnetLow + 1; }
+
+	/**
+		@brief Get the base address of this subnet (lowest numbered address)
+	 */
+	unsigned int GetSubnetBase()
+	{ return m_subnetLow; }
+
+protected:
+
+	//Addresses of nodes/routers under us
+	unsigned int m_subnetLow;
+	unsigned int m_subnetHigh;
 };
 
 #endif

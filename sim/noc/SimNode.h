@@ -46,6 +46,9 @@ public:
 
 	//Process events occuring in one simulated clock cycle
 	virtual void Timestep() = 0;
+
+	//Coordinates in the render (has no meaning in simulation)
+	std::pair<int, int> m_renderPosition;
 };
 
 #endif

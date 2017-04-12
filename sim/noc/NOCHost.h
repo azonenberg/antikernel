@@ -35,14 +35,20 @@
 #ifndef NOCHost_h
 #define NOCHost_h
 
+class NOCRouter;
+
 class NOCHost : public SimNode
 {
 public:
-	NOCHost(uint16_t addr);
+	NOCHost(uint16_t addr, NOCRouter* parent);
 	virtual ~NOCHost();
+
+	virtual void AcceptMessage(NOCPacket packet, SimNode* from);
+	virtual void Timestep();
 
 protected:
 	uint16_t m_address;
+	NOCRouter* m_parent;
 };
 
 #endif

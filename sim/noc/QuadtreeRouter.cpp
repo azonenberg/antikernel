@@ -38,10 +38,25 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-QuadtreeRouter::QuadtreeRouter()
+QuadtreeRouter::QuadtreeRouter(QuadtreeRouter* parent, unsigned int low, unsigned int high, unsigned int mask)
+	: NOCRouter(low, high)
+	, m_parentRouter(parent)
+	, m_subnetMask(mask)
 {
 }
 
 QuadtreeRouter::~QuadtreeRouter()
 {
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Simulation
+
+void QuadtreeRouter::AcceptMessage(NOCPacket packet, SimNode* from)
+{
+}
+
+void QuadtreeRouter::Timestep()
+{
+
 }
