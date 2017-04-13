@@ -198,7 +198,10 @@ void RenderOutput()
 
 	//Generate the final drawing
 	FILE* fp = fopen("/tmp/simrun.svg", "w");
-	fprintf(fp, "<svg width=\"%u\" height=\"%u\">\n", width, height);
+	fprintf(fp,
+		"<svg width=\"%u\" height=\"%u\" xmlns=\"http://www.w3.org/2000/svg\" "
+		"xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n",
+		width, height);
 	fprintf(fp, "<rect width=\"%u\" height=\"%u\" fill=\"white\"/>\n", width, height);
 
 	//Draw the stuff. Interconnect goes first so nodes overlay the links
