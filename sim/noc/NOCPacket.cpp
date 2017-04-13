@@ -38,7 +38,10 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-NOCPacket::NOCPacket()
+NOCPacket::NOCPacket(uint16_t f, uint16_t t, unsigned int s)
+	: m_from(f)
+	, m_to(t)
+	, m_size(s)
 {
 }
 

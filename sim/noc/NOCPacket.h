@@ -38,8 +38,12 @@
 class NOCPacket
 {
 public:
-	NOCPacket();
+	NOCPacket(uint16_t f = 0, uint16_t t = 0, unsigned int s = 0);
 	virtual ~NOCPacket();
+
+	uint16_t m_from;
+	uint16_t m_to;
+	unsigned int m_size;
 };
 
 #endif

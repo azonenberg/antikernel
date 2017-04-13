@@ -52,13 +52,22 @@ NOCHost::~NOCHost()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Simulation
 
-bool NOCHost::AcceptMessage(NOCPacket packet, SimNode* from)
+bool NOCHost::AcceptMessage(NOCPacket packet, SimNode* /*from*/)
 {
+	LogDebug("[%5u] NOCHost %04x: accepting %d-word message from %04x\n",
+		g_time, m_address, packet.m_size, packet.m_from);
+
 	//silently discard
 	return true;
 }
 
 void NOCHost::Timestep()
 {
-
+	//DEBUG: generate a single packet crossing the network from end to end
+	if( (g_time == 4) && (m_address == 0) )
+	{
+		NOCPacket message(m_address, 0xff, 4);
+		if(!m_parent->AcceptMessage(message, this))
+			LogWarning("Couldn't send initial message\n");
+	}
 }

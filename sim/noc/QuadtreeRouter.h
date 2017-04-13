@@ -52,9 +52,24 @@ protected:
 	unsigned int m_portShift;
 
 	unsigned int GetPortNumber(SimNode* node);
+	unsigned int GetPortNumber(uint16_t addr);
+
+	bool TryForwardFrom(unsigned int nport);
 
 	QuadtreeRouter* m_parentRouter;
 	SimNode* m_children[4];
+
+	//Incoming messages (not yet forwarded)
+	NOCPacket m_inboxes[5];
+	bool m_inboxValid[5];
+	unsigned int m_inboxForwardTime[5];
+
+	//Outgoing messages
+	bool m_outboxBlocked[5];
+	unsigned int m_outboxClearTime[5];
+
+	//Round-robin counter
+	unsigned int m_rrcount;
 };
 
 #endif
