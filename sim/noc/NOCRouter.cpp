@@ -38,8 +38,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-NOCRouter::NOCRouter(uint16_t low, uint16_t high)
-	: m_subnetLow(low)
+NOCRouter::NOCRouter(uint16_t low, uint16_t high, xypos pos)
+	: SimNode(pos)
+	, m_subnetLow(low)
 	, m_subnetHigh(high)
 {
 }

@@ -38,7 +38,7 @@
 class NOCRouter : public SimNode
 {
 public:
-	NOCRouter(uint16_t low, uint16_t high);
+	NOCRouter(uint16_t low, uint16_t high, xypos pos);
 	virtual ~NOCRouter();
 
 	/**

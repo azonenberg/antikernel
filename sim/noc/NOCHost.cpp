@@ -38,8 +38,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-NOCHost::NOCHost(uint16_t addr, NOCRouter* parent)
-	: m_address(addr)
+NOCHost::NOCHost(uint16_t addr, NOCRouter* parent, xypos pos)
+	: SimNode(pos)
+	, m_address(addr)
 	, m_parent(parent)
 {
 	m_parent->AddChild(this);
@@ -47,6 +48,40 @@ NOCHost::NOCHost(uint16_t addr, NOCRouter* parent)
 
 NOCHost::~NOCHost()
 {
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Rendering
+
+void NOCHost::ExpandBoundingBox(unsigned int& width, unsigned int& height)
+{
+	const unsigned int nodesize = 10;
+	const unsigned int radius = nodesize / 2;
+	const unsigned int right = m_renderPosition.first + radius;
+	const unsigned int bottom = m_renderPosition.second + radius;
+
+	if(width < right)
+		width = right;
+	if(height < bottom)
+		height = bottom;
+}
+
+void NOCHost::RenderSVGNodes(FILE* fp)
+{
+	const unsigned int nodesize = 10;
+	const unsigned int radius = nodesize / 2;
+
+	fprintf(
+		fp,
+		"<circle cx=\"%u\" cy=\"%u\" r=\"%u\" stroke=\"black\" stroke-width=\"1\" fill=\"white\"/>\n",
+		m_renderPosition.first,
+		m_renderPosition.second,
+		radius);
+}
+
+void NOCHost::RenderSVGLines(FILE* /*fp*/)
+{
+	//not a router, nothing to do
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

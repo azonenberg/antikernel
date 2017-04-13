@@ -35,10 +35,12 @@
 #ifndef SimNode_h
 #define SimNode_h
 
+typedef std::pair<int, int> xypos;
+
 class SimNode
 {
 public:
-	SimNode();
+	SimNode(xypos pos);
 	virtual ~SimNode();
 
 	//All sim nodes are able to accept messages, whether nodes or routers
@@ -47,8 +49,15 @@ public:
 	//Process events occuring in one simulated clock cycle
 	virtual void Timestep() = 0;
 
+	//Output: Expand the provided bounding box down and right so that it contains our elements
+	virtual void ExpandBoundingBox(unsigned int& width, unsigned int& height) =0;
+
+	//Output: Render this node into a SVG image
+	virtual void RenderSVGNodes(FILE* fp) =0;
+	virtual void RenderSVGLines(FILE* fp) =0;
+
 	//Coordinates in the render (has no meaning in simulation)
-	std::pair<int, int> m_renderPosition;
+	xypos m_renderPosition;
 };
 
 #endif

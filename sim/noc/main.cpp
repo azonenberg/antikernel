@@ -43,6 +43,7 @@ set<SimNode*> g_simNodes;
 
 void CreateQuadtreeNetwork();
 void RunSimulation();
+void RenderOutput();
 
 int main(int argc, char* argv[])
 {
@@ -72,6 +73,7 @@ int main(int argc, char* argv[])
 	//Fun stuff here!
 	CreateQuadtreeNetwork();
 	RunSimulation();
+	RenderOutput();
 
 	//Clean up
 	for(auto p : g_simNodes)
@@ -90,11 +92,24 @@ void CreateQuadtreeNetwork()
 	set<QuadtreeRouter*> routers;
 	set<QuadtreeRouter*> new_routers;
 
+	//Column pitch of the nodes at the bottom level of the tree, also row pitch
+	unsigned int pitch = 30;
+	unsigned int nodesize = 10;
+
+	//X center position of the leftmost host
+	unsigned int left = nodesize/2;
+
+	//X center position of the rightmost host
+	unsigned int right = left + (g_hostCount - 1)*pitch;
+
+	//Y center position of the topmost router
+	unsigned int top = nodesize/2;
+
 	//Seed things by creating a root router
 	unsigned int size = g_hostCount;
 	unsigned int mask = 0xffff & ~(size - 1);
 	unsigned int base = 0;
-	auto root = new QuadtreeRouter(NULL, base, base + size - 1, mask);
+	auto root = new QuadtreeRouter(NULL, base, base + size - 1, mask, xypos( (left + right)/2, top) );
 	g_simNodes.emplace(root);
 	routers.emplace(root);
 
@@ -107,7 +122,9 @@ void CreateQuadtreeNetwork()
 	int nhosts = 0;
 	while(!done)
 	{
+		//Start a new row
 		new_routers.clear();
+		top += pitch;
 
 		//For each parent router in our list, add four child nodes
 		for(auto r : routers)
@@ -121,11 +138,13 @@ void CreateQuadtreeNetwork()
 			for(int i=0; i<4; i++)
 			{
 				unsigned int cbase = base + i*size;
+				unsigned int rowpitch = pitch * size;
+				unsigned int xpos = r->m_renderPosition.first + (i-1)*rowpitch - rowpitch/2;
 
 				//If child subnet size is 1, create hosts instead
 				if(size == 1)
 				{
-					auto child = new NOCHost(cbase, r);
+					auto child = new NOCHost(cbase, r, xypos(xpos, top) );
 					g_simNodes.emplace(child);
 					nhosts ++;
 					//LogDebug("Creating host at %u\n", cbase);
@@ -133,7 +152,7 @@ void CreateQuadtreeNetwork()
 
 				else
 				{
-					auto child = new QuadtreeRouter(r, cbase, cbase + size - 1, mask);
+					auto child = new QuadtreeRouter(r, cbase, cbase + size - 1, mask, xypos(xpos, top) );
 					//LogDebug("Creating router at %u (size %u)\n", cbase, size);
 					g_simNodes.emplace(child);
 					new_routers.emplace(child);
@@ -163,4 +182,31 @@ void RunSimulation()
 		for(auto n : g_simNodes)
 			n->Timestep();
 	}
+}
+
+void RenderOutput()
+{
+	LogDebug("Writing simulation results to /tmp/simrun.svg...\n");
+	LogIndenter li;
+
+	unsigned int width = 0;
+	unsigned int height = 0;
+
+	//Find bounding box of all nodes
+	for(auto n : g_simNodes)
+		n->ExpandBoundingBox(width, height);
+
+	//Generate the final drawing
+	FILE* fp = fopen("/tmp/simrun.svg", "w");
+	fprintf(fp, "<svg width=\"%u\" height=\"%u\">\n", width, height);
+	fprintf(fp, "<rect width=\"%u\" height=\"%u\" fill=\"white\"/>\n", width, height);
+
+	//Draw the stuff. Interconnect goes first so nodes overlay the links
+	for(auto n : g_simNodes)
+		n->RenderSVGLines(fp);
+	for(auto n : g_simNodes)
+		n->RenderSVGNodes(fp);
+
+	fprintf(fp, "</svg>\n");
+	LogDebug("Done\n");
 }

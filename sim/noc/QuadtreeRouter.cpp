@@ -39,8 +39,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-QuadtreeRouter::QuadtreeRouter(QuadtreeRouter* parent, uint16_t low, uint16_t high, uint16_t mask)
-	: NOCRouter(low, high)
+QuadtreeRouter::QuadtreeRouter(QuadtreeRouter* parent, uint16_t low, uint16_t high, uint16_t mask, xypos pos)
+	: NOCRouter(low, high, pos)
 	, m_subnetMask(mask)
 	, m_parentRouter(parent)
 {
@@ -78,6 +78,49 @@ void QuadtreeRouter::AddChild(SimNode* child)
 
 	else
 		LogWarning("Can't add child (invalid address)\n");
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Rendering
+
+void QuadtreeRouter::ExpandBoundingBox(unsigned int& width, unsigned int& height)
+{
+	const unsigned int nodesize = 10;
+	const unsigned int radius = nodesize / 2;
+	const unsigned int right = m_renderPosition.first + radius;
+	const unsigned int bottom = m_renderPosition.second + radius;
+
+	if(width < right)
+		width = right;
+	if(height < bottom)
+		height = bottom;
+}
+
+void QuadtreeRouter::RenderSVGNodes(FILE* fp)
+{
+	const unsigned int nodesize = 10;
+	const unsigned int radius = nodesize / 2;
+
+	fprintf(
+		fp,
+		"<circle cx=\"%u\" cy=\"%u\" r=\"%u\" stroke=\"black\" stroke-width=\"1\" fill=\"white\"/>\n",
+		m_renderPosition.first,
+		m_renderPosition.second,
+		radius);
+}
+
+void QuadtreeRouter::RenderSVGLines(FILE* fp)
+{
+	for(int i=0; i<4; i++)
+	{
+		auto c = m_children[i];
+		fprintf(fp,
+			"<line x1=\"%u\" y1=\"%u\" x2=\"%u\" y2=\"%u\" stroke=\"blue\" stroke-width=\"1\" />\n",
+			c->m_renderPosition.first,
+			c->m_renderPosition.second,
+			m_renderPosition.first,
+			m_renderPosition.second);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

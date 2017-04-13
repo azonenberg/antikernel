@@ -40,7 +40,7 @@ class NOCRouter;
 class NOCHost : public SimNode
 {
 public:
-	NOCHost(uint16_t addr, NOCRouter* parent);
+	NOCHost(uint16_t addr, NOCRouter* parent, xypos pos);
 	virtual ~NOCHost();
 
 	virtual bool AcceptMessage(NOCPacket packet, SimNode* from);
@@ -48,6 +48,10 @@ public:
 
 	uint16_t GetAddress()
 	{ return m_address; }
+
+	virtual void ExpandBoundingBox(unsigned int& width, unsigned int& height);
+	virtual void RenderSVGNodes(FILE* fp);
+	virtual void RenderSVGLines(FILE* fp);
 
 protected:
 	uint16_t m_address;
