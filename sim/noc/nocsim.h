@@ -46,6 +46,9 @@
 #include "SimNode.h"
 
 #include "NOCHost.h"
+#include "NOCCpuHost.h"
+#include "NOCRamHost.h"
+
 #include "NOCRouter.h"
 
 #include "QuadtreeRouter.h"

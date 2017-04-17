@@ -30,39 +30,16 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief A packet on one of the networks
+	@brief A host that simulates a RAM controller
  */
-#ifndef NOCPacket_h
-#define NOCPacket_h
+#ifndef NOCRamHost_h
+#define NOCRamHost_h
 
-class NOCPacket
+class NOCRamHost : public NOCHost
 {
 public:
-	//Type of message (to make sim a bit more realistic)
-	enum msgType
-	{
-		TYPE_RPC_CALL,
-		TYPE_RPC_RETURN,
-		TYPE_RPC_INTERRUPT,
-		TYPE_DMA_READ,
-		TYPE_DMA_RDATA,
-		TYPE_DMA_WRITE,
-		TYPE_DMA_ACK
-	};
-
-	NOCPacket(uint16_t f = 0, uint16_t t = 0, unsigned int s = 0, msgType type = TYPE_RPC_CALL);
-	virtual ~NOCPacket();
-
-	uint16_t m_from;
-	uint16_t m_to;
-	unsigned int m_size;
-
-	msgType m_type;
-
-	unsigned int m_timeSent;
-
-	//Indicate that this message has been received and handled by the final destination
-	void Processed();
+	NOCRamHost(uint16_t addr, NOCRouter* parent, xypos pos);
+	virtual ~NOCRamHost();
 };
 
 #endif

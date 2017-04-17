@@ -33,8 +33,10 @@ nocsim:
 
     sources:
         - main.cpp
+        - NOCCpuHost.cpp
         - NOCHost.cpp
         - NOCPacket.cpp
+        - NOCRamHost.cpp
         - NOCRouter.cpp
         - QuadtreeRouter.cpp
         - SimNode.cpp

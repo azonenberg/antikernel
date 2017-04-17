@@ -91,6 +91,53 @@ bool NOCHost::AcceptMessage(NOCPacket packet, SimNode* /*from*/)
 {
 	LogDebug("[%5u] NOCHost %04x: accepting %d-word message from %04x\n",
 		g_time, m_address, packet.m_size, packet.m_from);
+	packet.Processed();
+
+	switch(packet.m_type)
+	{
+		//Respond with a 4-word return
+		case NOCPacket::TYPE_RPC_CALL:
+			{
+				NOCPacket message(m_address, packet.m_from, 4, NOCPacket::TYPE_RPC_RETURN);
+				if(!m_parent->AcceptMessage(message, this))
+					LogWarning("Couldn't send reply to function call\n");
+			}
+			break;
+
+		//No action required
+		case NOCPacket::TYPE_RPC_RETURN:
+			break;
+
+		//No action required
+		case NOCPacket::TYPE_RPC_INTERRUPT:
+			break;
+
+		//Respond with a DMA read data
+		case NOCPacket::TYPE_DMA_READ:
+			{
+				NOCPacket message(m_address, packet.m_from, packet.m_size, NOCPacket::TYPE_DMA_RDATA);
+				if(!m_parent->AcceptMessage(message, this))
+					LogWarning("Couldn't send reply to DMA read\n");
+			}
+			break;
+
+		//No action required
+		case NOCPacket::TYPE_DMA_RDATA:
+			break;
+
+		//Respond with a DMA ack (headers only, no payload)
+		case NOCPacket::TYPE_DMA_WRITE:
+			{
+				NOCPacket message(m_address, packet.m_from, 3, NOCPacket::TYPE_DMA_ACK);
+				if(!m_parent->AcceptMessage(message, this))
+					LogWarning("Couldn't send reply to DMA write\n");
+			}
+			break;
+
+		//No action required
+		case NOCPacket::TYPE_DMA_ACK:
+			break;
+	}
 
 	//silently discard
 	return true;
@@ -98,11 +145,5 @@ bool NOCHost::AcceptMessage(NOCPacket packet, SimNode* /*from*/)
 
 void NOCHost::Timestep()
 {
-	//DEBUG: generate a single packet crossing the network from end to end
-	if( (g_time == 4) && (m_address == 0) )
-	{
-		NOCPacket message(m_address, 0xff, 4);
-		if(!m_parent->AcceptMessage(message, this))
-			LogWarning("Couldn't send initial message\n");
-	}
+	//Nothing to do, we don't originate messages
 }

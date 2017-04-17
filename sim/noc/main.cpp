@@ -67,6 +67,9 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	//Reset RNG
+	srand(0);
+
 	//Set up logging
 	g_log_sinks.emplace(g_log_sinks.begin(), new ColoredSTDLogSink(console_verbosity));
 
@@ -144,10 +147,18 @@ void CreateQuadtreeNetwork()
 				//If child subnet size is 1, create hosts instead
 				if(size == 1)
 				{
-					auto child = new NOCHost(cbase, r, xypos(xpos, top) );
+					//Create special hosts at a few addresses, then random stuff after that
+					NOCHost* child = NULL;
+					if(cbase == 0x0000)
+						child = new NOCRamHost(cbase, r, xypos(xpos, top) );
+					else if(cbase == 0x00ff)
+						child = new NOCCpuHost(cbase, r, xypos(xpos, top) );
+					else
+						child = new NOCHost(cbase, r, xypos(xpos, top) );
+
+					//Done
 					g_simNodes.emplace(child);
 					nhosts ++;
-					//LogDebug("Creating host at %u\n", cbase);
 				}
 
 				else

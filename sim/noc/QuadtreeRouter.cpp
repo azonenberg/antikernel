@@ -137,7 +137,7 @@ unsigned int QuadtreeRouter::GetPortNumber(SimNode* node)
 	//Figure out the base address of our target node
 	uint16_t addr = 0;
 	if(router)
-		addr = router->m_subnetLow;
+		addr = (router->m_subnetLow + router->m_subnetHigh)/2;
 
 	else if(host)
 		addr = host->GetAddress();
@@ -170,14 +170,15 @@ bool QuadtreeRouter::AcceptMessage(NOCPacket packet, SimNode* from)
 	//If inbox is already full, reject it!
 	if(m_inboxValid[srcport])
 	{
-		LogError("[%5u] QuadtreeRouter %04x/%d: rejecting %d-word message from %04x (on port %d): bus fight!\n",
-			g_time, m_subnetLow, 16 - m_portShift, packet.m_size, packet.m_from, srcport);
+		LogError(
+			"[%5u] QuadtreeRouter %04x/%d: rejecting %d-word message from %04x to %04x (on port %d): bus fight!\n",
+			g_time, m_subnetLow, 16 - m_portShift, packet.m_size, packet.m_from, packet.m_to, srcport);
 		return false;
 	}
 
 	//We're good, accept it
-	LogDebug("[%5u] QuadtreeRouter %04x/%d: accepting %d-word message from %04x to %04x (on port %d)\n",
-		g_time, m_subnetLow, 16 - m_portShift, packet.m_size, packet.m_from, packet.m_to, srcport);
+	//LogDebug("[%5u] QuadtreeRouter %04x/%d: accepting %d-word message from %04x to %04x (on port %d)\n",
+	//	g_time, m_subnetLow, 16 - m_portShift, packet.m_size, packet.m_from, packet.m_to, srcport);
 	m_inboxes[srcport] = packet;
 	m_inboxValid[srcport] = true;
 	m_inboxForwardTime[srcport] = g_time + 4;	//4 cycle forwarding latency assuming 32-bit bus width
@@ -238,8 +239,8 @@ bool QuadtreeRouter::TryForwardFrom(unsigned int nport)
 
 	//Forward the packet
 	//TODO: allow empty/NULL child ports?
-	LogDebug("[%5u] QuadtreeRouter %04x/%d: forwarding %d-word message from %04x to %04x (out port %d)\n",
-		g_time, m_subnetLow, 16 - m_portShift, packet.m_size, packet.m_from, packet.m_to, dstport);
+	//LogDebug("[%5u] QuadtreeRouter %04x/%d: forwarding %d-word message from %04x to %04x (out port %d)\n",
+	//	g_time, m_subnetLow, 16 - m_portShift, packet.m_size, packet.m_from, packet.m_to, dstport);
 	if(dstport == 4)
 		m_parentRouter->AcceptMessage(packet, this);
 	else if(m_children[dstport])

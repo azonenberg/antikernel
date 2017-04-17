@@ -30,40 +30,48 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief A packet on one of the networks
+	@brief A host that simulates a CPU
  */
-#ifndef NOCPacket_h
-#define NOCPacket_h
 
-class NOCPacket
+#include "nocsim.h"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Construction / destruction
+
+NOCCpuHost::NOCCpuHost(uint16_t addr, NOCRouter* parent, xypos pos)
+	: NOCHost(addr, parent, pos)
 {
-public:
-	//Type of message (to make sim a bit more realistic)
-	enum msgType
+
+}
+
+NOCCpuHost::~NOCCpuHost()
+{
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Rendering
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Simulation
+
+bool NOCCpuHost::AcceptMessage(NOCPacket packet, SimNode* /*from*/)
+{
+	//We got this message
+	LogDebug("[%5u] NOCCpuHost %04x: accepting %d-word message from %04x\n",
+		g_time, m_address, packet.m_size, packet.m_from);
+	packet.Processed();
+
+	return true;
+}
+
+void NOCCpuHost::Timestep()
+{
+	//DEBUG: generate a single packet crossing the network from end to end
+	if(g_time == 0)
 	{
-		TYPE_RPC_CALL,
-		TYPE_RPC_RETURN,
-		TYPE_RPC_INTERRUPT,
-		TYPE_DMA_READ,
-		TYPE_DMA_RDATA,
-		TYPE_DMA_WRITE,
-		TYPE_DMA_ACK
-	};
-
-	NOCPacket(uint16_t f = 0, uint16_t t = 0, unsigned int s = 0, msgType type = TYPE_RPC_CALL);
-	virtual ~NOCPacket();
-
-	uint16_t m_from;
-	uint16_t m_to;
-	unsigned int m_size;
-
-	msgType m_type;
-
-	unsigned int m_timeSent;
-
-	//Indicate that this message has been received and handled by the final destination
-	void Processed();
-};
-
-#endif
-
+		NOCPacket message(m_address, 0x0000, 4, NOCPacket::TYPE_RPC_CALL);
+		if(!m_parent->AcceptMessage(message, this))
+			LogWarning("Couldn't send initial message\n");
+	}
+}

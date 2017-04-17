@@ -38,13 +38,25 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-NOCPacket::NOCPacket(uint16_t f, uint16_t t, unsigned int s)
+NOCPacket::NOCPacket(uint16_t f, uint16_t t, unsigned int s, msgType type)
 	: m_from(f)
 	, m_to(t)
 	, m_size(s)
+	, m_type(type)
+	, m_timeSent(g_time)
 {
 }
 
 NOCPacket::~NOCPacket()
 {
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Simulation
+
+void NOCPacket::Processed()
+{
+	unsigned int latency = g_time - m_timeSent;
+	LogDebug("[%5u] NOCPacket: message took %d clocks to arrive\n",
+		g_time, latency);
 }
