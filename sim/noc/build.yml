@@ -36,6 +36,7 @@ nocsim:
         - NOCCpuHost.cpp
         - NOCHost.cpp
         - NOCPacket.cpp
+        - NOCNicHost.cpp
         - NOCRamHost.cpp
         - NOCRouter.cpp
         - QuadtreeRouter.cpp

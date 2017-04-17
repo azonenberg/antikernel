@@ -58,6 +58,8 @@ public:
 
 	//Coordinates in the render (has no meaning in simulation)
 	xypos m_renderPosition;
+
+	virtual void PrintStats();
 };
 
 #endif

@@ -50,12 +50,18 @@ public:
 		TYPE_DMA_ACK
 	};
 
-	NOCPacket(uint16_t f = 0, uint16_t t = 0, unsigned int s = 0, msgType type = TYPE_RPC_CALL);
+	NOCPacket(
+		uint16_t f = 0,
+		uint16_t t = 0,
+		unsigned int s = 0,
+		msgType type = TYPE_RPC_CALL,
+		unsigned int replysize = 4);
 	virtual ~NOCPacket();
 
 	uint16_t m_from;
 	uint16_t m_to;
 	unsigned int m_size;
+	unsigned int m_replysize;	//for DMA read
 
 	msgType m_type;
 

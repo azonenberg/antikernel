@@ -43,6 +43,7 @@ set<SimNode*> g_simNodes;
 
 void CreateQuadtreeNetwork();
 void RunSimulation();
+void PrintStats();
 void RenderOutput();
 
 int main(int argc, char* argv[])
@@ -76,6 +77,7 @@ int main(int argc, char* argv[])
 	//Fun stuff here!
 	CreateQuadtreeNetwork();
 	RunSimulation();
+	PrintStats();
 	RenderOutput();
 
 	//Clean up
@@ -149,10 +151,12 @@ void CreateQuadtreeNetwork()
 				{
 					//Create special hosts at a few addresses, then random stuff after that
 					NOCHost* child = NULL;
-					if(cbase == 0x0000)
+					if(cbase == RAM_ADDR)
 						child = new NOCRamHost(cbase, r, xypos(xpos, top) );
-					else if(cbase == 0x00ff)
+					else if(cbase == CPU_ADDR)
 						child = new NOCCpuHost(cbase, r, xypos(xpos, top) );
+					else if(cbase == NIC_ADDR)
+						child = new NOCNicHost(cbase, r, xypos(xpos, top) );
 					else
 						child = new NOCHost(cbase, r, xypos(xpos, top) );
 
@@ -188,11 +192,19 @@ void CreateQuadtreeNetwork()
  */
 void RunSimulation()
 {
-	for(g_time = 0; g_time < 100; g_time ++)
+	for(g_time = 0; g_time < 1000; g_time ++)
 	{
 		for(auto n : g_simNodes)
 			n->Timestep();
 	}
+}
+
+void PrintStats()
+{
+	LogDebug("\n\nCollecting statistics...\n");
+	LogIndenter li;
+	for(auto n : g_simNodes)
+		n->PrintStats();
 }
 
 void RenderOutput()

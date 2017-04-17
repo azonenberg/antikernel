@@ -40,6 +40,9 @@
 
 NOCCpuHost::NOCCpuHost(uint16_t addr, NOCRouter* parent, xypos pos)
 	: NOCHost(addr, parent, pos)
+	, m_state(STATE_WAIT_RAM)
+	, m_cyclesExecuting(0)
+	, m_cyclesWaiting(0)
 {
 
 }
@@ -55,23 +58,69 @@ NOCCpuHost::~NOCCpuHost()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Simulation
 
+void NOCCpuHost::PrintStats()
+{
+	LogDebug("[CPU] Cycles spent:\n");
+	LogIndenter li;
+	LogDebug("Executing              : %5lu (%5.2f %%)\n", m_cyclesExecuting, (m_cyclesExecuting * 100.0f) / g_time);
+	LogDebug("Waiting for RAM        : %5lu (%5.2f %%)\n", m_cyclesWaiting, (m_cyclesWaiting * 100.0f) / g_time);
+}
+
 bool NOCCpuHost::AcceptMessage(NOCPacket packet, SimNode* /*from*/)
 {
 	//We got this message
-	LogDebug("[%5u] NOCCpuHost %04x: accepting %d-word message from %04x\n",
-		g_time, m_address, packet.m_size, packet.m_from);
+	//LogDebug("[%5u] NOCCpuHost %04x: accepting %d-word message from %04x\n",
+	//	g_time, m_address, packet.m_size, packet.m_from);
 	packet.Processed();
+
+	//If we get a DMA data message and were waiting on RAM, then unblock
+	if( (m_state == STATE_WAIT_RAM) && (packet.m_type == NOCPacket::TYPE_DMA_RDATA) )
+	{
+		LogDebug("[%5u] Got cache line, unblocking CPU\n", g_time);
+		m_state = STATE_EXECUTING;
+	}
 
 	return true;
 }
 
 void NOCCpuHost::Timestep()
 {
-	//DEBUG: generate a single packet crossing the network from end to end
+	//Stat collection
+	switch(m_state)
+	{
+		case STATE_WAIT_RAM:
+			m_cyclesWaiting ++;
+			break;
+
+		case STATE_EXECUTING:
+			m_cyclesExecuting ++;
+			break;
+	}
+
+	//At time 0: generate a DMA read request for our first cache line
 	if(g_time == 0)
 	{
-		NOCPacket message(m_address, 0x0000, 4, NOCPacket::TYPE_RPC_CALL);
+		LogDebug("[%5u] Sending initial RAM read request\n", g_time);
+
+		NOCPacket message(m_address, RAM_ADDR, 4, NOCPacket::TYPE_DMA_READ, 32);
 		if(!m_parent->AcceptMessage(message, this))
 			LogWarning("Couldn't send initial message\n");
+	}
+
+	//If executing, do stuff
+	if(m_state == STATE_EXECUTING)
+	{
+		//For now: 1% L1 cache miss rate
+		if(0 == (rand() % 100) )
+		{
+			LogDebug("[%5u] Cache miss, requesting new data\n", g_time);
+			NOCPacket message(m_address, RAM_ADDR, 4, NOCPacket::TYPE_DMA_READ, 32);
+			if(!m_parent->AcceptMessage(message, this))
+				LogWarning("Couldn't send RAM read message\n");
+
+			m_state = STATE_WAIT_RAM;
+		}
+
+		//TODO: talk to peripherals
 	}
 }

@@ -38,10 +38,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-NOCPacket::NOCPacket(uint16_t f, uint16_t t, unsigned int s, msgType type)
+NOCPacket::NOCPacket(uint16_t f, uint16_t t, unsigned int s, msgType type, unsigned int replysize)
 	: m_from(f)
 	, m_to(t)
 	, m_size(s)
+	, m_replysize(replysize)
 	, m_type(type)
 	, m_timeSent(g_time)
 {

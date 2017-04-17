@@ -30,35 +30,40 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Main project header
+	@brief A host that simulates an Ethernet interface
  */
-#ifndef nocsim_h
-#define nocsim_h
+#ifndef NOCNicHost_h
+#define NOCNicHost_h
 
-#include <stdint.h>
+class NOCNicHost : public NOCHost
+{
+public:
+	NOCNicHost(uint16_t addr, NOCRouter* parent, xypos pos);
+	virtual ~NOCNicHost();
 
-#include <string>
+	virtual bool AcceptMessage(NOCPacket packet, SimNode* from);
+	virtual void Timestep();
 
-#include "../../src/log/log.h"
+	virtual void PrintStats();
 
-#include "NOCPacket.h"
+	enum States
+	{
+		RX_STATE_IDLE,
+		RX_STATE_WAIT_ALLOC,
+		RX_STATE_WAIT_WRITE,
+		RX_STATE_WAIT_CHOWN,
+		RX_STATE_WAIT_SEND
+	} m_rxstate;
 
-#include "SimNode.h"
+protected:
+	int m_frameBuffers;
 
-#include "NOCHost.h"
-#include "NOCCpuHost.h"
-#include "NOCNicHost.h"
-#include "NOCRamHost.h"
-
-#include "NOCRouter.h"
-
-#include "QuadtreeRouter.h"
-
-extern unsigned int g_hostCount;
-extern unsigned int g_time;
-
-#define RAM_ADDR 0x0000
-#define CPU_ADDR 0x00ff
-#define NIC_ADDR 0x0080
+	unsigned long m_cyclesIdle;
+	unsigned long m_cyclesWaitingForMalloc;
+	unsigned long m_cyclesWaitingForWrite;
+	unsigned long m_cyclesWaitingForChown;
+	unsigned long m_cyclesWaitingForSend;
+};
 
 #endif
+

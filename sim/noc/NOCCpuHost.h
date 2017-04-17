@@ -43,6 +43,18 @@ public:
 
 	virtual bool AcceptMessage(NOCPacket packet, SimNode* from);
 	virtual void Timestep();
+
+	enum States
+	{
+		STATE_WAIT_RAM,
+		STATE_EXECUTING,
+	} m_state;
+
+	virtual void PrintStats();
+
+protected:
+	unsigned long m_cyclesExecuting;
+	unsigned long m_cyclesWaiting;
 };
 
 #endif

@@ -115,7 +115,7 @@ bool NOCHost::AcceptMessage(NOCPacket packet, SimNode* /*from*/)
 		//Respond with a DMA read data
 		case NOCPacket::TYPE_DMA_READ:
 			{
-				NOCPacket message(m_address, packet.m_from, packet.m_size, NOCPacket::TYPE_DMA_RDATA);
+				NOCPacket message(m_address, packet.m_from, packet.m_replysize, NOCPacket::TYPE_DMA_RDATA);
 				if(!m_parent->AcceptMessage(message, this))
 					LogWarning("Couldn't send reply to DMA read\n");
 			}
