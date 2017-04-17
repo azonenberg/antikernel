@@ -190,7 +190,7 @@ void QuadtreeRouter::Timestep()
 	//Clear any outboxes that became available this clock
 	for(int i=0; i<5; i++)
 	{
-		if(m_outboxBlocked[i] && (m_outboxClearTime[i] >= g_time) )
+		if(m_outboxBlocked[i] && (m_outboxClearTime[i] < g_time) )
 			m_outboxBlocked[i] = false;
 	}
 
@@ -202,7 +202,7 @@ void QuadtreeRouter::Timestep()
 	for(int i=0; i<5; i++)
 	{
 		if(TryForwardFrom(i))
-			m_rrcount = (m_rrcount + 1);
+			m_rrcount = (m_rrcount + 1) % 5;
 	}
 }
 
