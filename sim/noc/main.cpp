@@ -50,6 +50,11 @@ int main(int argc, char* argv[])
 {
 	Severity console_verbosity = Severity::NOTICE;
 
+	enum Topologies
+	{
+		TOPO_QUADTREE
+	} topo = TOPO_QUADTREE;
+
 	//Parse command-line arguments
 	for(int i=1; i<argc; i++)
 	{
@@ -59,8 +64,17 @@ int main(int argc, char* argv[])
 		if(ParseLoggerArguments(i, argc, argv, console_verbosity))
 			continue;
 
-		if(false)
-		{}
+		if(s == "--topo")
+		{
+			string t = argv[++i];
+			if(t == "quadtree")
+				topo = TOPO_QUADTREE;
+			else
+			{
+				printf("Invalid topology, (must be one of: quadtree)\n");
+				return 0;
+			}
+		}
 		else
 		{
 			printf("Unrecognized command-line argument \"%s\"\n", s.c_str());
@@ -75,7 +89,16 @@ int main(int argc, char* argv[])
 	g_log_sinks.emplace(g_log_sinks.begin(), new ColoredSTDLogSink(console_verbosity));
 
 	//Fun stuff here!
-	CreateQuadtreeNetwork();
+	switch(topo)
+	{
+		case TOPO_QUADTREE:
+			CreateQuadtreeNetwork();
+			break;
+
+		default:
+			LogError("Invalid topology, can't run sim\n");
+			return 0;
+	}
 	RunSimulation();
 	PrintStats();
 	RenderOutput();
@@ -192,6 +215,7 @@ void CreateQuadtreeNetwork()
  */
 void RunSimulation()
 {
+	LogNotice("Running simulation...\n");
 	for(g_time = 0; g_time < 1000; g_time ++)
 	{
 		for(auto n : g_simNodes)
@@ -201,7 +225,7 @@ void RunSimulation()
 
 void PrintStats()
 {
-	LogDebug("\n\nCollecting statistics...\n");
+	LogNotice("\n\nCollecting statistics...\n");
 	LogIndenter li;
 	for(auto n : g_simNodes)
 		n->PrintStats();
