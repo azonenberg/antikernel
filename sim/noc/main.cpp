@@ -132,6 +132,11 @@ int main(int argc, char* argv[])
  */
 void CreateGridNetwork(bool randomize)
 {
+	LogNotice("Creating network (2D grid topology, with %s routing) with %d hosts\n",
+		randomize ? "pseudorandom" : "X-Y",
+		g_hostCount);
+	LogIndenter li;
+
 	/*
 		256 hosts in the network
 
@@ -146,16 +151,18 @@ void CreateGridNetwork(bool randomize)
 	unsigned int nodesize = 10;
 	unsigned int nodepitch = 25;
 	unsigned int routerpitch = 450;
+	GridRouter* routers[4][4];
 	for(int y=0; y<4; y++)
 	{
 		for(int x=0; x<4; x++)
 		{
 			//Create the router
 			uint16_t addr = (y << 6) | (x << 4);
-			unsigned int xbase = x*routerpitch + nodesize + 7*nodepitch;
+			unsigned int xbase = x*routerpitch + nodesize + 8*nodepitch;
 			unsigned int ypos = y*routerpitch + nodesize;
 			auto router = new GridRouter(addr, addr+15, xypos(xbase, ypos) );
 			g_simNodes.emplace(router);
+			routers[y][x] = router;
 
 			//move children down half a row
 			ypos += routerpitch/2;
@@ -165,7 +172,7 @@ void CreateGridNetwork(bool randomize)
 			{
 				uint16_t cbase = addr | i;
 
-				unsigned int xpos = xbase + i*nodepitch - 7*nodepitch;
+				unsigned int xpos = xbase + i*nodepitch - 7.5*nodepitch;
 
 				//Create special hosts at a few addresses, then random stuff after that
 				NOCHost* child = NULL;
@@ -178,14 +185,33 @@ void CreateGridNetwork(bool randomize)
 				else
 					child = new NOCHost(cbase, router, xypos(xpos, ypos) );
 
+				router->AddChild(child);
+
 				//Done
 				g_simNodes.emplace(child);
-				//nhosts ++;
 			}
 		}
 	}
 
-	//TODO: connect the routers
+	//Connect the routers to each other
+	for(int y=0; y<4; y++)
+	{
+		for(int x=0; x<4; x++)
+		{
+			GridRouter* r = routers[y][x];
+			if(y > 0)
+				r->AddNeighbor(0, routers[y-1][x]);
+			if(x < 3)
+				r->AddNeighbor(1, routers[y][x+1]);
+			if(y < 3)
+				r->AddNeighbor(2, routers[y+1][x]);
+			if(x > 0)
+				r->AddNeighbor(3, routers[y][x-1]);
+		}
+	}
+
+	LogVerbose("Created %d routers\n", 16);
+	LogVerbose("Created %d hosts\n", 256);
 }
 
 /**

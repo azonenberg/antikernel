@@ -44,12 +44,15 @@ GridRouter::GridRouter(uint16_t low, uint16_t high, xypos pos)
 	//, m_subnetMask(mask)
 	//, m_parentRouter(parent)
 {
+	for(int i=0; i<4; i++)
+		m_neighbors[i] = NULL;
+	for(int i=0; i<16; i++)
+		m_children[i] = NULL;
+
 	/*
 	if(m_parentRouter)
 		m_parentRouter->AddChild(this);
 
-	for(int i=0; i<4; i++)
-		m_children[i] = NULL;
 	for(int i=0; i<5; i++)
 	{
 		m_outboxBlocked[i] = false;
@@ -73,15 +76,19 @@ GridRouter::~GridRouter()
 
 void GridRouter::AddChild(SimNode* child)
 {
-	/*
-	unsigned int port = GetPortNumber(child);
+	auto node = dynamic_cast<NOCHost*>(child);
+	if(node == NULL)
+	{
+		LogWarning("Can't add child (not a host)\n");
+		return;
+	}
 
-	if( port <= 3 )
-		m_children[port] = child;
+	m_children[node->GetAddress() & 0xf] = child;
+}
 
-	else
-		LogWarning("Can't add child (invalid address)\n");
-	*/
+void GridRouter::AddNeighbor(int direction, GridRouter* peer)
+{
+	m_neighbors[direction] = peer;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -115,10 +122,24 @@ void GridRouter::RenderSVGNodes(FILE* fp)
 
 void GridRouter::RenderSVGLines(FILE* fp)
 {
-	/*
 	for(int i=0; i<4; i++)
 	{
+		auto c = m_neighbors[i];
+		if(c == NULL)	//null neighbors are legal at edge of network
+			continue;
+		fprintf(fp,
+			"<line x1=\"%u\" y1=\"%u\" x2=\"%u\" y2=\"%u\" stroke=\"cyan\" stroke-width=\"1\" />\n",
+			c->m_renderPosition.first,
+			c->m_renderPosition.second,
+			m_renderPosition.first,
+			m_renderPosition.second);
+	}
+
+	for(int i=0; i<16; i++)
+	{
 		auto c = m_children[i];
+		if(c == NULL)
+			continue;
 		fprintf(fp,
 			"<line x1=\"%u\" y1=\"%u\" x2=\"%u\" y2=\"%u\" stroke=\"blue\" stroke-width=\"1\" />\n",
 			c->m_renderPosition.first,
@@ -126,7 +147,6 @@ void GridRouter::RenderSVGLines(FILE* fp)
 			m_renderPosition.first,
 			m_renderPosition.second);
 	}
-	*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -53,7 +53,13 @@ public:
 	virtual void RenderSVGNodes(FILE* fp);
 	virtual void RenderSVGLines(FILE* fp);
 
+	void AddNeighbor(int direction, GridRouter* peer);
+
 protected:
+	GridRouter* m_neighbors[4];	//0=north, 1=east, 2=south, 3=west
+
+	SimNode* m_children[16];
+
 	/*
 	uint16_t m_subnetMask;
 	uint16_t m_portMask;
