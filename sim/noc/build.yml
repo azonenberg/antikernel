@@ -33,6 +33,7 @@ nocsim:
 
     sources:
         - main.cpp
+        - GridRouter.cpp
         - NOCCpuHost.cpp
         - NOCHost.cpp
         - NOCPacket.cpp

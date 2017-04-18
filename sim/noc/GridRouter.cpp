@@ -39,11 +39,12 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-QuadtreeRouter::QuadtreeRouter(QuadtreeRouter* parent, uint16_t low, uint16_t high, uint16_t mask, xypos pos)
+GridRouter::GridRouter(GridRouter* parent, uint16_t low, uint16_t high, uint16_t mask, xypos pos)
 	: NOCRouter(low, high, pos)
-	, m_subnetMask(mask)
-	, m_parentRouter(parent)
+	//, m_subnetMask(mask)
+	//, m_parentRouter(parent)
 {
+	/*
 	if(m_parentRouter)
 		m_parentRouter->AddChild(this);
 
@@ -63,14 +64,16 @@ QuadtreeRouter::QuadtreeRouter(QuadtreeRouter* parent, uint16_t low, uint16_t hi
 	m_portShift = log2(size) - 2;
 
 	m_rrcount = 0;
+	*/
 }
 
-QuadtreeRouter::~QuadtreeRouter()
+GridRouter::~GridRouter()
 {
 }
 
-void QuadtreeRouter::AddChild(SimNode* child)
+void GridRouter::AddChild(SimNode* child)
 {
+	/*
 	unsigned int port = GetPortNumber(child);
 
 	if( port <= 3 )
@@ -78,12 +81,13 @@ void QuadtreeRouter::AddChild(SimNode* child)
 
 	else
 		LogWarning("Can't add child (invalid address)\n");
+	*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Rendering
 
-void QuadtreeRouter::ExpandBoundingBox(unsigned int& width, unsigned int& height)
+void GridRouter::ExpandBoundingBox(unsigned int& width, unsigned int& height)
 {
 	const unsigned int nodesize = 10;
 	const unsigned int radius = nodesize / 2;
@@ -96,7 +100,7 @@ void QuadtreeRouter::ExpandBoundingBox(unsigned int& width, unsigned int& height
 		height = bottom;
 }
 
-void QuadtreeRouter::RenderSVGNodes(FILE* fp)
+void GridRouter::RenderSVGNodes(FILE* fp)
 {
 	const unsigned int nodesize = 10;
 	const unsigned int radius = nodesize / 2;
@@ -109,8 +113,9 @@ void QuadtreeRouter::RenderSVGNodes(FILE* fp)
 		radius);
 }
 
-void QuadtreeRouter::RenderSVGLines(FILE* fp)
+void GridRouter::RenderSVGLines(FILE* fp)
 {
+	/*
 	for(int i=0; i<4; i++)
 	{
 		auto c = m_children[i];
@@ -121,138 +126,18 @@ void QuadtreeRouter::RenderSVGLines(FILE* fp)
 			m_renderPosition.first,
 			m_renderPosition.second);
 	}
+	*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Simulation
 
-/**
-	@brief See which port a given node is attached to
- */
-unsigned int QuadtreeRouter::GetPortNumber(SimNode* node)
+
+bool GridRouter::AcceptMessage(NOCPacket packet, SimNode* from)
 {
-	auto router = dynamic_cast<QuadtreeRouter*>(node);
-	auto host = dynamic_cast<NOCHost*>(node);
-
-	//Figure out the base address of our target node
-	uint16_t addr = 0;
-	if(router)
-		addr = (router->m_subnetLow + router->m_subnetHigh)/2;
-
-	else if(host)
-		addr = host->GetAddress();
-
-	else
-	{
-		LogError("Invalid sim node (not a quadtree router or host)\n");
-		return 4;
-	}
-
-	return GetPortNumber(addr);
-}
-
-/**
-	@brief See which port a given address is attached to
- */
-unsigned int QuadtreeRouter::GetPortNumber(uint16_t addr)
-{
-	//Not in our subnet? Go up
-	if( (addr & m_subnetMask) != m_subnetLow)
-		return 4;
-
-	return (addr & m_portMask) >> m_portShift;
-}
-
-bool QuadtreeRouter::AcceptMessage(NOCPacket packet, SimNode* from)
-{
-	unsigned int srcport = GetPortNumber(from);
-
-	//If inbox is already full, reject it!
-	if(m_inboxValid[srcport])
-	{
-		LogError(
-			"[%5u] QuadtreeRouter %04x/%d: rejecting %d-word message from %04x to %04x (on port %d): bus fight!\n",
-			g_time, m_subnetLow, 16 - m_portShift, packet.m_size, packet.m_from, packet.m_to, srcport);
-		return false;
-	}
-
-	//We're good, accept it
-	//LogDebug("[%5u] QuadtreeRouter %04x/%d: accepting %d-word message from %04x to %04x (on port %d)\n",
-	//	g_time, m_subnetLow, 16 - m_portShift, packet.m_size, packet.m_from, packet.m_to, srcport);
-	m_inboxes[srcport] = packet;
-	m_inboxValid[srcport] = true;
-	m_inboxForwardTime[srcport] = g_time + 4;	//4 cycle forwarding latency assuming 32-bit bus width
 	return true;
 }
 
-void QuadtreeRouter::Timestep()
+void GridRouter::Timestep()
 {
-	//Clear any outboxes that became available this clock
-	for(int i=0; i<5; i++)
-	{
-		if(m_outboxBlocked[i] && (m_outboxClearTime[i] < g_time) )
-			m_outboxBlocked[i] = false;
-	}
-
-	//Try forwarding from our round-robin winner first, they always have first priority
-	if(TryForwardFrom(m_rrcount))
-		m_rrcount = (m_rrcount + 1);
-
-	//Try forwarding from every other port
-	for(int i=0; i<5; i++)
-	{
-		if(TryForwardFrom(i))
-			m_rrcount = (m_rrcount + 1) % 5;
-	}
-}
-
-/**
-	@brief Try forwarding the message located in the specified port's inbox (if present)
- */
-bool QuadtreeRouter::TryForwardFrom(unsigned int nport)
-{
-	//If inbox is empty, nothing to do
-	if(!m_inboxValid[nport])
-		return false;
-
-	//If we're still receiving this packet, nothing to do
-	if(m_inboxForwardTime[nport] > g_time)
-		return false;
-
-	auto& packet = m_inboxes[nport];
-
-	//Packet is forwardable. See where it goes.
-	unsigned int dstaddr = m_inboxes[nport].m_to;
-	unsigned int dstport = GetPortNumber(dstaddr);
-
-	//If the destination port is currently occupied, we can't do anything this cycle
-	if(m_outboxBlocked[dstport])
-		return false;
-
-	//If message is unforwardable, drop it
-	if( (dstport == 4) && (m_parentRouter == NULL) )
-	{
-		LogDebug("[%5u] QuadtreeRouter %04x/%d: cannot forward message to %d: address isn't in root subnet!\n",
-			g_time, m_subnetLow, 16 - m_portShift, packet.m_to);
-		m_inboxValid[nport] = false;
-	}
-
-	//Forward the packet
-	//TODO: allow empty/NULL child ports?
-	//LogDebug("[%5u] QuadtreeRouter %04x/%d: forwarding %d-word message from %04x to %04x (out port %d)\n",
-	//	g_time, m_subnetLow, 16 - m_portShift, packet.m_size, packet.m_from, packet.m_to, dstport);
-	if(dstport == 4)
-		m_parentRouter->AcceptMessage(packet, this);
-	else if(m_children[dstport])
-		m_children[dstport]->AcceptMessage(packet, this);
-	else
-		LogError("child port %d is NULL\n", dstport);
-
-	//Output port is busy for the next 4 clocks
-	m_outboxBlocked[dstport] = true;
-	m_outboxClearTime[dstport] = g_time + 4;
-
-	//Inbox is now available
-	m_inboxValid[nport] = false;
-	return true;
 }

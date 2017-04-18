@@ -30,36 +30,58 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Main project header
+	@brief A router on one of the networks
  */
-#ifndef nocsim_h
-#define nocsim_h
+#ifndef GridRouter_h
+#define GridRouter_h
 
-#include <stdint.h>
+class GridRouter : public NOCRouter
+{
+public:
+	GridRouter(
+		GridRouter* parent,
+		uint16_t low,
+		uint16_t high,
+		uint16_t mask,
+		xypos pos);
+	virtual ~GridRouter();
 
-#include <string>
+	virtual bool AcceptMessage(NOCPacket packet, SimNode* from);
+	virtual void Timestep();
 
-#include "../../src/log/log.h"
+	virtual void AddChild(SimNode* child);
 
-#include "NOCPacket.h"
+	virtual void ExpandBoundingBox(unsigned int& width, unsigned int& height);
+	virtual void RenderSVGNodes(FILE* fp);
+	virtual void RenderSVGLines(FILE* fp);
 
-#include "SimNode.h"
+protected:
+	/*
+	uint16_t m_subnetMask;
+	uint16_t m_portMask;
+	unsigned int m_portShift;
 
-#include "NOCHost.h"
-#include "NOCCpuHost.h"
-#include "NOCNicHost.h"
-#include "NOCRamHost.h"
+	unsigned int GetPortNumber(SimNode* node);
+	unsigned int GetPortNumber(uint16_t addr);
 
-#include "NOCRouter.h"
+	bool TryForwardFrom(unsigned int nport);
 
-#include "GridRouter.h"
-#include "QuadtreeRouter.h"
+	GridRouter* m_parentRouter;
+	SimNode* m_children[4];
 
-extern unsigned int g_hostCount;
-extern unsigned int g_time;
+	//Incoming messages (not yet forwarded)
+	NOCPacket m_inboxes[5];
+	bool m_inboxValid[5];
+	unsigned int m_inboxForwardTime[5];
 
-#define RAM_ADDR 0x0000
-#define CPU_ADDR 0x00ff
-#define NIC_ADDR 0x0080
+	//Outgoing messages
+	bool m_outboxBlocked[5];
+	unsigned int m_outboxClearTime[5];
+
+	//Round-robin counter
+	unsigned int m_rrcount;
+	*/
+};
 
 #endif
+

@@ -42,6 +42,7 @@ unsigned int g_time = 0;
 set<SimNode*> g_simNodes;
 
 void CreateQuadtreeNetwork();
+void CreateGridNetwork(bool randomize);
 void RunSimulation();
 void PrintStats();
 void RenderOutput();
@@ -52,7 +53,9 @@ int main(int argc, char* argv[])
 
 	enum Topologies
 	{
-		TOPO_QUADTREE
+		TOPO_QUADTREE,
+		TOPO_XYGRID,
+		TOPO_RANDOMGRID
 	} topo = TOPO_QUADTREE;
 
 	//Parse command-line arguments
@@ -69,6 +72,10 @@ int main(int argc, char* argv[])
 			string t = argv[++i];
 			if(t == "quadtree")
 				topo = TOPO_QUADTREE;
+			else if(t == "xygrid")
+				topo = TOPO_XYGRID;
+			else if(t == "randomgrid")
+				topo = TOPO_RANDOMGRID;
 			else
 			{
 				printf("Invalid topology, (must be one of: quadtree)\n");
@@ -95,6 +102,14 @@ int main(int argc, char* argv[])
 			CreateQuadtreeNetwork();
 			break;
 
+		case TOPO_XYGRID:
+			CreateGridNetwork(false);
+			break;
+
+		case TOPO_RANDOMGRID:
+			CreateGridNetwork(true);
+			break;
+
 		default:
 			LogError("Invalid topology, can't run sim\n");
 			return 0;
@@ -110,6 +125,14 @@ int main(int argc, char* argv[])
 
 	//All good
 	return 0;
+}
+
+/**
+	@brief Create a network using the grid topology, with either X-then-Y or pseudorandom routing
+ */
+void CreateGridNetwork(bool randomize)
+{
+
 }
 
 /**
