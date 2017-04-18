@@ -132,7 +132,60 @@ int main(int argc, char* argv[])
  */
 void CreateGridNetwork(bool randomize)
 {
+	/*
+		256 hosts in the network
 
+		Have a 4x4 grid of routers with 16 addresses under each one
+
+		Address mapping:
+		a[15:8] = unused
+		a[7:6] = Y
+		a[5:4] = X
+		a[3:0] = port
+	 */
+	unsigned int nodesize = 10;
+	unsigned int nodepitch = 25;
+	unsigned int routerpitch = 450;
+	for(int y=0; y<4; y++)
+	{
+		for(int x=0; x<4; x++)
+		{
+			//Create the router
+			uint16_t addr = (y << 6) | (x << 4);
+			unsigned int xbase = x*routerpitch + nodesize + 7*nodepitch;
+			unsigned int ypos = y*routerpitch + nodesize;
+			auto router = new GridRouter(addr, addr+15, xypos(xbase, ypos) );
+			g_simNodes.emplace(router);
+
+			//move children down half a row
+			ypos += routerpitch/2;
+
+			//Create child nodes
+			for(int i=0; i<16; i++)
+			{
+				uint16_t cbase = addr | i;
+
+				unsigned int xpos = xbase + i*nodepitch - 7*nodepitch;
+
+				//Create special hosts at a few addresses, then random stuff after that
+				NOCHost* child = NULL;
+				if(cbase == RAM_ADDR)
+					child = new NOCRamHost(cbase, router, xypos(xpos, ypos) );
+				else if(cbase == CPU_ADDR)
+					child = new NOCCpuHost(cbase, router, xypos(xpos, ypos) );
+				else if(cbase == NIC_ADDR)
+					child = new NOCNicHost(cbase, router, xypos(xpos, ypos) );
+				else
+					child = new NOCHost(cbase, router, xypos(xpos, ypos) );
+
+				//Done
+				g_simNodes.emplace(child);
+				//nhosts ++;
+			}
+		}
+	}
+
+	//TODO: connect the routers
 }
 
 /**

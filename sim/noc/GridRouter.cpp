@@ -39,7 +39,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-GridRouter::GridRouter(GridRouter* parent, uint16_t low, uint16_t high, uint16_t mask, xypos pos)
+GridRouter::GridRouter(uint16_t low, uint16_t high, xypos pos)
 	: NOCRouter(low, high, pos)
 	//, m_subnetMask(mask)
 	//, m_parentRouter(parent)

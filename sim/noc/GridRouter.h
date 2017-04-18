@@ -39,10 +39,8 @@ class GridRouter : public NOCRouter
 {
 public:
 	GridRouter(
-		GridRouter* parent,
 		uint16_t low,
 		uint16_t high,
-		uint16_t mask,
 		xypos pos);
 	virtual ~GridRouter();
 

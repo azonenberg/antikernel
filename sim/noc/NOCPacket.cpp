@@ -73,6 +73,9 @@ void NOCPacket::Processed()
 
 void NOCPacket::PrintStats()
 {
+	if(m_totalPackets == 0)
+		return;
+
 	LogDebug("[NOC] Packets:\n");
 	LogIndenter li;
 	LogDebug("Sent                     : %5u\n", m_totalPackets);

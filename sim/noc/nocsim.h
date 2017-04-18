@@ -58,8 +58,8 @@
 extern unsigned int g_hostCount;
 extern unsigned int g_time;
 
-#define RAM_ADDR 0x0000
+#define NIC_ADDR 0x0000
+#define RAM_ADDR 0x0080		//put in the middle
 #define CPU_ADDR 0x00ff
-#define NIC_ADDR 0x0080
 
 #endif
