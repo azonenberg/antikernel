@@ -76,7 +76,7 @@ bool NOCCpuHost::AcceptMessage(NOCPacket packet, SimNode* /*from*/)
 	//If we get a DMA data message and were waiting on RAM, then unblock
 	if( (m_state == STATE_WAIT_RAM) && (packet.m_type == NOCPacket::TYPE_DMA_RDATA) )
 	{
-		LogDebug("[%5u] Got cache line, unblocking CPU\n", g_time);
+		//LogDebug("[%5u] Got cache line, unblocking CPU\n", g_time);
 		m_state = STATE_EXECUTING;
 	}
 
@@ -100,7 +100,7 @@ void NOCCpuHost::Timestep()
 	//At time 0: generate a DMA read request for our first cache line
 	if(g_time == 0)
 	{
-		LogDebug("[%5u] Sending initial RAM read request\n", g_time);
+		//LogDebug("[%5u] Sending initial RAM read request\n", g_time);
 
 		NOCPacket message(m_address, RAM_ADDR, 3, NOCPacket::TYPE_DMA_READ, 3+32);
 		if(!m_parent->AcceptMessage(message, this))
@@ -113,7 +113,7 @@ void NOCCpuHost::Timestep()
 		//For now: 1% L1 cache miss rate
 		if(0 == (rand() % 100) )
 		{
-			LogDebug("[%5u] Cache miss, requesting new data\n", g_time);
+			//LogDebug("[%5u] Cache miss, requesting new data\n", g_time);
 			NOCPacket message(m_address, RAM_ADDR, 3, NOCPacket::TYPE_DMA_READ, 3+32);
 			if(!m_parent->AcceptMessage(message, this))
 				LogWarning("Couldn't send RAM read message\n");

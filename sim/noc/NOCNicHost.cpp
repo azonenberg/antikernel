@@ -127,7 +127,7 @@ bool NOCNicHost::AcceptMessage(NOCPacket packet, SimNode* /*from*/)
 			//Chown it to the CPU.
 			if( (packet.m_type == NOCPacket::TYPE_DMA_ACK) && (packet.m_from == RAM_ADDR) )
 			{
-				LogDebug("[%5u] NOCNicHost: Write complete, chowning to CPU\n", g_time);
+				//LogDebug("[%5u] NOCNicHost: Write complete, chowning to CPU\n", g_time);
 				NOCPacket message(m_address, RAM_ADDR, 4, NOCPacket::TYPE_RPC_CALL, 4);
 				if(!m_parent->AcceptMessage(message, this))
 					LogWarning("Couldn't send chown message\n");
@@ -145,7 +145,7 @@ bool NOCNicHost::AcceptMessage(NOCPacket packet, SimNode* /*from*/)
 
 			//If we get a message from RAM, the chown is complete.
 			//Send the packet to the CPU
-			LogDebug("[%5u] NOCNicHost: chown complete, sending to CPU\n", g_time);
+			//LogDebug("[%5u] NOCNicHost: chown complete, sending to CPU\n", g_time);
 			if( (packet.m_type == NOCPacket::TYPE_RPC_RETURN) && (packet.m_from == RAM_ADDR) )
 			{
 				NOCPacket message(m_address, RAM_ADDR, 4, NOCPacket::TYPE_RPC_CALL, 4);
@@ -169,7 +169,7 @@ void NOCNicHost::Timestep()
 	//At time 0: generate an RPC request to allocate a page of RAM
 	if(g_time == 0)
 	{
-		LogDebug("[%5u] Sending initial malloc request\n", g_time);
+		//LogDebug("[%5u] Sending initial malloc request\n", g_time);
 
 		NOCPacket message(m_address, RAM_ADDR, 4, NOCPacket::TYPE_RPC_CALL, 4);
 		if(!m_parent->AcceptMessage(message, this))
@@ -195,7 +195,7 @@ void NOCNicHost::Timestep()
 			m_framesProcessed ++;
 			m_pendingFrame = true;
 			m_pendingFrameSize = m_nextFrameSize;
-			LogDebug("[%5u] NOCNicHost: Got a packet\n", g_time);
+			//LogDebug("[%5u] NOCNicHost: Got a packet\n", g_time);
 		}
 
 		//Next frame is a random size between 64 and 1500 bytes
@@ -215,7 +215,7 @@ void NOCNicHost::Timestep()
 			//If we have no frame buffers, request allocation of a new buffer
 			if(m_frameBuffers == 0)
 			{
-				LogDebug("[%5u] NOCNicHost: No frame buffers, sending malloc request\n", g_time);
+				//LogDebug("[%5u] NOCNicHost: No frame buffers, sending malloc request\n", g_time);
 				NOCPacket message(m_address, RAM_ADDR, 4, NOCPacket::TYPE_RPC_CALL, 4);
 				if(!m_parent->AcceptMessage(message, this))
 					LogWarning("Couldn't send initial message\n");
@@ -226,7 +226,7 @@ void NOCNicHost::Timestep()
 			else if(m_pendingFrame)
 			{
 				//Send the write request to RAM
-				LogDebug("[%5u] NOCNicHost: Writing packet to RAM\n", g_time);
+				//LogDebug("[%5u] NOCNicHost: Writing packet to RAM\n", g_time);
 				NOCPacket message(m_address, RAM_ADDR, 3 + m_pendingFrameSize, NOCPacket::TYPE_DMA_WRITE, 3);
 				if(!m_parent->AcceptMessage(message, this))
 					LogWarning("Couldn't send write-to-RAM message\n");
@@ -256,23 +256,4 @@ void NOCNicHost::Timestep()
 			m_cyclesWaitingForSend ++;
 			break;
 	}
-
-	/*
-	//If executing, do stuff
-	if(m_state == RX_STATE_EXECUTING)
-	{
-		//For now: 1% L1 cache miss rate
-		if(0 == (rand() % 100) )
-		{
-			LogDebug("[%5u] Cache miss, requesting new data\n", g_time);
-			NOCPacket message(m_address, RAM_ADDR, 4, NOCPacket::TYPE_DMA_READ, 64);
-			if(!m_parent->AcceptMessage(message, this))
-				LogWarning("Couldn't send RAM read message\n");
-
-			m_state = RX_STATE_WAIT_RAM;
-		}
-
-		//TODO: talk to peripherals
-	}
-	*/
 }

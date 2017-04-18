@@ -69,6 +69,14 @@ public:
 
 	//Indicate that this message has been received and handled by the final destination
 	void Processed();
+
+	static void PrintStats();
+
+protected:
+	static unsigned int m_minLatency;
+	static unsigned int m_maxLatency;
+	static unsigned int m_totalPackets;
+	static unsigned long m_totalLatency;
 };
 
 #endif

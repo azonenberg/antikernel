@@ -35,6 +35,11 @@
 
 #include "nocsim.h"
 
+unsigned int NOCPacket::m_minLatency = 0xffffffff;
+unsigned int NOCPacket::m_maxLatency = 0;
+unsigned int NOCPacket::m_totalPackets = 0;
+unsigned long NOCPacket::m_totalLatency = 0;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
@@ -57,9 +62,19 @@ NOCPacket::~NOCPacket()
 
 void NOCPacket::Processed()
 {
-	//TODO: keep stats somewhere
+	unsigned int latency = g_time - m_timeSent;
+	if(m_minLatency > latency)
+		m_minLatency = latency;
+	if(m_maxLatency < latency)
+		m_maxLatency = latency;
+	m_totalPackets ++;
+	m_totalLatency += latency;
+}
 
-	//unsigned int latency = g_time - m_timeSent;
-	//LogDebug("[%5u] NOCPacket: message took %d clocks to arrive\n",
-	//	g_time, latency);
+void NOCPacket::PrintStats()
+{
+	LogDebug("[NOC] Packets:\n");
+	LogIndenter li;
+	LogDebug("Sent                     : %5u\n", m_totalPackets);
+	LogDebug("Latency (min/avg/max)    : %5u / %5lu / %5u\n", m_minLatency, m_totalLatency/m_totalPackets, m_maxLatency);
 }

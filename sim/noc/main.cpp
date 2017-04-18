@@ -205,6 +205,7 @@ void PrintStats()
 	LogIndenter li;
 	for(auto n : g_simNodes)
 		n->PrintStats();
+	NOCPacket::PrintStats();
 }
 
 void RenderOutput()
