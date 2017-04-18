@@ -153,6 +153,7 @@ bool NOCNicHost::AcceptMessage(NOCPacket packet, SimNode* /*from*/)
 					LogWarning("Couldn't send chown message\n");
 				m_rxstate = RX_STATE_WAIT_SEND;
 				m_returnToIdle = g_time + 4;
+				m_frameBuffers --;	//we just used a frame buffer
 			}
 
 			break;
