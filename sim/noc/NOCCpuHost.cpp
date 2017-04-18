@@ -62,8 +62,8 @@ void NOCCpuHost::PrintStats()
 {
 	LogDebug("[CPU] Cycles spent:\n");
 	LogIndenter li;
-	LogDebug("Executing              : %5lu (%5.2f %%)\n", m_cyclesExecuting, (m_cyclesExecuting * 100.0f) / g_time);
-	LogDebug("Waiting for RAM        : %5lu (%5.2f %%)\n", m_cyclesWaiting, (m_cyclesWaiting * 100.0f) / g_time);
+	LogDebug("Executing                : %5lu (%5.2f %%)\n", m_cyclesExecuting, (m_cyclesExecuting * 100.0f) / g_time);
+	LogDebug("Waiting for RAM          : %5lu (%5.2f %%)\n", m_cyclesWaiting, (m_cyclesWaiting * 100.0f) / g_time);
 }
 
 bool NOCCpuHost::AcceptMessage(NOCPacket packet, SimNode* /*from*/)
@@ -102,7 +102,7 @@ void NOCCpuHost::Timestep()
 	{
 		LogDebug("[%5u] Sending initial RAM read request\n", g_time);
 
-		NOCPacket message(m_address, RAM_ADDR, 4, NOCPacket::TYPE_DMA_READ, 32);
+		NOCPacket message(m_address, RAM_ADDR, 3, NOCPacket::TYPE_DMA_READ, 3+32);
 		if(!m_parent->AcceptMessage(message, this))
 			LogWarning("Couldn't send initial message\n");
 	}
@@ -114,7 +114,7 @@ void NOCCpuHost::Timestep()
 		if(0 == (rand() % 100) )
 		{
 			LogDebug("[%5u] Cache miss, requesting new data\n", g_time);
-			NOCPacket message(m_address, RAM_ADDR, 4, NOCPacket::TYPE_DMA_READ, 32);
+			NOCPacket message(m_address, RAM_ADDR, 3, NOCPacket::TYPE_DMA_READ, 3+32);
 			if(!m_parent->AcceptMessage(message, this))
 				LogWarning("Couldn't send RAM read message\n");
 

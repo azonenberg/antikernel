@@ -57,7 +57,9 @@ NOCPacket::~NOCPacket()
 
 void NOCPacket::Processed()
 {
-	unsigned int latency = g_time - m_timeSent;
-	LogDebug("[%5u] NOCPacket: message took %d clocks to arrive\n",
-		g_time, latency);
+	//TODO: keep stats somewhere
+
+	//unsigned int latency = g_time - m_timeSent;
+	//LogDebug("[%5u] NOCPacket: message took %d clocks to arrive\n",
+	//	g_time, latency);
 }

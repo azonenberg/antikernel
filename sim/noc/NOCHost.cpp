@@ -89,8 +89,8 @@ void NOCHost::RenderSVGLines(FILE* /*fp*/)
 
 bool NOCHost::AcceptMessage(NOCPacket packet, SimNode* /*from*/)
 {
-	LogDebug("[%5u] NOCHost %04x: accepting %d-word message from %04x\n",
-		g_time, m_address, packet.m_size, packet.m_from);
+	//LogDebug("[%5u] NOCHost %04x: accepting %d-word message from %04x\n",
+	//	g_time, m_address, packet.m_size, packet.m_from);
 	packet.Processed();
 
 	switch(packet.m_type)

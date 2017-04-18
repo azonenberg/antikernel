@@ -63,6 +63,25 @@ protected:
 	unsigned long m_cyclesWaitingForWrite;
 	unsigned long m_cyclesWaitingForChown;
 	unsigned long m_cyclesWaitingForSend;
+
+	unsigned long m_framesProcessed;
+	unsigned long m_framesDropped;
+	unsigned long m_framesTotal;
+
+	//True if we have a frame ready to forward
+	bool m_pendingFrame;
+
+	//Size of the pending frame
+	unsigned int m_pendingFrameSize;
+
+	//Time at which the next frame arrives
+	unsigned int m_nextFrame;
+
+	//Size of the next frame
+	unsigned int m_nextFrameSize;
+
+	//Time at which we return to idle
+	unsigned int m_returnToIdle;
 };
 
 #endif
