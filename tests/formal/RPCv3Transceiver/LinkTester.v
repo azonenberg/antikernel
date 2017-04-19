@@ -222,6 +222,9 @@ module LinkTester(
 
 	end
 
+	//Constrain the initial state: if we have a pending transmit, a transaction must be active
+	assume property(!tx_pending || transaction_active);
+
 	//Counter of cycles since we actually began the transmit (position in the packet)
 	reg[3:0]	word_count = 0;
 	always @(posedge clk) begin
