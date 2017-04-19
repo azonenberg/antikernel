@@ -27,19 +27,65 @@
 #                                                                                                                      #
 ########################################################################################################################
 
-RPCv3TransceiverFormal:
+# release config for formal doesn't make any sense, it's not an artifact we ship
+# we're not synthesizing for a real FPGA so don't do tech mapping etc
+
+RPCv3TransceiverFormal128:
     toolchain:      verilog/yosys
     type:           formal
 
-    # release config for formal doesn't make any sense, it's not an artifact we ship
     configs:
         - debug
 
-    # we're not synthesizing for a real FPGA so don't do tech mapping etc
     arches:
         - generic-formal
 
     sources:
-        - RPCv3TransceiverFormal.v
+        - RPCv3TransceiverFormal128.v
+        - LinkTester.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v
+
+RPCv3TransceiverFormal64:
+    toolchain:      verilog/yosys
+    type:           formal
+
+    configs:
+        - debug
+
+    arches:
+        - generic-formal
+
+    sources:
+        - RPCv3TransceiverFormal64.v
+        - LinkTester.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v
+
+RPCv3TransceiverFormal32:
+    toolchain:      verilog/yosys
+    type:           formal
+
+    configs:
+        - debug
+
+    arches:
+        - generic-formal
+
+    sources:
+        - RPCv3TransceiverFormal32.v
+        - LinkTester.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v
+
+RPCv3TransceiverFormal16:
+    toolchain:      verilog/yosys
+    type:           formal
+
+    configs:
+        - debug
+
+    arches:
+        - generic-formal
+
+    sources:
+        - RPCv3TransceiverFormal16.v
         - LinkTester.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v

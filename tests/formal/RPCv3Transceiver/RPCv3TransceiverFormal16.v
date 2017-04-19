@@ -37,7 +37,7 @@
 	The goal of this test is to prove that an RPCv3Transceiver sends the correct data on the link, and that
 	two transceivers connected end to end will pass data through unchanged and supply the correct source address.
  */
-module RPCv3TransceiverFormal(
+module RPCv3TransceiverFormal16(
 	input wire					clk,
 
 	input wire					rpc_fab_tx_en,
@@ -59,51 +59,6 @@ module RPCv3TransceiverFormal(
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// The individual test blocks (one for each data width)
-
-	LinkTester #(
-		.NODE_ADDR(NODE_ADDR),
-		.DATA_WIDTH(128)
-	) tester_128 (
-		.clk(clk),
-		.rpc_fab_tx_en(rpc_fab_tx_en),
-		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
-		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
-		.rpc_fab_tx_type(rpc_fab_tx_type),
-		.rpc_fab_tx_d0(rpc_fab_tx_d0),
-		.rpc_fab_tx_d1(rpc_fab_tx_d1),
-		.rpc_fab_tx_d2(rpc_fab_tx_d2),
-		.rpc_fab_rx_ready(rpc_fab_rx_ready)
-	);
-
-	LinkTester #(
-		.NODE_ADDR(NODE_ADDR),
-		.DATA_WIDTH(64)
-	) tester_64 (
-		.clk(clk),
-		.rpc_fab_tx_en(rpc_fab_tx_en),
-		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
-		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
-		.rpc_fab_tx_type(rpc_fab_tx_type),
-		.rpc_fab_tx_d0(rpc_fab_tx_d0),
-		.rpc_fab_tx_d1(rpc_fab_tx_d1),
-		.rpc_fab_tx_d2(rpc_fab_tx_d2),
-		.rpc_fab_rx_ready(rpc_fab_rx_ready)
-	);
-
-	LinkTester #(
-		.NODE_ADDR(NODE_ADDR),
-		.DATA_WIDTH(32)
-	) tester_32 (
-		.clk(clk),
-		.rpc_fab_tx_en(rpc_fab_tx_en),
-		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
-		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
-		.rpc_fab_tx_type(rpc_fab_tx_type),
-		.rpc_fab_tx_d0(rpc_fab_tx_d0),
-		.rpc_fab_tx_d1(rpc_fab_tx_d1),
-		.rpc_fab_tx_d2(rpc_fab_tx_d2),
-		.rpc_fab_rx_ready(rpc_fab_rx_ready)
-	);
 
 	LinkTester #(
 		.NODE_ADDR(NODE_ADDR),
