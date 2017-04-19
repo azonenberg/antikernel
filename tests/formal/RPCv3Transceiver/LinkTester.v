@@ -123,6 +123,16 @@ module LinkTester(
 	wire					rpc_fab_tx_done_noisy;
 	wire					rpc_fab_tx_busy_noisy;
 
+	wire					rpc_fab_rx_busy_noisy;
+	wire					rpc_fab_rx_en_noisy;
+	wire[15:0]				rpc_fab_rx_src_addr_noisy;
+	wire[15:0]				rpc_fab_rx_dst_addr_noisy;
+	wire[7:0]				rpc_fab_rx_callnum_noisy;
+	wire[2:0]				rpc_fab_rx_type_noisy;
+	wire[20:0]				rpc_fab_rx_d0_noisy;
+	wire[31:0]				rpc_fab_rx_d1_noisy;
+	wire[31:0]				rpc_fab_rx_d2_noisy;
+
 	RPCv3Transceiver #(
 		.DATA_WIDTH(DATA_WIDTH),
 		.QUIET_WHEN_IDLE(0),
@@ -148,16 +158,16 @@ module LinkTester(
 		.rpc_fab_tx_d2(rpc_fab_tx_d2),
 		.rpc_fab_tx_done(rpc_fab_tx_done_noisy),
 
-		.rpc_fab_rx_ready(),
-		.rpc_fab_rx_busy(),
-		.rpc_fab_rx_en(),
-		.rpc_fab_rx_src_addr(),
-		.rpc_fab_rx_dst_addr(),
-		.rpc_fab_rx_callnum(),
-		.rpc_fab_rx_type(),
-		.rpc_fab_rx_d0(),
-		.rpc_fab_rx_d1(),
-		.rpc_fab_rx_d2()
+		.rpc_fab_rx_ready(rpc_fab_rx_ready),
+		.rpc_fab_rx_busy(rpc_fab_rx_busy_noisy),
+		.rpc_fab_rx_en(rpc_fab_rx_en_noisy),
+		.rpc_fab_rx_src_addr(rpc_fab_rx_src_addr_noisy),
+		.rpc_fab_rx_dst_addr(rpc_fab_rx_dst_addr_noisy),
+		.rpc_fab_rx_callnum(rpc_fab_rx_callnum_noisy),
+		.rpc_fab_rx_type(rpc_fab_rx_type_noisy),
+		.rpc_fab_rx_d0(rpc_fab_rx_d0_noisy),
+		.rpc_fab_rx_d1(rpc_fab_rx_d1_noisy),
+		.rpc_fab_rx_d2(rpc_fab_rx_d2_noisy)
 
 		//TODO: assert that these outputs are otherwise identical?
 	);
