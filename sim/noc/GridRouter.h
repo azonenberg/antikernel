@@ -41,7 +41,8 @@ public:
 	GridRouter(
 		uint16_t low,
 		uint16_t high,
-		xypos pos);
+		xypos pos,
+		bool random);
 	virtual ~GridRouter();
 
 	virtual bool AcceptMessage(NOCPacket packet, SimNode* from);
@@ -80,6 +81,8 @@ protected:
 
 	unsigned int m_xpos;
 	unsigned int m_ypos;
+
+	bool m_randomRouting;
 };
 
 #endif

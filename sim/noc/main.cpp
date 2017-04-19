@@ -160,7 +160,7 @@ void CreateGridNetwork(bool randomize)
 			uint16_t addr = (y << 6) | (x << 4);
 			unsigned int xbase = x*routerpitch + nodesize + 8*nodepitch;
 			unsigned int ypos = y*routerpitch + nodesize;
-			auto router = new GridRouter(addr, addr+15, xypos(xbase, ypos) );
+			auto router = new GridRouter(addr, addr+15, xypos(xbase, ypos), randomize);
 			g_simNodes.emplace(router);
 			routers[y][x] = router;
 

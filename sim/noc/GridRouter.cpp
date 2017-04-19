@@ -39,8 +39,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-GridRouter::GridRouter(uint16_t low, uint16_t high, xypos pos)
+GridRouter::GridRouter(uint16_t low, uint16_t high, xypos pos, bool random)
 	: NOCRouter(low, high, pos)
+	, m_randomRouting(random)
 {
 	for(int i=0; i<4; i++)
 		m_neighbors[i] = NULL;
@@ -191,7 +192,7 @@ unsigned int GridRouter::GetPortNumber(uint16_t addr)
 	//Target is diagonal from us, we have to decide which axis to move on first
 
 	//If doing X-Y routing, move along the X axis and only do Y once they're due north/south from us
-	if(true)
+	if(!m_randomRouting)
 	{
 		if(dx > 0)				//target is north/southeast, move east
 			return 17;
@@ -199,9 +200,27 @@ unsigned int GridRouter::GetPortNumber(uint16_t addr)
 			return 19;
 	}
 
-	//TODO: pseudorandom routing based on some hash of the addresses
+	//Pseudorandom routing based on some hash of the addresses
 	else
 	{
+		//Arbitrary hash function (TODO: try others)
+		//If it returns 1, route along the X axis first
+		if( (target_xpos + target_ypos + m_xpos + m_ypos) & 1 )
+		{
+			if(dx > 0)				//target is north/southeast, move east
+				return 17;
+			else					//target is north/southwest, move west
+				return 19;
+		}
+
+		//Otherwise, route along Y axis
+		else
+		{
+			if(dy > 0)				//target is southweast/west, move south
+				return 18;
+			else					//target is northeast/west, move north
+				return 16;
+		}
 	}
 }
 
