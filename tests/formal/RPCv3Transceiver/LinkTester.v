@@ -173,20 +173,18 @@ module LinkTester(
 	);
 
 	//Assert that _noisy outputs are identical to normal stuff
-	always @(posedge clk) begin
-		assert(rpc_fab_tx_busy == rpc_fab_tx_busy_noisy);
-		assert(rpc_fab_tx_done == rpc_fab_tx_done_noisy);
+	assert property(rpc_fab_tx_busy == rpc_fab_tx_busy_noisy);
+	assert property(rpc_fab_tx_done == rpc_fab_tx_done_noisy);
 
-		assert(rpc_fab_rx_busy == rpc_fab_rx_busy_noisy);
-		assert(rpc_fab_rx_en == rpc_fab_rx_en_noisy);
-		assert(rpc_fab_rx_src_addr == rpc_fab_rx_src_addr_noisy);
-		assert(rpc_fab_rx_dst_addr == rpc_fab_rx_dst_addr_noisy);
-		assert(rpc_fab_rx_callnum == rpc_fab_rx_callnum_noisy);
-		assert(rpc_fab_rx_type == rpc_fab_rx_type_noisy);
-		assert(rpc_fab_rx_d0 == rpc_fab_rx_d0_noisy);
-		assert(rpc_fab_rx_d1 == rpc_fab_rx_d1_noisy);
-		assert(rpc_fab_rx_d2 == rpc_fab_rx_d2_noisy);
-	end
+	assert property(rpc_fab_rx_busy == rpc_fab_rx_busy_noisy);
+	assert property(rpc_fab_rx_en == rpc_fab_rx_en_noisy);
+	assert property(rpc_fab_rx_src_addr == rpc_fab_rx_src_addr_noisy);
+	assert property(rpc_fab_rx_dst_addr == rpc_fab_rx_dst_addr_noisy);
+	assert property(rpc_fab_rx_callnum == rpc_fab_rx_callnum_noisy);
+	assert property(rpc_fab_rx_type == rpc_fab_rx_type_noisy);
+	assert property(rpc_fab_rx_d0 == rpc_fab_rx_d0_noisy);
+	assert property(rpc_fab_rx_d1 == rpc_fab_rx_d1_noisy);
+	assert property(rpc_fab_rx_d2 == rpc_fab_rx_d2_noisy);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verification helpers
