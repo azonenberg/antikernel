@@ -235,6 +235,7 @@ bool QuadtreeRouter::TryForwardFrom(unsigned int nport)
 		LogDebug("[%5u] QuadtreeRouter %04x/%d: cannot forward message to %d: address isn't in root subnet!\n",
 			g_time, m_subnetLow, 16 - m_portShift, packet.m_to);
 		m_inboxValid[nport] = false;
+		return false;
 	}
 
 	//Forward the packet

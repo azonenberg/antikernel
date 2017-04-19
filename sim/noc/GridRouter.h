@@ -60,31 +60,26 @@ protected:
 
 	SimNode* m_children[16];
 
-	/*
-	uint16_t m_subnetMask;
-	uint16_t m_portMask;
-	unsigned int m_portShift;
-
+	//We have a total of 20 peers... 15:0 are children, 19:16 are neighbors
 	unsigned int GetPortNumber(SimNode* node);
 	unsigned int GetPortNumber(uint16_t addr);
 
 	bool TryForwardFrom(unsigned int nport);
 
-	GridRouter* m_parentRouter;
-	SimNode* m_children[4];
-
 	//Incoming messages (not yet forwarded)
-	NOCPacket m_inboxes[5];
-	bool m_inboxValid[5];
-	unsigned int m_inboxForwardTime[5];
+	NOCPacket m_inboxes[20];
+	bool m_inboxValid[20];
+	unsigned int m_inboxForwardTime[20];
 
 	//Outgoing messages
-	bool m_outboxBlocked[5];
-	unsigned int m_outboxClearTime[5];
+	bool m_outboxBlocked[20];
+	unsigned int m_outboxClearTime[20];
 
 	//Round-robin counter
 	unsigned int m_rrcount;
-	*/
+
+	unsigned int m_xpos;
+	unsigned int m_ypos;
 };
 
 #endif
