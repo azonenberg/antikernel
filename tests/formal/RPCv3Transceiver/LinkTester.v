@@ -123,6 +123,8 @@ module LinkTester(
 	wire					rpc_fab_tx_done_noisy;
 	wire					rpc_fab_tx_busy_noisy;
 
+	wire					rpc_tx_ready_noisy;
+
 	wire					rpc_fab_rx_busy_noisy;
 	wire					rpc_fab_rx_en_noisy;
 	wire[15:0]				rpc_fab_rx_src_addr_noisy;
@@ -144,9 +146,9 @@ module LinkTester(
 		.rpc_tx_data(rpc_tx_data_noisy),
 		.rpc_tx_ready(rpc_tx_ready),
 
-		.rpc_rx_en(),
-		.rpc_rx_data(),
-		.rpc_rx_ready(),
+		.rpc_rx_en(rpc_tx_en),
+		.rpc_rx_data(rpc_tx_data),
+		.rpc_rx_ready(rpc_tx_ready_noisy),
 
 		.rpc_fab_tx_en(rpc_fab_tx_en),
 		.rpc_fab_tx_busy(rpc_fab_tx_busy_noisy),
@@ -168,9 +170,23 @@ module LinkTester(
 		.rpc_fab_rx_d0(rpc_fab_rx_d0_noisy),
 		.rpc_fab_rx_d1(rpc_fab_rx_d1_noisy),
 		.rpc_fab_rx_d2(rpc_fab_rx_d2_noisy)
-
-		//TODO: assert that these outputs are otherwise identical?
 	);
+
+	//Assert that _noisy outputs are identical to normal stuff
+	always @(posedge clk) begin
+		assert(rpc_fab_tx_busy == rpc_fab_tx_busy_noisy);
+		assert(rpc_fab_tx_done == rpc_fab_tx_done_noisy);
+
+		assert(rpc_fab_rx_busy == rpc_fab_rx_busy_noisy);
+		assert(rpc_fab_rx_en == rpc_fab_rx_en_noisy);
+		assert(rpc_fab_rx_src_addr == rpc_fab_rx_src_addr_noisy);
+		assert(rpc_fab_rx_dst_addr == rpc_fab_rx_dst_addr_noisy);
+		assert(rpc_fab_rx_callnum == rpc_fab_rx_callnum_noisy);
+		assert(rpc_fab_rx_type == rpc_fab_rx_type_noisy);
+		assert(rpc_fab_rx_d0 == rpc_fab_rx_d0_noisy);
+		assert(rpc_fab_rx_d1 == rpc_fab_rx_d1_noisy);
+		assert(rpc_fab_rx_d2 == rpc_fab_rx_d2_noisy);
+	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verification helpers
@@ -186,6 +202,10 @@ module LinkTester(
 		//If we try to send and the link is busy, send it later
 		if(rpc_fab_tx_en && !rpc_tx_ready)
 			tx_pending		<= 1;
+
+		//We can't have a pending message if we're still sending the last one
+		if(word_count != 0)
+			tx_pending		<= 0;
 
 	end
 
@@ -350,7 +370,9 @@ module LinkTester(
 		else begin
 
 			//Should never try to transmit when receiver isn't ready
-			assert (rpc_tx_ready);
+			//Protocol change - tx_ready will go low after we start sending
+			if(word_count == 0)
+				assert (rpc_tx_ready);
 
 			//Quiet transmitter should be same as noisy one here
 			assert(rpc_tx_data == rpc_tx_data_noisy);
