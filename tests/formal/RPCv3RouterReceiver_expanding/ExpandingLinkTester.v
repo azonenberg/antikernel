@@ -1,0 +1,336 @@
+`default_nettype none
+`timescale 1ns / 1ps
+/***********************************************************************************************************************
+*                                                                                                                      *
+* ANTIKERNEL v0.1                                                                                                      *
+*                                                                                                                      *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
+* All rights reserved.                                                                                                 *
+*                                                                                                                      *
+* Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
+* following conditions are met:                                                                                        *
+*                                                                                                                      *
+*    * Redistributions of source code must retain the above copyright notice, this list of conditions, and the         *
+*      following disclaimer.                                                                                           *
+*                                                                                                                      *
+*    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the       *
+*      following disclaimer in the documentation and/or other materials provided with the distribution.                *
+*                                                                                                                      *
+*    * Neither the name of the author nor the names of any contributors may be used to endorse or promote products     *
+*      derived from this software without specific prior written permission.                                           *
+*                                                                                                                      *
+* THIS SOFTWARE IS PROVIDED BY THE AUTHORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED   *
+* TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL *
+* THE AUTHORS BE HELD LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES        *
+* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR       *
+* BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT *
+* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE       *
+* POSSIBILITY OF SUCH DAMAGE.                                                                                          *
+*                                                                                                                      *
+***********************************************************************************************************************/
+
+/**
+	@file
+	@author Andrew D. Zonenberg
+	@brief Formal validation test harness for RPCv3Transceiver - single node wrapper
+ */
+module ExpandingLinkTester(
+	input wire					clk,
+
+	input wire					rpc_fab_tx_en,
+	input wire[15:0]			rpc_fab_tx_dst_addr,
+	input wire[7:0]				rpc_fab_tx_callnum,
+	input wire[2:0]				rpc_fab_tx_type,
+	input wire[20:0]			rpc_fab_tx_d0,
+	input wire[31:0]			rpc_fab_tx_d1,
+	input wire[31:0]			rpc_fab_tx_d2,
+
+	input wire					rpc_fab_rx_ready
+	);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Proof configuration
+
+	//Source address of all messages
+	parameter NODE_ADDR = 16'h4141;
+
+	//Width of the data bus being tested
+	parameter IN_DATA_WIDTH = 64;
+	parameter OUT_DATA_WIDTH = 128;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Sender (just to make sure we have well formed traffic to test with)
+
+	wire					rpc_tx_en;
+	wire[IN_DATA_WIDTH-1:0]	rpc_tx_data;
+	wire					rpc_tx_ready;
+
+	wire					rpc_fab_tx_done;
+	wire					rpc_fab_tx_busy;
+
+	//Unused
+	wire					rpc_tx_ready_unused;
+	wire					rpc_fab_rx_en;
+	wire					rpc_fab_rx_busy;
+	wire[15:0]				rpc_fab_rx_src_addr;
+	wire[15:0]				rpc_fab_rx_dst_addr;
+	wire[7:0]				rpc_fab_rx_callnum;
+	wire[2:0]				rpc_fab_rx_type;
+	wire[20:0]				rpc_fab_rx_d0;
+	wire[31:0]				rpc_fab_rx_d1;
+	wire[31:0]				rpc_fab_rx_d2;
+
+	RPCv3Transceiver #(
+		.DATA_WIDTH(IN_DATA_WIDTH),
+		.QUIET_WHEN_IDLE(1),
+		.NODE_ADDR(NODE_ADDR)
+	) sender (
+		.clk(clk),
+
+		.rpc_tx_en(rpc_tx_en),
+		.rpc_tx_data(rpc_tx_data),
+		.rpc_tx_ready(rpc_tx_ready),
+
+		.rpc_rx_en(1'b0),
+		.rpc_rx_data({IN_DATA_WIDTH{1'b0}}),
+		.rpc_rx_ready(rpc_tx_ready_unused),
+
+		.rpc_fab_tx_en(rpc_fab_tx_en),
+		.rpc_fab_tx_busy(rpc_fab_tx_busy),
+		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
+		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
+		.rpc_fab_tx_type(rpc_fab_tx_type),
+		.rpc_fab_tx_d0(rpc_fab_tx_d0),
+		.rpc_fab_tx_d1(rpc_fab_tx_d1),
+		.rpc_fab_tx_d2(rpc_fab_tx_d2),
+		.rpc_fab_tx_done(rpc_fab_tx_done),
+
+		.rpc_fab_rx_ready(rpc_fab_rx_ready),
+		.rpc_fab_rx_busy(rpc_fab_rx_busy),
+		.rpc_fab_rx_en(rpc_fab_rx_en),
+		.rpc_fab_rx_src_addr(rpc_fab_rx_src_addr),
+		.rpc_fab_rx_dst_addr(rpc_fab_rx_dst_addr),
+		.rpc_fab_rx_callnum(rpc_fab_rx_callnum),
+		.rpc_fab_rx_type(rpc_fab_rx_type),
+		.rpc_fab_rx_d0(rpc_fab_rx_d0),
+		.rpc_fab_rx_d1(rpc_fab_rx_d1),
+		.rpc_fab_rx_d2(rpc_fab_rx_d2)
+	);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// The DUT
+
+	wire							rpc_fab_rx_packet_start;
+	wire							rpc_fab_rx_data_valid;
+	wire[OUT_DATA_WIDTH-1:0]		rpc_fab_rx_data;
+	wire							rpc_fab_rx_packet_done;
+
+	RPCv3RouterReceiver_expanding #(
+		.IN_DATA_WIDTH(IN_DATA_WIDTH),
+		.OUT_DATA_WIDTH(OUT_DATA_WIDTH)
+	) dut (
+		.clk(clk),
+
+		.rpc_rx_en(rpc_tx_en),
+		.rpc_rx_data(rpc_tx_data),
+		.rpc_rx_ready(rpc_tx_ready),
+
+		.rpc_fab_rx_space_available(rpc_fab_rx_ready),
+		.rpc_fab_rx_packet_start(rpc_fab_rx_packet_start),
+		.rpc_fab_rx_data_valid(rpc_fab_rx_data_valid),
+		.rpc_fab_rx_data(rpc_fab_rx_data),
+		.rpc_fab_rx_packet_done(rpc_fab_rx_packet_done)
+	);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verification helpers
+
+	//Keep track of whether messages are waiting to be sent
+	reg tx_pending = 0;
+	always @(posedge clk) begin
+
+		//No longer have a message pending once this one gets sent
+		if(rpc_tx_en)
+			tx_pending		<= 0;
+
+		//If we try to send and the link is busy, send it later
+		if(rpc_fab_tx_en && !rpc_tx_ready)
+			tx_pending		<= 1;
+
+		//We can't have a pending message if we're still sending the last one
+		if(word_count != 0)
+			tx_pending		<= 0;
+
+	end
+
+	//True if a message is waiting to be sent, but not being sent this cycle
+	wire tx_pending_unfulfilled = tx_pending && !rpc_tx_en;
+
+	//Indicates a full tx-rx transaction is in progress
+	reg transaction_active		= 0;
+	always @(posedge clk) begin
+
+		if(rpc_fab_rx_en)
+			transaction_active	<= 0;
+
+		if(rpc_fab_tx_en)
+			transaction_active	<= 1;
+
+	end
+
+	//Constrain the initial state: if we have a pending transmit, a transaction must be active
+	assume property(!tx_pending || transaction_active);
+
+	//Counter of cycles since we actually began the transmit (position in the packet)
+	reg[3:0]	word_count = 0;
+	always @(posedge clk) begin
+		if(rpc_tx_en)
+			word_count	<= 1;
+		if(word_count)
+			word_count	<= word_count + 1'h1;
+
+		if(rpc_fab_tx_done)
+			word_count	<= 0;
+	end
+
+	//word_count value where we are expected to complete sending the packet
+	reg[3:0]	expected_finish_cycle;
+	always @(*) begin
+		case(IN_DATA_WIDTH)
+			64:		expected_finish_cycle	<= 1;
+			32:		expected_finish_cycle	<= 3;
+			16:		expected_finish_cycle	<= 7;
+		endcase
+	end
+
+	//We should be done when word_count is equal to expected_finish_cycle.
+	reg			tx_done_expected;
+	always @(*) begin
+		tx_done_expected		<=	(expected_finish_cycle == word_count);
+	end
+
+	//Keep track of if a transmit just started or finished
+	reg		tx_en_ff	= 0;
+	reg		tx_done_ff	= 0;
+	always @(posedge clk) begin
+		tx_en_ff	<= rpc_tx_en;
+		tx_done_ff	<= rpc_fab_tx_done;
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Save transmit data when we begin sending
+
+	reg[15:0]	tx_dst_addr_saved	= 0;
+	reg[7:0]	tx_callnum_saved	= 0;
+	reg[2:0]	tx_type_saved		= 0;
+	reg[20:0]	tx_d0_saved			= 0;
+	reg[31:0]	tx_d1_saved			= 0;
+	reg[31:0]	tx_d2_saved			= 0;
+
+	always @(posedge clk) begin
+		if(rpc_fab_tx_en && !transaction_active) begin
+			tx_dst_addr_saved	<= rpc_fab_tx_dst_addr;
+			tx_callnum_saved	<= rpc_fab_tx_callnum;
+			tx_type_saved		<= rpc_fab_tx_type;
+			tx_d0_saved			<= rpc_fab_tx_d0;
+			tx_d1_saved			<= rpc_fab_tx_d1;
+			tx_d2_saved			<= rpc_fab_tx_d2;
+		end
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Preconditions
+
+	//External test logic should not block receiving for too many cycles
+	reg[3:0] rx_timeout = 0;
+	always @(posedge clk) begin
+
+		//Keep counting up for as long as we're busy, reset when available
+		if(rpc_fab_rx_ready)
+			rx_timeout <= 0;
+		if(!rpc_fab_rx_ready)
+			rx_timeout <= rx_timeout + 1;
+
+		assume(rx_timeout <= 10);
+	end
+
+	always @(posedge clk) begin
+
+		if(transaction_active) begin
+
+			//Result of changing inputs when sending is undefined. Don't do it.
+			assume (rpc_fab_tx_dst_addr	== tx_dst_addr_saved);
+			assume (rpc_fab_tx_callnum	== tx_callnum_saved);
+			assume (rpc_fab_tx_type		== tx_type_saved);
+			assume (rpc_fab_tx_d0		== tx_d0_saved);
+			assume (rpc_fab_tx_d1		== tx_d1_saved);
+			assume (rpc_fab_tx_d2		== tx_d2_saved);
+		end
+
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verified properties: timing and sync
+
+	//We should never send if the receiver isn't ready
+	assert property(! (rpc_tx_en && !rpc_tx_ready) );
+
+	//If there is a message waiting to be sent, we should send as soon as possible.
+	//Do not send if there are no messages to send, or if we already have a message in progress
+	wire ready_to_send		= tx_pending || rpc_fab_tx_en;
+	wire should_be_sending	= (ready_to_send && rpc_tx_ready) && (word_count == 0);
+
+	//Receiver should start the packet as soon as the transmit begins
+	assert property(rpc_fab_rx_packet_start == should_be_sending);
+
+	//Receiver should be done one cycle after transmit finishes
+	assert property(rpc_fab_rx_packet_done == tx_done_ff);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verified properties: receive datapath
+
+	//Can't use x_saved b/c they haven't been set yet
+	wire[127:0] expected_message =
+	{
+		rpc_fab_tx_dst_addr,
+		NODE_ADDR,
+		rpc_fab_tx_callnum,
+		rpc_fab_tx_type,
+		rpc_fab_tx_d0,
+		rpc_fab_tx_d1,
+		rpc_fab_tx_d2
+	};
+
+	//High OUT_DATA_WIDTH bits should be the next block of our message
+	reg[127:0] message_shreg = 0;
+
+	wire[OUT_DATA_WIDTH-1:0] expected_word = message_shreg[127: (128 - OUT_DATA_WIDTH)];
+
+	reg[3:0] out_count = 0;
+	always @(posedge clk) begin
+
+		//At the end, we should have seen a full 128 bits.
+		//Note that rx_packet_done and rx_data_valid are asserted concurrently on the last message word
+		if(rpc_fab_rx_packet_done)
+			assert((out_count + 1) * OUT_DATA_WIDTH == 128);
+
+		//Each time we assert rpc_fab_rx_data_valid we should get another OUT_DATA_WIDTH bits of the message
+		if(rpc_fab_rx_data_valid) begin
+			assert(rpc_fab_rx_data == expected_word);
+			message_shreg	<= {message_shreg[128 - OUT_DATA_WIDTH : 0], {OUT_DATA_WIDTH{1'b0}}};
+		end
+
+		//Keep track of how many output words we've seen so far
+		//We have to check for packet_start after data_valid since we can start and stop packets simultaneously
+		//if two packets are sent back to back.
+		//Same thing applies to writing message_shreg after we do the shift
+		if(rpc_fab_rx_data_valid)
+			out_count	<= out_count + 1'h1;
+		if(rpc_fab_rx_packet_start) begin
+			out_count		<= 0;
+			message_shreg	<= expected_message;
+		end
+
+	end
+
+endmodule
