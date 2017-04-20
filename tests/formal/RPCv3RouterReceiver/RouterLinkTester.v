@@ -32,9 +32,9 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Formal validation test harness for RPCv3Transceiver - single node wrapper
+	@brief Formal validation test harness for RPCv3RouterTransceiver_*
  */
-module ExpandingLinkTester(
+module RouterLinkTester(
 	input wire					clk,
 
 	input wire					rpc_fab_tx_en,
@@ -125,6 +125,7 @@ module ExpandingLinkTester(
 	wire[OUT_DATA_WIDTH-1:0]		rpc_fab_rx_data;
 	wire							rpc_fab_rx_packet_done;
 
+	//TODO: use expanding/shrinking transceiver depending on IN_DATA_WIDTH / OUT_DATA_WIDTH
 	RPCv3RouterReceiver_expanding #(
 		.IN_DATA_WIDTH(IN_DATA_WIDTH),
 		.OUT_DATA_WIDTH(OUT_DATA_WIDTH)

@@ -42,7 +42,7 @@ RPCv3RouterReceiverFormal_expanding_in16:
 
     sources:
         - RPCv3RouterReceiver_expanding_in16.v
-        - ExpandingLinkTester.v
+        - RouterLinkTester.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v
 
@@ -58,7 +58,7 @@ RPCv3RouterReceiverFormal_expanding_in32:
 
     sources:
         - RPCv3RouterReceiver_expanding_in32.v
-        - ExpandingLinkTester.v
+        - RouterLinkTester.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v
 
@@ -74,6 +74,6 @@ RPCv3RouterReceiverFormal_expanding_in64:
 
     sources:
         - RPCv3RouterReceiver_expanding_in64.v
-        - ExpandingLinkTester.v
+        - RouterLinkTester.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v

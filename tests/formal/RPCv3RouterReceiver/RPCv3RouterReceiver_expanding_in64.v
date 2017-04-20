@@ -36,7 +36,7 @@
 
 	The goal of this test is to prove that an RPCv3RouterReceiver_expanding properly decodes RPC data
  */
-module RPCv3RouterReceiverFormal_expanding_in16(
+module RPCv3RouterReceiverFormal_expanding_in64(
 	input wire					clk,
 
 	input wire					rpc_fab_tx_en,
@@ -59,43 +59,11 @@ module RPCv3RouterReceiverFormal_expanding_in16(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// The individual test blocks (one for each data width)
 
-	ExpandingLinkTester #(
+	RouterLinkTester #(
 		.NODE_ADDR(NODE_ADDR),
-		.IN_DATA_WIDTH(16),
-		.OUT_DATA_WIDTH(32)
-	) tester_32 (
-		.clk(clk),
-		.rpc_fab_tx_en(rpc_fab_tx_en),
-		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
-		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
-		.rpc_fab_tx_type(rpc_fab_tx_type),
-		.rpc_fab_tx_d0(rpc_fab_tx_d0),
-		.rpc_fab_tx_d1(rpc_fab_tx_d1),
-		.rpc_fab_tx_d2(rpc_fab_tx_d2),
-		.rpc_fab_rx_ready(rpc_fab_rx_ready)
-	);
-
-	ExpandingLinkTester #(
-		.NODE_ADDR(NODE_ADDR),
-		.IN_DATA_WIDTH(16),
-		.OUT_DATA_WIDTH(64)
-	) tester_64 (
-		.clk(clk),
-		.rpc_fab_tx_en(rpc_fab_tx_en),
-		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
-		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
-		.rpc_fab_tx_type(rpc_fab_tx_type),
-		.rpc_fab_tx_d0(rpc_fab_tx_d0),
-		.rpc_fab_tx_d1(rpc_fab_tx_d1),
-		.rpc_fab_tx_d2(rpc_fab_tx_d2),
-		.rpc_fab_rx_ready(rpc_fab_rx_ready)
-	);
-
-	ExpandingLinkTester #(
-		.NODE_ADDR(NODE_ADDR),
-		.IN_DATA_WIDTH(16),
+		.IN_DATA_WIDTH(64),
 		.OUT_DATA_WIDTH(128)
-	) tester_128 (
+	) tester_64 (
 		.clk(clk),
 		.rpc_fab_tx_en(rpc_fab_tx_en),
 		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
