@@ -1,0 +1,2 @@
+initial
+assume (= [ram_fifo.mem.storage] [shreg_fifo.shreg.storage])

@@ -41,22 +41,19 @@ module ShiftRegisterFormal(
 
 	input wire					wr,
 	input wire					rd,
-	input wire[7:0]				din
+	input wire[3:0]				din
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Proof configuration
 
-	//Source address of all messages
-	localparam NODE_ADDR = 16'h4141;
-
-	localparam WIDTH = 8;
+	localparam WIDTH = 4;
 	localparam DEPTH = 4;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// The FIFOs
 
-	wire[7:0]	shreg_dout;
+	wire[3:0]	shreg_dout;
 	wire		shreg_overflow;
 	wire		shreg_underflow;
 	wire		shreg_empty;
@@ -84,7 +81,7 @@ module ShiftRegisterFormal(
 		.reset(reset)
 		);
 
-	wire[7:0]	ram_dout;
+	wire[3:0]	ram_dout;
 	wire		ram_overflow;
 	wire		ram_underflow;
 	wire		ram_empty;
@@ -115,12 +112,39 @@ module ShiftRegisterFormal(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verified properties
 
-	assert property(ram_dout == shreg_dout);
+	//Constrain pointers to valid range
+	//We constrain the RAM fifo and verify the shreg follows
+	assume property( (ram_rsize + ram_wsize) <= DEPTH );
+
+	//Reset while reading/writing is undefined, don't do it
+	assume property(! (reset && rd) );
+	assume property(! (reset && wr) );
+
 	assert property(ram_overflow == shreg_overflow);
 	assert property(ram_underflow == shreg_underflow);
 	assert property(ram_empty == shreg_empty);
 	assert property(ram_full == shreg_full);
 	assert property(ram_wsize == shreg_wsize);
 	assert property(ram_rsize == shreg_rsize);
+
+	//Check read values for match iff we're not underflowing.
+	//If underflowing, read data is undefined.
+	/*
+	reg		last_read_was_underflow = 0;
+	reg		rd_ff					= 0;
+	always @(posedge clk) begin
+		rd_ff		<= rd;
+
+		if(rd_ff)
+			last_read_was_underflow <= ram_underflow;
+
+		if(!ram_underflow && !last_read_was_underflow)
+			assert(ram_dout == shreg_dout);
+	end
+	*/
+
+	//TODO: verify correct operation of the fifo in general
+
+	//TODO: rename test to be something like "SingleClockFIFOFormal" or something?
 
 endmodule
