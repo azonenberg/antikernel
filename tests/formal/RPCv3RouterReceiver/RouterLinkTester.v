@@ -326,7 +326,7 @@ module RouterLinkTester(
 		//if two packets are sent back to back.
 		//Same thing applies to writing message_shreg after we do the shift
 		if(rpc_fab_rx_data_valid)
-			out_count	<= out_count + 1'h1;
+			out_count		<= out_count + 1'h1;
 		if(rpc_fab_rx_packet_start) begin
 			out_count		<= 0;
 			message_shreg	<= expected_message;
