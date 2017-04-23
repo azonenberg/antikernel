@@ -30,7 +30,7 @@
 # release config for formal doesn't make any sense, it's not an artifact we ship
 # we're not synthesizing for a real FPGA so don't do tech mapping etc
 
-ShiftRegisterFormal:
+FifosFormal:
     toolchain:      verilog/yosys
     type:           formal
 
@@ -41,7 +41,7 @@ ShiftRegisterFormal:
         - generic-formal
 
     sources:
-        - ShiftRegisterFormal.v
+        - FifosFormal.v
         - ../../../antikernel-ipcores/dataflow/SingleClockFifo.v
         - ../../../antikernel-ipcores/dataflow/SingleClockShiftRegisterFifo.v
         - ../../../antikernel-ipcores/device_abstraction/MemoryMacro.v

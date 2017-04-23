@@ -32,9 +32,9 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Formal validation test harness for SingleClockShiftRegisterFifo
+	@brief Formal validation test harness for SingleClockFifo and SingleClockShiftRegisterFifo
  */
-module ShiftRegisterFormal(
+module FifosFormal(
 	input wire					clk,
 
 	input wire					reset,
