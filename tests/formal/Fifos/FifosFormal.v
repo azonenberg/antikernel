@@ -44,22 +44,28 @@ module FifosFormal(
 	input wire[3:0]				din
 	);
 
+	`include "../../../antikernel-ipcores/synth_helpers/clog2.vh"
+	`include "../../../antikernel-ipcores/proof_helpers/implies.vh"
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Proof configuration
 
 	localparam WIDTH = 4;
 	localparam DEPTH = 4;
 
+	//number of bits in the address bus
+	localparam ADDR_BITS = clog2(DEPTH);
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// The FIFOs
 
-	wire[WIDTH-1:0]	shreg_dout;
-	wire			shreg_overflow;
-	wire			shreg_underflow;
-	wire			shreg_empty;
-	wire			shreg_full;
-	wire[2:0]		shreg_rsize;
-	wire[2:0]		shreg_wsize;
+	wire[WIDTH-1:0]		shreg_dout;
+	wire				shreg_overflow;
+	wire				shreg_underflow;
+	wire				shreg_empty;
+	wire				shreg_full;
+	wire[ADDR_BITS:0]	shreg_rsize;
+	wire[ADDR_BITS:0]	shreg_wsize;
 
 	wire[WIDTH*DEPTH-1 : 0] shreg_contents;
 
@@ -85,13 +91,13 @@ module FifosFormal(
 		.dout_formal(shreg_contents)
 		);
 
-	wire[WIDTH-1:0]	ram_dout;
-	wire			ram_overflow;
-	wire			ram_underflow;
-	wire			ram_empty;
-	wire			ram_full;
-	wire[2:0]		ram_rsize;
-	wire[2:0]		ram_wsize;
+	wire[WIDTH-1:0]		ram_dout;
+	wire				ram_overflow;
+	wire				ram_underflow;
+	wire				ram_empty;
+	wire				ram_full;
+	wire[ADDR_BITS:0]	ram_rsize;
+	wire[ADDR_BITS:0]	ram_wsize;
 
 	wire[WIDTH*DEPTH-1 : 0] ram_contents;
 
@@ -118,6 +124,56 @@ module FifosFormal(
 		);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verification helpers
+
+	//Remember what the state was last cycle
+	reg					rd_ff			= 0;
+	reg					wr_ff			= 0;
+	reg					reset_ff		= 0;
+
+	reg[ADDR_BITS:0]	rsize_ff		= 0;
+	reg[ADDR_BITS:0]	wsize_ff		= 0;
+	reg					full_ff			= 0;
+	reg					empty_ff		= 0;
+
+	reg					overflow_ff		= 0;
+	reg					underflow_ff	= 0;
+
+	always @(posedge clk) begin
+		rd_ff			<= rd;
+		wr_ff			<= wr;
+		reset_ff		<= reset;
+
+		rsize_ff		<= ram_rsize;
+		wsize_ff		<= ram_wsize;
+		full_ff			<= ram_full;
+		empty_ff		<= ram_empty;
+
+		overflow_ff		<= ram_overflow;
+		underflow_ff	<= ram_underflow;
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Create friendly names for some common situations
+
+	wire wrote_without_overflowing = (wr_ff && !full_ff);
+	wire read_without_underflowing = (rd_ff && !empty_ff);
+
+	wire size_increased = (ram_rsize == (rsize_ff + 1'h1) );
+	wire size_decreased = (ram_rsize == (rsize_ff - 1'h1) );
+	wire size_unchanged = (ram_rsize == rsize_ff);
+
+	wire reset_singleword_fifo = (reset_ff && (rsize_ff == 1) );
+
+	reg last_read_was_underflow = 0;
+	always @(posedge clk) begin
+		if(rd_ff)
+			last_read_was_underflow <= ram_underflow;
+	end
+
+	wire last_read_was_valid = (!ram_underflow && !last_read_was_underflow);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verify equivalence of the fifos against each other
 
 	//Reset while reading/writing is undefined, don't do it
@@ -136,23 +192,41 @@ module FifosFormal(
 	assert property(ram_contents == shreg_contents);
 
 	//Check read values for match iff we're not underflowing.
-	//If underflowing, read data is undefined.
-	reg		last_read_was_underflow = 0;
-	reg		rd_ff					= 0;
-	always @(posedge clk) begin
-		rd_ff		<= rd;
-
-		if(rd_ff)
-			last_read_was_underflow <= ram_underflow;
-
-		if(!ram_underflow && !last_read_was_underflow)
-			assert(ram_dout == shreg_dout);
-	end
+	//(If underflowing, read data is undefined.)
+	assert property( implies(last_read_was_valid, ram_dout == shreg_dout) );
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verify correct operation of the RAM FIFO (shreg is proven by equivalence)
 
 	//The amount of used and empty space must always sum to the total capacity
 	assert property( (ram_rsize + ram_wsize) == DEPTH );
+
+	//Iff we write to a full FIFO, it should overflow
+	//(no forwarding so reading during the write won't help)
+	assert property( (wr_ff && full_ff) == ram_overflow);
+
+	//Iff we read from an empty FIFO, it should underflow
+	//(no forwarding so writing during the read won't help)
+	assert property( (rd_ff && empty_ff) == ram_underflow);
+
+	//After a successful write, unless we also read, we should have one more word in the fifo now.
+	//This is the only time this should happen.
+	assert property( (wrote_without_overflowing && !read_without_underflowing) == size_increased );
+
+	//We should have one less word in the fifo if we read a word (unless we also wrote).
+	//But it can also happen if we had one word in the fifo when we reset it!
+	assert property(
+		(
+			(read_without_underflowing && !wrote_without_overflowing) ||
+			(reset_singleword_fifo)
+		) == size_decreased);
+
+	//After simultaneous successful read and write, size shouldn't change.
+	assert property( implies(read_without_underflowing && wrote_without_overflowing, size_unchanged) );
+
+	//If we reset the FIFO, it should now be empty (but this can of course happen other ways too)
+	assert property( implies(reset_ff, ram_empty ) );
+
+	//
 
 endmodule
