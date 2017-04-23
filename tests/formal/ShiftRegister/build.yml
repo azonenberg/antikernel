@@ -41,7 +41,6 @@ ShiftRegisterFormal:
         - generic-formal
 
     sources:
-        - ShiftRegisterFormal.smtc
         - ShiftRegisterFormal.v
         - ../../../antikernel-ipcores/dataflow/SingleClockFifo.v
         - ../../../antikernel-ipcores/dataflow/SingleClockShiftRegisterFifo.v
