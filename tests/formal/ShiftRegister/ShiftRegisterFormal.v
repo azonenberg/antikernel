@@ -53,13 +53,15 @@ module ShiftRegisterFormal(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// The FIFOs
 
-	wire[3:0]	shreg_dout;
-	wire		shreg_overflow;
-	wire		shreg_underflow;
-	wire		shreg_empty;
-	wire		shreg_full;
-	wire[2:0]	shreg_rsize;
-	wire[2:0]	shreg_wsize;
+	wire[WIDTH-1:0]	shreg_dout;
+	wire			shreg_overflow;
+	wire			shreg_underflow;
+	wire			shreg_empty;
+	wire			shreg_full;
+	wire[2:0]		shreg_rsize;
+	wire[2:0]		shreg_wsize;
+
+	wire[WIDTH*DEPTH-1 : 0] shreg_contents;
 
 	SingleClockShiftRegisterFifo #(
 		.WIDTH(WIDTH),
@@ -78,16 +80,20 @@ module ShiftRegisterFormal(
 		.full(shreg_full),
 		.rsize(shreg_rsize),
 		.wsize(shreg_wsize),
-		.reset(reset)
+		.reset(reset),
+
+		.dout_formal(shreg_contents)
 		);
 
-	wire[3:0]	ram_dout;
-	wire		ram_overflow;
-	wire		ram_underflow;
-	wire		ram_empty;
-	wire		ram_full;
-	wire[2:0]	ram_rsize;
-	wire[2:0]	ram_wsize;
+	wire[WIDTH-1:0]	ram_dout;
+	wire			ram_overflow;
+	wire			ram_underflow;
+	wire			ram_empty;
+	wire			ram_full;
+	wire[2:0]		ram_rsize;
+	wire[2:0]		ram_wsize;
+
+	wire[WIDTH*DEPTH-1 : 0] ram_contents;
 
 	SingleClockFifo #(
 		.WIDTH(WIDTH),
@@ -106,7 +112,9 @@ module ShiftRegisterFormal(
 		.full(ram_full),
 		.rsize(ram_rsize),
 		.wsize(ram_wsize),
-		.reset(reset)
+		.reset(reset),
+
+		.dout_formal(ram_contents)
 		);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -127,9 +135,11 @@ module ShiftRegisterFormal(
 	assert property(ram_wsize == shreg_wsize);
 	assert property(ram_rsize == shreg_rsize);
 
+	//Memory contents must match up (FIFOs mask off the dontcare bits for us)
+	assert property(ram_contents == shreg_contents);
+
 	//Check read values for match iff we're not underflowing.
 	//If underflowing, read data is undefined.
-	/*
 	reg		last_read_was_underflow = 0;
 	reg		rd_ff					= 0;
 	always @(posedge clk) begin
@@ -141,7 +151,6 @@ module ShiftRegisterFormal(
 		if(!ram_underflow && !last_read_was_underflow)
 			assert(ram_dout == shreg_dout);
 	end
-	*/
 
 	//TODO: verify correct operation of the fifo in general
 
