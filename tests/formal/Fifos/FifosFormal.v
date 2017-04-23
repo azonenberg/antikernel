@@ -118,16 +118,13 @@ module FifosFormal(
 		);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Verified properties
-
-	//Constrain pointers to valid range
-	//We constrain the RAM fifo and verify the shreg follows
-	assume property( (ram_rsize + ram_wsize) <= DEPTH );
+	// Verify equivalence of the fifos against each other
 
 	//Reset while reading/writing is undefined, don't do it
 	assume property(! (reset && rd) );
 	assume property(! (reset && wr) );
 
+	//Both FIFOs must have the same status state
 	assert property(ram_overflow == shreg_overflow);
 	assert property(ram_underflow == shreg_underflow);
 	assert property(ram_empty == shreg_empty);
@@ -152,8 +149,10 @@ module FifosFormal(
 			assert(ram_dout == shreg_dout);
 	end
 
-	//TODO: verify correct operation of the fifo in general
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verify correct operation of the RAM FIFO (shreg is proven by equivalence)
 
-	//TODO: rename test to be something like "SingleClockFIFOFormal" or something?
+	//The amount of used and empty space must always sum to the total capacity
+	assert property( (ram_rsize + ram_wsize) == DEPTH );
 
 endmodule
