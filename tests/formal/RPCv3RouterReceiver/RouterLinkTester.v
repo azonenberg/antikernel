@@ -206,10 +206,10 @@ module RouterLinkTester(
 	reg transaction_active		= 0;
 	always @(posedge clk) begin
 
-		if(rpc_fab_rx_packet_done)
+		if(rpc_fab_rx_packet_done )
 			transaction_active	<= 0;
 
-		if(rpc_fab_tx_en)
+		if(rpc_tx_en)
 			transaction_active	<= 1;
 
 	end
@@ -264,7 +264,7 @@ module RouterLinkTester(
 	reg[31:0]	tx_d2_saved			= 0;
 
 	always @(posedge clk) begin
-		if(rpc_fab_tx_en && !transaction_active) begin
+		if(rpc_tx_en) begin
 			tx_dst_addr_saved	<= rpc_fab_tx_dst_addr;
 			tx_callnum_saved	<= rpc_fab_tx_callnum;
 			tx_type_saved		<= rpc_fab_tx_type;
