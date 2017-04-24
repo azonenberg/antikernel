@@ -196,7 +196,7 @@ module FifosFormal(
 	assert property( implies(last_read_was_valid, ram_dout == shreg_dout) );
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Verify correct operation of the RAM FIFO (shreg is proven by equivalence)
+	// Verify correct control-plane operation of the RAM FIFO (shreg is proven by equivalence)
 
 	//The amount of used and empty space must always sum to the total capacity
 	assert property( (ram_rsize + ram_wsize) == DEPTH );
@@ -227,6 +227,58 @@ module FifosFormal(
 	//If we reset the FIFO, it should now be empty (but this can of course happen other ways too)
 	assert property( implies(reset_ff, ram_empty ) );
 
-	//
+	//Empty means size is zero
+	assert property( (ram_rsize == 0) == ram_empty);
+
+	//Full means size is max
+	assert property( (ram_rsize == DEPTH) == ram_full);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Data-plane model of the FIFO
+
+	//The FIFO data
+	//[rsize - 1] is always the next word to be read
+	reg[WIDTH-1:0]		fifo_data[DEPTH-1:0];
+
+	//Data we just read
+	reg[WIDTH-1:0] 		fifo_rdata = 0;
+
+	//Behavioral model of the data-plane side of the FIFO.
+	//We don't have to model the control plane because we've already verified that, so use the existing control signals
+	integer i;
+	always @(posedge clk) begin
+
+		//Don't touch buffer on read
+		if(!ram_empty && rd)
+			fifo_rdata			<= fifo_data[ram_rsize - 1'b1];
+
+		//Write to the start of the buffer and push things down
+		if(!ram_full && wr) begin
+			for(i=1; i<DEPTH; i=i+1)
+				fifo_data[i]	<= fifo_data[i-1];
+			fifo_data[0] <= din;
+		end
+
+	end
+
+	//Concatenated copy of the memory
+	reg[WIDTH*DEPTH-1 : 0]	fifo_contents = 0;
+	always @(*) begin
+		for(i=0; i<DEPTH; i=i+1) begin
+			if(i < ram_rsize)
+				fifo_contents[i*WIDTH +: WIDTH]	<= fifo_data[i];
+			else
+				fifo_contents[i*WIDTH +: WIDTH]	<= {WIDTH{1'b0}};
+		end
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verify correct data-plane operation
+
+	//Our behavioral model of the memory should always have the same data as the synthesizeable one
+	assert property(fifo_contents == ram_contents);
+
+	//After a successful read, we should be reading the same data
+	assert property( implies(last_read_was_valid, ram_dout == fifo_rdata) );
 
 endmodule
