@@ -125,23 +125,58 @@ module RouterLinkTester(
 	wire[OUT_DATA_WIDTH-1:0]		rpc_fab_rx_data;
 	wire							rpc_fab_rx_packet_done;
 
-	//TODO: use expanding/shrinking transceiver depending on IN_DATA_WIDTH / OUT_DATA_WIDTH
-	RPCv3RouterReceiver_expanding #(
-		.IN_DATA_WIDTH(IN_DATA_WIDTH),
-		.OUT_DATA_WIDTH(OUT_DATA_WIDTH)
-	) dut (
-		.clk(clk),
+	localparam EXPANDING = (IN_DATA_WIDTH < OUT_DATA_WIDTH);
+	localparam COLLAPSING = (IN_DATA_WIDTH > OUT_DATA_WIDTH);
+	localparam BUFFERING = (IN_DATA_WIDTH == OUT_DATA_WIDTH);
 
-		.rpc_rx_en(rpc_tx_en),
-		.rpc_rx_data(rpc_tx_data),
-		.rpc_rx_ready(rpc_tx_ready),
+	generate
 
-		.rpc_fab_rx_space_available(rpc_fab_rx_ready),
-		.rpc_fab_rx_packet_start(rpc_fab_rx_packet_start),
-		.rpc_fab_rx_data_valid(rpc_fab_rx_data_valid),
-		.rpc_fab_rx_data(rpc_fab_rx_data),
-		.rpc_fab_rx_packet_done(rpc_fab_rx_packet_done)
-	);
+		if(EXPANDING) begin
+			RPCv3RouterReceiver_expanding #(
+				.IN_DATA_WIDTH(IN_DATA_WIDTH),
+				.OUT_DATA_WIDTH(OUT_DATA_WIDTH)
+			) dut (
+				.clk(clk),
+
+				.rpc_rx_en(rpc_tx_en),
+				.rpc_rx_data(rpc_tx_data),
+				.rpc_rx_ready(rpc_tx_ready),
+
+				.rpc_fab_rx_space_available(rpc_fab_rx_ready),
+				.rpc_fab_rx_packet_start(rpc_fab_rx_packet_start),
+				.rpc_fab_rx_data_valid(rpc_fab_rx_data_valid),
+				.rpc_fab_rx_data(rpc_fab_rx_data),
+				.rpc_fab_rx_packet_done(rpc_fab_rx_packet_done)
+			);
+		end
+
+		else if(COLLAPSING) begin
+			RPCv3RouterReceiver_collapsing #(
+				.IN_DATA_WIDTH(IN_DATA_WIDTH),
+				.OUT_DATA_WIDTH(OUT_DATA_WIDTH)
+			) dut (
+				.clk(clk),
+
+				.rpc_rx_en(rpc_tx_en),
+				.rpc_rx_data(rpc_tx_data),
+				.rpc_rx_ready(rpc_tx_ready),
+
+				.rpc_fab_rx_space_available(rpc_fab_rx_ready),
+				.rpc_fab_rx_packet_start(rpc_fab_rx_packet_start),
+				.rpc_fab_rx_data_valid(rpc_fab_rx_data_valid),
+				.rpc_fab_rx_data(rpc_fab_rx_data),
+				.rpc_fab_rx_packet_done(rpc_fab_rx_packet_done)
+			);
+		end
+
+		else begin
+			initial begin
+				$display("ERROR: RouterLinkTester: don't know what to do if IN_DATA_WIDTH == OUT_DATA_WIDTH");
+				$finish;
+			end
+		end
+
+	endgenerate
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verification helpers
@@ -171,7 +206,7 @@ module RouterLinkTester(
 	reg transaction_active		= 0;
 	always @(posedge clk) begin
 
-		if(rpc_fab_rx_en)
+		if(rpc_fab_rx_packet_done)
 			transaction_active	<= 0;
 
 		if(rpc_fab_tx_en)
@@ -239,6 +274,11 @@ module RouterLinkTester(
 		end
 	end
 
+	//Verification helper: Don't allow send when the link is busy
+	//We already verified correct flow control for this elsewhere, no need to re-test
+	//and it makes our verification nasty if we have two messages in the pipe at once
+	assume property(! (rpc_fab_tx_en && rpc_fab_rx_data_valid) );
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Preconditions
 
@@ -273,19 +313,20 @@ module RouterLinkTester(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verified properties: timing and sync
 
-	//We should never send if the receiver isn't ready
-	assert property(! (rpc_tx_en && !rpc_tx_ready) );
-
-	//If there is a message waiting to be sent, we should send as soon as possible.
-	//Do not send if there are no messages to send, or if we already have a message in progress
-	wire ready_to_send		= tx_pending || rpc_fab_tx_en;
-	wire should_be_sending	= (ready_to_send && rpc_tx_ready) && (word_count == 0);
-
 	//Receiver should start the packet as soon as the transmit begins
-	assert property(rpc_fab_rx_packet_start == should_be_sending);
+	assert property(rpc_fab_rx_packet_start == rpc_tx_en);
 
-	//Receiver should be done one cycle after transmit finishes
-	assert property(rpc_fab_rx_packet_done == tx_done_ff);
+	generate
+
+		//If expanding, outbound packet is shorter than inbound.
+		//Receiver should be done one cycle after transmit finishes.
+		if(EXPANDING)
+			assert property(rpc_fab_rx_packet_done == tx_done_ff);
+
+		//If collapsing, outbound packet is longer - we need more time
+		//TODO
+
+	endgenerate
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verified properties: receive datapath

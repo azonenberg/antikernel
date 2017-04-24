@@ -30,6 +30,9 @@
 # release config for formal doesn't make any sense, it's not an artifact we ship
 # we're not synthesizing for a real FPGA so don't do tech mapping etc
 
+########################################################################################################################
+# EXPANDING
+
 RPCv3RouterReceiverFormal_expanding_in16:
     toolchain:      verilog/yosys
     type:           formal
@@ -75,5 +78,27 @@ RPCv3RouterReceiverFormal_expanding_in64:
     sources:
         - RPCv3RouterReceiver_expanding_in64.v
         - RouterLinkTester.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v
+
+########################################################################################################################
+# COLLAPSING
+
+RPCv3RouterReceiverFormal_collapsing_in64:
+    toolchain:      verilog/yosys
+    type:           formal
+
+    configs:
+        - debug
+
+    arches:
+        - generic-formal
+
+    sources:
+        - RPCv3RouterReceiver_collapsing_in64.v
+        - RouterLinkTester.v
+        - ../../../antikernel-ipcores/dataflow/SingleClockShiftRegisterFifo.v
+        - ../../../antikernel-ipcores/device_abstraction/ShiftRegisterMacro.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_collapsing.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v
