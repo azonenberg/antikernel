@@ -36,7 +36,7 @@
 
 	The goal of this test is to prove that an RPCv3RouterReceiver_collapsing properly decodes RPC data
  */
-module RPCv3RouterReceiverFormal_collapsing_in32(
+module RPCv3RouterReceiverFormal_collapsing_in128(
 	input wire					clk,
 
 	input wire					rpc_fab_tx_en,

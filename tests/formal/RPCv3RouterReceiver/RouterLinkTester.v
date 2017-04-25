@@ -231,9 +231,10 @@ module RouterLinkTester(
 			word_count	<= 0;
 	end
 
-	//word_count value where we are expected to complete sending the packet
+	//Word_count value where we are expected to complete sending the packet
 	reg[3:0]	expected_finish_cycle;
 	always @(*) begin
+		expected_finish_cycle				<= 0;
 		case(IN_DATA_WIDTH)
 			64:		expected_finish_cycle	<= 1;
 			32:		expected_finish_cycle	<= 3;
@@ -333,7 +334,7 @@ module RouterLinkTester(
 	wire[OUT_DATA_WIDTH-1:0] expected_word = message_shreg[127: (128 - OUT_DATA_WIDTH)];
 
 	//When we hit this count value, we should be writing the last message word
-	wire expected_done = (out_count + 1) * OUT_DATA_WIDTH == 128;
+	wire expected_done = ( (out_count + 1) * OUT_DATA_WIDTH == 128 ) && rpc_fab_rx_data_valid;
 
 	reg[3:0] out_count = 0;
 	always @(posedge clk) begin
