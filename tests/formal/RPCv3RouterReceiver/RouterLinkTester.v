@@ -58,6 +58,8 @@ module RouterLinkTester(
 	parameter IN_DATA_WIDTH = 64;
 	parameter OUT_DATA_WIDTH = 128;
 
+	`include "../../../antikernel-ipcores/proof_helpers/implies.vh"
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Sender (just to make sure we have well formed traffic to test with)
 
@@ -311,24 +313,6 @@ module RouterLinkTester(
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Verified properties: timing and sync
-
-	//Receiver should start the packet as soon as the transmit begins
-	assert property(rpc_fab_rx_packet_start == rpc_tx_en);
-
-	generate
-
-		//If expanding, outbound packet is shorter than inbound.
-		//Receiver should be done one cycle after transmit finishes.
-		if(EXPANDING)
-			assert property(rpc_fab_rx_packet_done == tx_done_ff);
-
-		//If collapsing, outbound packet is longer - we need more time
-		//TODO
-
-	endgenerate
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verified properties: receive datapath
 
 	//Can't use x_saved b/c they haven't been set yet
@@ -348,13 +332,15 @@ module RouterLinkTester(
 
 	wire[OUT_DATA_WIDTH-1:0] expected_word = message_shreg[127: (128 - OUT_DATA_WIDTH)];
 
+	//When we hit this count value, we should be writing the last message word
+	wire expected_done = (out_count + 1) * OUT_DATA_WIDTH == 128;
+
 	reg[3:0] out_count = 0;
 	always @(posedge clk) begin
 
 		//At the end, we should have seen a full 128 bits.
 		//Note that rx_packet_done and rx_data_valid are asserted concurrently on the last message word
-		if(rpc_fab_rx_packet_done)
-			assert((out_count + 1) * OUT_DATA_WIDTH == 128);
+		assert(rpc_fab_rx_packet_done == expected_done);
 
 		//Each time we assert rpc_fab_rx_data_valid we should get another OUT_DATA_WIDTH bits of the message
 		if(rpc_fab_rx_data_valid) begin
@@ -373,6 +359,44 @@ module RouterLinkTester(
 			message_shreg	<= expected_message;
 		end
 
+		//Clear state when the message finishes
+		if(rpc_fab_rx_packet_done)
+			out_count		<= 0;
+
 	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verified properties: timing and sync
+
+	//Receiver should start the packet as soon as the transmit begins
+	assert property(rpc_fab_rx_packet_start == rpc_tx_en);
+
+	generate
+
+		//If expanding, outbound packet is shorter than inbound.
+		//Receiver should be done one cycle after transmit finishes.
+		if(EXPANDING)
+			assert property(rpc_fab_rx_packet_done == tx_done_ff);
+
+		//If collapsing, outbound packet is longer - we need more time
+		else if(COLLAPSING) begin
+
+			//Add a delay to the start flag for determining when the output begins
+			reg rpc_fab_rx_packet_start_ff	= 0;
+			reg rpc_fab_rx_packet_start_ff2	= 0;
+			always @(posedge clk) begin
+				rpc_fab_rx_packet_start_ff	<= rpc_fab_rx_packet_start;
+				rpc_fab_rx_packet_start_ff2	<= rpc_fab_rx_packet_start_ff;
+			end
+
+			//Packet should be output starting two clocks later than the send began
+			assert property(implies(rpc_fab_rx_packet_start_ff2, rpc_fab_rx_data_valid));
+
+			//Packet should be output constantly until the end, with no delays
+			assert property(implies( (out_count != 0), rpc_fab_rx_data_valid) );
+
+		end
+
+	endgenerate
 
 endmodule

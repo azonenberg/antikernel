@@ -36,7 +36,7 @@
 
 	The goal of this test is to prove that an RPCv3RouterReceiver_collapsing properly decodes RPC data
  */
-module RPCv3RouterReceiverFormal_collapsing_in64(
+module RPCv3RouterReceiverFormal_collapsing_in32(
 	input wire					clk,
 
 	input wire					rpc_fab_tx_en,
@@ -61,7 +61,23 @@ module RPCv3RouterReceiverFormal_collapsing_in64(
 
 	RouterLinkTester #(
 		.NODE_ADDR(NODE_ADDR),
-		.IN_DATA_WIDTH(64),
+		.IN_DATA_WIDTH(128),
+		.OUT_DATA_WIDTH(64)
+	) tester_64 (
+		.clk(clk),
+		.rpc_fab_tx_en(rpc_fab_tx_en),
+		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
+		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
+		.rpc_fab_tx_type(rpc_fab_tx_type),
+		.rpc_fab_tx_d0(rpc_fab_tx_d0),
+		.rpc_fab_tx_d1(rpc_fab_tx_d1),
+		.rpc_fab_tx_d2(rpc_fab_tx_d2),
+		.rpc_fab_rx_ready(rpc_fab_rx_ready)
+	);
+
+	RouterLinkTester #(
+		.NODE_ADDR(NODE_ADDR),
+		.IN_DATA_WIDTH(128),
 		.OUT_DATA_WIDTH(32)
 	) tester_32 (
 		.clk(clk),
@@ -77,7 +93,7 @@ module RPCv3RouterReceiverFormal_collapsing_in64(
 
 	RouterLinkTester #(
 		.NODE_ADDR(NODE_ADDR),
-		.IN_DATA_WIDTH(64),
+		.IN_DATA_WIDTH(128),
 		.OUT_DATA_WIDTH(16)
 	) tester_16 (
 		.clk(clk),
