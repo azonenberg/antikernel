@@ -59,7 +59,7 @@ module RPCv3RouterReceiverFormal_collapsing_in64(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// The individual test blocks (one for each data width)
 
-	RouterLinkTester #(
+	RxRouterLinkTester #(
 		.NODE_ADDR(NODE_ADDR),
 		.IN_DATA_WIDTH(64),
 		.OUT_DATA_WIDTH(32)
@@ -75,7 +75,7 @@ module RPCv3RouterReceiverFormal_collapsing_in64(
 		.rpc_fab_rx_ready(rpc_fab_rx_ready)
 	);
 
-	RouterLinkTester #(
+	RxRouterLinkTester #(
 		.NODE_ADDR(NODE_ADDR),
 		.IN_DATA_WIDTH(64),
 		.OUT_DATA_WIDTH(16)

@@ -32,9 +32,9 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Formal validation test harness for RPCv3RouterTransceiver_*
+	@brief Formal verification test harness for RPCv3RouterReceiver_*
  */
-module RouterLinkTester(
+module RxRouterLinkTester(
 	input wire					clk,
 
 	input wire					rpc_fab_tx_en,
