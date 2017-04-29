@@ -172,10 +172,22 @@ module RouterLinkTester(
 		end
 
 		else begin
-			initial begin
-				$display("ERROR: RouterLinkTester: don't know what to do if IN_DATA_WIDTH == OUT_DATA_WIDTH");
-				$finish;
-			end
+			RPCv3RouterReceiver_buffering #(
+				.IN_DATA_WIDTH(IN_DATA_WIDTH),
+				.OUT_DATA_WIDTH(OUT_DATA_WIDTH)
+			) dut (
+				.clk(clk),
+
+				.rpc_rx_en(rpc_tx_en),
+				.rpc_rx_data(rpc_tx_data),
+				.rpc_rx_ready(rpc_tx_ready),
+
+				.rpc_fab_rx_space_available(rpc_fab_rx_ready),
+				.rpc_fab_rx_packet_start(rpc_fab_rx_packet_start),
+				.rpc_fab_rx_data_valid(rpc_fab_rx_data_valid),
+				.rpc_fab_rx_data(rpc_fab_rx_data),
+				.rpc_fab_rx_packet_done(rpc_fab_rx_packet_done)
+			);
 		end
 
 	endgenerate
