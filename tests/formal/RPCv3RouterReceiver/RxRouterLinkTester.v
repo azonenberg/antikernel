@@ -336,6 +336,10 @@ module RxRouterLinkTester(
 	//Receiver should start the packet as soon as the transmit begins
 	assert property(rpc_fab_rx_packet_start == rpc_tx_en);
 
+	localparam EXPANDING = (IN_DATA_WIDTH < OUT_DATA_WIDTH);
+	localparam COLLAPSING = (IN_DATA_WIDTH > OUT_DATA_WIDTH);
+	localparam BUFFERING = (IN_DATA_WIDTH == OUT_DATA_WIDTH);
+
 	generate
 
 		//If expanding, outbound packet is shorter than inbound.
