@@ -46,6 +46,7 @@ RPCv3RouterReceiverFormal_expanding_in16:
     sources:
         - RPCv3RouterReceiver_expanding_in16.v
         - RxRouterLinkTester.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v
 
@@ -62,6 +63,7 @@ RPCv3RouterReceiverFormal_expanding_in32:
     sources:
         - RPCv3RouterReceiver_expanding_in32.v
         - RxRouterLinkTester.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v
 
@@ -78,6 +80,7 @@ RPCv3RouterReceiverFormal_expanding_in64:
     sources:
         - RPCv3RouterReceiver_expanding_in64.v
         - RxRouterLinkTester.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v
 
@@ -99,6 +102,7 @@ RPCv3RouterReceiverFormal_collapsing_in128:
         - RxRouterLinkTester.v
         - ../../../antikernel-ipcores/dataflow/SingleClockShiftRegisterFifo.v
         - ../../../antikernel-ipcores/device_abstraction/ShiftRegisterMacro.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_buffering.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_collapsing.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v
@@ -120,6 +124,7 @@ RPCv3RouterReceiverFormal_collapsing_in64:
         - RxRouterLinkTester.v
         - ../../../antikernel-ipcores/dataflow/SingleClockShiftRegisterFifo.v
         - ../../../antikernel-ipcores/device_abstraction/ShiftRegisterMacro.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_buffering.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_collapsing.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v
@@ -140,6 +145,7 @@ RPCv3RouterReceiverFormal_collapsing_in32:
         - RxRouterLinkTester.v
         - ../../../antikernel-ipcores/dataflow/SingleClockShiftRegisterFifo.v
         - ../../../antikernel-ipcores/device_abstraction/ShiftRegisterMacro.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_buffering.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_collapsing.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v
@@ -163,6 +169,7 @@ RPCv3RouterReceiverFormal_buffering_in16:
         - RxRouterLinkTester.v
         - ../../../antikernel-ipcores/dataflow/SingleClockShiftRegisterFifo.v
         - ../../../antikernel-ipcores/device_abstraction/ShiftRegisterMacro.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_buffering.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_collapsing.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v
@@ -183,6 +190,7 @@ RPCv3RouterReceiverFormal_buffering_in32:
         - RxRouterLinkTester.v
         - ../../../antikernel-ipcores/dataflow/SingleClockShiftRegisterFifo.v
         - ../../../antikernel-ipcores/device_abstraction/ShiftRegisterMacro.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_buffering.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_collapsing.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v
@@ -203,6 +211,7 @@ RPCv3RouterReceiverFormal_buffering_in64:
         - RxRouterLinkTester.v
         - ../../../antikernel-ipcores/dataflow/SingleClockShiftRegisterFifo.v
         - ../../../antikernel-ipcores/device_abstraction/ShiftRegisterMacro.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_buffering.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_collapsing.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v
@@ -223,6 +232,7 @@ RPCv3RouterReceiverFormal_buffering_in128:
         - RxRouterLinkTester.v
         - ../../../antikernel-ipcores/dataflow/SingleClockShiftRegisterFifo.v
         - ../../../antikernel-ipcores/device_abstraction/ShiftRegisterMacro.v
+        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_buffering.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_collapsing.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterReceiver_expanding.v

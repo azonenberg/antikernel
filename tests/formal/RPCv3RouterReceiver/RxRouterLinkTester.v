@@ -127,70 +127,22 @@ module RxRouterLinkTester(
 	wire[OUT_DATA_WIDTH-1:0]		rpc_fab_rx_data;
 	wire							rpc_fab_rx_packet_done;
 
-	localparam EXPANDING = (IN_DATA_WIDTH < OUT_DATA_WIDTH);
-	localparam COLLAPSING = (IN_DATA_WIDTH > OUT_DATA_WIDTH);
-	localparam BUFFERING = (IN_DATA_WIDTH == OUT_DATA_WIDTH);
+	RPCv3RouterReceiver #(
+		.OUT_DATA_WIDTH(OUT_DATA_WIDTH),
+		.IN_DATA_WIDTH(IN_DATA_WIDTH)
+	) dut (
+		.clk(clk),
 
-	generate
+		.rpc_rx_en(rpc_tx_en),
+		.rpc_rx_data(rpc_tx_data),
+		.rpc_rx_ready(rpc_tx_ready),
 
-		if(EXPANDING) begin
-			RPCv3RouterReceiver_expanding #(
-				.IN_DATA_WIDTH(IN_DATA_WIDTH),
-				.OUT_DATA_WIDTH(OUT_DATA_WIDTH)
-			) dut (
-				.clk(clk),
-
-				.rpc_rx_en(rpc_tx_en),
-				.rpc_rx_data(rpc_tx_data),
-				.rpc_rx_ready(rpc_tx_ready),
-
-				.rpc_fab_rx_space_available(rpc_fab_rx_ready),
-				.rpc_fab_rx_packet_start(rpc_fab_rx_packet_start),
-				.rpc_fab_rx_data_valid(rpc_fab_rx_data_valid),
-				.rpc_fab_rx_data(rpc_fab_rx_data),
-				.rpc_fab_rx_packet_done(rpc_fab_rx_packet_done)
-			);
-		end
-
-		else if(COLLAPSING) begin
-			RPCv3RouterReceiver_collapsing #(
-				.IN_DATA_WIDTH(IN_DATA_WIDTH),
-				.OUT_DATA_WIDTH(OUT_DATA_WIDTH)
-			) dut (
-				.clk(clk),
-
-				.rpc_rx_en(rpc_tx_en),
-				.rpc_rx_data(rpc_tx_data),
-				.rpc_rx_ready(rpc_tx_ready),
-
-				.rpc_fab_rx_space_available(rpc_fab_rx_ready),
-				.rpc_fab_rx_packet_start(rpc_fab_rx_packet_start),
-				.rpc_fab_rx_data_valid(rpc_fab_rx_data_valid),
-				.rpc_fab_rx_data(rpc_fab_rx_data),
-				.rpc_fab_rx_packet_done(rpc_fab_rx_packet_done)
-			);
-		end
-
-		else begin
-			RPCv3RouterReceiver_buffering #(
-				.IN_DATA_WIDTH(IN_DATA_WIDTH),
-				.OUT_DATA_WIDTH(OUT_DATA_WIDTH)
-			) dut (
-				.clk(clk),
-
-				.rpc_rx_en(rpc_tx_en),
-				.rpc_rx_data(rpc_tx_data),
-				.rpc_rx_ready(rpc_tx_ready),
-
-				.rpc_fab_rx_space_available(rpc_fab_rx_ready),
-				.rpc_fab_rx_packet_start(rpc_fab_rx_packet_start),
-				.rpc_fab_rx_data_valid(rpc_fab_rx_data_valid),
-				.rpc_fab_rx_data(rpc_fab_rx_data),
-				.rpc_fab_rx_packet_done(rpc_fab_rx_packet_done)
-			);
-		end
-
-	endgenerate
+		.rpc_fab_rx_space_available(rpc_fab_rx_ready),
+		.rpc_fab_rx_packet_start(rpc_fab_rx_packet_start),
+		.rpc_fab_rx_data_valid(rpc_fab_rx_data_valid),
+		.rpc_fab_rx_data(rpc_fab_rx_data),
+		.rpc_fab_rx_packet_done(rpc_fab_rx_packet_done)
+	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verification helpers
