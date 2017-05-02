@@ -43,7 +43,7 @@ module TxRouterLinkTester #(
 	input wire						rpc_fab_tx_packet_start,
 	input wire						rpc_fab_tx_wr_en,
 	input wire[IN_DATA_WIDTH-1:0]	rpc_fab_tx_wr_data,
-	
+
 	input wire						rpc_fab_rx_ready
 	);
 
@@ -68,6 +68,9 @@ module TxRouterLinkTester #(
 
 	//Don't start sending a packet if we don't have enough space for it
 	assume( implies(rpc_fab_tx_packet_start, rpc_fab_tx_fifo_size > 3) );
+
+	//Go simple to start: don't start if the fifo isn't empty
+	assume( implies(rpc_fab_tx_packet_start, rpc_fab_tx_fifo_size == 32));
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// The DUT
@@ -102,48 +105,53 @@ module TxRouterLinkTester #(
 			$display("ERROR: Dont know what to do with data widths %d, %d", IN_DATA_WIDTH, OUT_DATA_WIDTH);
 			$finish;
 		end
-		
+
 	endgenerate
 
-	/*
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Receiver (for sanity checking generated traffic)
 
-	wire					rpc_tx_ready;
-	wire					rpc_fab_rx_en;
-	wire					rpc_fab_rx_busy;
-	wire[15:0]				rpc_fab_rx_src_addr;
-	wire[15:0]				rpc_fab_rx_dst_addr;
-	wire[7:0]				rpc_fab_rx_callnum;
-	wire[2:0]				rpc_fab_rx_type;
-	wire[20:0]				rpc_fab_rx_d0;
-	wire[31:0]				rpc_fab_rx_d1;
-	wire[31:0]				rpc_fab_rx_d2;
+	wire						rpc_tx_en_unused;
+	wire[OUT_DATA_WIDTH-1:0]	rpc_tx_data_unused;
+	wire						rpc_fab_tx_busy_unused;
+	wire						rpc_fab_tx_done_unused;
+
+	wire						rpc_tx_ready;
+	wire						rpc_fab_rx_en;
+	wire						rpc_fab_rx_busy;
+	wire[15:0]					rpc_fab_rx_src_addr;
+	wire[15:0]					rpc_fab_rx_dst_addr;
+	wire[7:0]					rpc_fab_rx_callnum;
+	wire[2:0]					rpc_fab_rx_type;
+	wire[20:0]					rpc_fab_rx_d0;
+	wire[31:0]					rpc_fab_rx_d1;
+	wire[31:0]					rpc_fab_rx_d2;
 
 	RPCv3Transceiver #(
-		.DATA_WIDTH(IN_DATA_WIDTH),
+		.DATA_WIDTH(OUT_DATA_WIDTH),
 		.QUIET_WHEN_IDLE(1),
 		.NODE_ADDR(NODE_ADDR)
 	) sender (
 		.clk(clk),
 
-		.rpc_tx_en(rpc_tx_en),
-		.rpc_tx_data(rpc_tx_data),
+		.rpc_tx_en(rpc_tx_en_unused),
+		.rpc_tx_data(rpc_tx_data_unused),
 		.rpc_tx_ready(rpc_tx_ready),
 
 		.rpc_rx_en(1'b0),
 		.rpc_rx_data({IN_DATA_WIDTH{1'b0}}),
 		.rpc_rx_ready(rpc_tx_ready_unused),
 
-		.rpc_fab_tx_en(rpc_fab_tx_en),
-		.rpc_fab_tx_busy(rpc_fab_tx_busy),
-		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
-		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
-		.rpc_fab_tx_type(rpc_fab_tx_type),
-		.rpc_fab_tx_d0(rpc_fab_tx_d0),
-		.rpc_fab_tx_d1(rpc_fab_tx_d1),
-		.rpc_fab_tx_d2(rpc_fab_tx_d2),
-		.rpc_fab_tx_done(rpc_fab_tx_done),
+		.rpc_fab_tx_en(1'b0),
+		.rpc_fab_tx_busy(rpc_fab_tx_busy_unused),
+		.rpc_fab_tx_dst_addr(16'h0),
+		.rpc_fab_tx_src_addr(16'h0),
+		.rpc_fab_tx_callnum(8'h0),
+		.rpc_fab_tx_type(3'h0),
+		.rpc_fab_tx_d0(21'h0),
+		.rpc_fab_tx_d1(32'h0),
+		.rpc_fab_tx_d2(32'h0),
+		.rpc_fab_tx_done(rpc_fab_tx_done_unused),
 
 		.rpc_fab_rx_ready(rpc_fab_rx_ready),
 		.rpc_fab_rx_busy(rpc_fab_rx_busy),
@@ -156,7 +164,16 @@ module TxRouterLinkTester #(
 		.rpc_fab_rx_d1(rpc_fab_rx_d1),
 		.rpc_fab_rx_d2(rpc_fab_rx_d2)
 	);
-	*/
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// State machine for processing outbound data
+
+	//The message we're sending
+	reg[127:0] tx_message = 0;
+
+	always @(posedge clk) begin
+	end
+
 
 	/*
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
