@@ -37,7 +37,13 @@
 	The goal of this test is to prove that an RPCv3RouterTransmitter_buffering properly encodes RPC data
  */
 module RPCv3RouterTransmitterFormal_buffering_in32(
-	input wire					clk,
+	input wire			clk,
+
+	input wire			rpc_fab_tx_packet_start,
+	input wire			rpc_fab_tx_wr_en,
+	input wire[31:0]	rpc_fab_tx_wr_data,
+
+	input wire			rpc_fab_rx_ready
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -49,22 +55,17 @@ module RPCv3RouterTransmitterFormal_buffering_in32(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// The individual test blocks (one for each data width)
 
-	/*
-	RxRouterLinkTester #(
+	TxRouterLinkTester #(
 		.NODE_ADDR(NODE_ADDR),
 		.IN_DATA_WIDTH(32),
 		.OUT_DATA_WIDTH(32)
-	) tester_16 (
+	) tester_32 (
 		.clk(clk),
-		.rpc_fab_tx_en(rpc_fab_tx_en),
-		.rpc_fab_tx_dst_addr(rpc_fab_tx_dst_addr),
-		.rpc_fab_tx_callnum(rpc_fab_tx_callnum),
-		.rpc_fab_tx_type(rpc_fab_tx_type),
-		.rpc_fab_tx_d0(rpc_fab_tx_d0),
-		.rpc_fab_tx_d1(rpc_fab_tx_d1),
-		.rpc_fab_tx_d2(rpc_fab_tx_d2),
+
+		.rpc_fab_tx_packet_start(rpc_fab_tx_packet_start),
+		.rpc_fab_tx_wr_en(rpc_fab_tx_wr_en),
+		.rpc_fab_tx_wr_data(rpc_fab_tx_wr_data),
 		.rpc_fab_rx_ready(rpc_fab_rx_ready)
 	);
-	*/
 
 endmodule

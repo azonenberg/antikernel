@@ -46,6 +46,8 @@ RPCv3RouterTransmitterFormal_buffering_in32:
     sources:
         - RPCv3RouterTransmitter_buffering_in32.v
         - TxRouterLinkTester.v
+        - ../../../antikernel-ipcores/dataflow/SingleClockShiftRegisterFifo.v
+        - ../../../antikernel-ipcores/device_abstraction/ShiftRegisterMacro.v
         #- ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterTransmitter.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3RouterTransmitter_buffering.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v

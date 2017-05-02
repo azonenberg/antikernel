@@ -35,8 +35,8 @@
 	@brief Formal verification test harness for RPCv3RouterTransmitter_*
  */
 module TxRouterLinkTester #(
-	parameter IN_DATA_WIDTH = 64,
-	parameter OUT_DATA_WIDTH = 128
+	parameter IN_DATA_WIDTH = 32,
+	parameter OUT_DATA_WIDTH = 32
 )(
 	input wire						clk,
 
@@ -67,10 +67,10 @@ module TxRouterLinkTester #(
 	// Constraints on inputs
 
 	//Don't start sending a packet if we don't have enough space for it
-	assume( implies(rpc_fab_tx_packet_start, rpc_fab_tx_fifo_size > 3) );
+	assume property( implies(rpc_fab_tx_packet_start, rpc_fab_tx_fifo_size > 3) );
 
 	//Go simple to start: don't start if the fifo isn't empty
-	assume( implies(rpc_fab_tx_packet_start, rpc_fab_tx_fifo_size == 32));
+	assume property( implies(rpc_fab_tx_packet_start, rpc_fab_tx_fifo_size == 32));
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// The DUT
@@ -79,7 +79,7 @@ module TxRouterLinkTester #(
 	wire[IN_DATA_WIDTH-1:0]	rpc_tx_data;
 	wire					rpc_tx_ready;
 
-	wire[4:0]				rpc_fab_tx_fifo_size;
+	wire[5:0]				rpc_fab_tx_fifo_size;
 	wire					rpc_fab_tx_packet_done;
 
 	generate
@@ -102,8 +102,10 @@ module TxRouterLinkTester #(
 		end
 
 		else begin
-			$display("ERROR: Dont know what to do with data widths %d, %d", IN_DATA_WIDTH, OUT_DATA_WIDTH);
-			$finish;
+			initial begin
+				$display("ERROR: Dont know what to do with data widths %d, %d", IN_DATA_WIDTH, OUT_DATA_WIDTH);
+				$finish;
+			end
 		end
 
 	endgenerate
@@ -136,11 +138,11 @@ module TxRouterLinkTester #(
 
 		.rpc_tx_en(rpc_tx_en_unused),
 		.rpc_tx_data(rpc_tx_data_unused),
-		.rpc_tx_ready(rpc_tx_ready),
+		.rpc_tx_ready(1'b0),
 
 		.rpc_rx_en(1'b0),
 		.rpc_rx_data({IN_DATA_WIDTH{1'b0}}),
-		.rpc_rx_ready(rpc_tx_ready_unused),
+		.rpc_rx_ready(rpc_tx_ready),
 
 		.rpc_fab_tx_en(1'b0),
 		.rpc_fab_tx_busy(rpc_fab_tx_busy_unused),
