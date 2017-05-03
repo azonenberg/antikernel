@@ -64,15 +64,6 @@ module TxRouterLinkTester #(
 	`include "../../../antikernel-ipcores/proof_helpers/implies.vh"
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Constraints on inputs
-
-	//Don't start sending a packet if we don't have enough space for it
-	assume property( implies(rpc_fab_tx_packet_start, rpc_fab_tx_fifo_size > 3) );
-
-	//Go simple to start: don't start if the fifo isn't empty
-	assume property( implies(rpc_fab_tx_packet_start, rpc_fab_tx_fifo_size == 32));
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// The DUT
 
 	wire					rpc_tx_en;
@@ -168,14 +159,81 @@ module TxRouterLinkTester #(
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// State machine for processing outbound data
+	// Keep track of the message being sent
 
 	//The message we're sending
 	reg[127:0] tx_message = 0;
 
 	always @(posedge clk) begin
+		if(rpc_fab_tx_wr_en)
+			tx_message	<= {tx_message[128 - IN_DATA_WIDTH +: IN_DATA_WIDTH], rpc_fab_tx_wr_data};
 	end
 
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Keep track of overall transceiver state
+
+	reg			busy						= 0;
+	reg[7:0]	bits_valid					= 0;
+	reg			rpc_fab_tx_packet_start_ff	= 0;
+	reg			rpc_fab_tx_packet_start_ff2	= 0;
+
+	always @(posedge clk) begin
+
+		//Start a new packet
+		if(rpc_fab_tx_packet_start) begin
+			busy		<= 1;
+			bits_valid	<= IN_DATA_WIDTH;
+		end
+
+		//Finish the packet
+		if(rpc_fab_rx_en) begin
+			busy		<= 0;
+			bits_valid	<= 0;
+		end
+
+		//Keep track of iu
+		rpc_fab_tx_packet_start_ff	<= rpc_fab_tx_packet_start;
+		rpc_fab_tx_packet_start_ff2	<= rpc_fab_tx_packet_start_ff;
+
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Constraints on inputs
+
+	//We should never have more than 128 valid bits in a message as that's the whole packet size
+	assert property(bits_valid <= 128);
+
+	//Don't start sending a packet if we don't have enough space for it
+	assume property( implies(rpc_fab_tx_packet_start, rpc_fab_tx_fifo_size > 3) );
+
+	//Simplify initial testing: don't start if the fifo isn't empty
+	assume property( implies(rpc_fab_tx_packet_start, rpc_fab_tx_fifo_size == 32));
+
+	//Always assert wr_en at start of a packet
+	assume property( implies(rpc_fab_tx_packet_start, rpc_fab_tx_wr_en) );
+
+	//Continue to assert wr_en until we have the entire message
+	assume property( implies( (bits_valid < 128) && busy, rpc_fab_tx_wr_en ) );
+
+	//Do not write if we have the whole message, unless we're starting a new one
+	assume property( implies(rpc_fab_tx_wr_en, !(busy && bits_valid == 128) ) );
+
+	//Only write if we're busy or starting a message
+	assume property( implies(rpc_fab_tx_wr_en, busy || rpc_fab_tx_packet_start) );
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Sanity checks
+
+	//FIFO should never have more than 32 words of space in it, since that's the total capacity
+	assert property( rpc_fab_tx_fifo_size <= 32 );
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Verify the outbound message
+
+	//If we're busy and the receiver is ready, we should send.
+	//Don't send one cycle after we started the packet, though! There's latency in the transmitter
+	wire	should_be_sending	= busy && rpc_tx_ready && !rpc_fab_tx_packet_start_ff && !rpc_fab_tx_packet_start_ff2;
+	assert property( rpc_tx_en == should_be_sending);
 
 	/*
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
