@@ -12,4 +12,4 @@
 	url = git@github.com:azonenberg/antikernel-ipcores
 [submodule "bsp"]
 	path = bsp
-	url = git@github.com:/azonenberg/antikernel-bsps
+	url = https://github.com/azonenberg/antikernel-bsps
