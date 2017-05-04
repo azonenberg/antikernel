@@ -177,6 +177,8 @@ module TxRouterLinkTester #(
 	reg			rpc_fab_tx_packet_start_ff	= 0;
 	reg			rpc_fab_tx_packet_start_ff2	= 0;
 
+	reg[7:0]	tx_bits_valid				= 0;
+
 	always @(posedge clk) begin
 
 		//Start a new packet
@@ -190,6 +192,14 @@ module TxRouterLinkTester #(
 			busy		<= 0;
 			bits_valid	<= 0;
 		end
+
+		//Keep track of how many bits have been sent
+		if(rpc_tx_en)
+			tx_bits_valid	<= IN_DATA_WIDTH;
+		else if(busy && (tx_bits_valid > 0) && (tx_bits_valid < 128) )
+			tx_bits_valid	<= tx_bits_valid + IN_DATA_WIDTH;
+		if(rpc_fab_rx_en)
+			tx_bits_valid	<= 0;
 
 		//Keep track of iu
 		rpc_fab_tx_packet_start_ff	<= rpc_fab_tx_packet_start;
@@ -232,7 +242,7 @@ module TxRouterLinkTester #(
 
 	//If we're busy and the receiver is ready, we should send.
 	//Don't send one cycle after we started the packet, though! There's latency in the transmitter
-	wire	should_be_sending	= busy && rpc_tx_ready && !rpc_fab_tx_packet_start_ff && !rpc_fab_tx_packet_start_ff2;
+	wire	should_be_sending	= busy && rpc_tx_ready && !rpc_fab_tx_packet_start_ff && (tx_bits_valid == 0);
 	assert property( rpc_tx_en == should_be_sending);
 
 	/*
