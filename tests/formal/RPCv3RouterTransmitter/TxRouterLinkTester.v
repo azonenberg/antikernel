@@ -50,18 +50,26 @@ module TxRouterLinkTester #(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Proof configuration
 
+	`include "../../../antikernel-ipcores/proof_helpers/implies.vh"
+	`include "../../../antikernel-ipcores/synth_helpers/clog2.vh"
+
 	//Source address of all messages
 	parameter NODE_ADDR = 16'h4141;
 
 	//Number of clocks it takes to send/receive a message
-	localparam MESSAGE_CYCLES = 128 / IN_DATA_WIDTH;
+	localparam MESSAGE_CYCLES	= 128 / IN_DATA_WIDTH;
+	localparam MESSAGE_MAX		= MESSAGE_CYCLES - 1'h1;
+	localparam PHASE_BITS_RAW	= clog2(MESSAGE_CYCLES);
+	localparam PHASE_BITS		= (PHASE_BITS_RAW == 0) ? 1 : PHASE_BITS;
+
+	//Number of 16-bit words in the input bus
+	localparam IN_MESSAGE_WORDS = IN_DATA_WIDTH / 16;
+	localparam IN_WORD_SHIFT	= clog2(IN_MESSAGE_WORDS);
 
 	//Width conversion, if any
 	localparam EXPANDING = (IN_DATA_WIDTH < OUT_DATA_WIDTH);
 	localparam COLLAPSING = (IN_DATA_WIDTH > OUT_DATA_WIDTH);
 	localparam BUFFERING = (IN_DATA_WIDTH == OUT_DATA_WIDTH);
-
-	`include "../../../antikernel-ipcores/proof_helpers/implies.vh"
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// The DUT
@@ -72,6 +80,8 @@ module TxRouterLinkTester #(
 
 	wire[5:0]				rpc_fab_tx_fifo_size;
 	wire					rpc_fab_tx_packet_done;
+
+	wire					fifo_rdata_valid;
 
 	generate
 
@@ -88,7 +98,9 @@ module TxRouterLinkTester #(
 				.rpc_fab_tx_packet_start(rpc_fab_tx_packet_start),
 				.rpc_fab_tx_wr_en(rpc_fab_tx_wr_en),
 				.rpc_fab_tx_wr_data(rpc_fab_tx_wr_data),
-				.rpc_fab_tx_packet_done(rpc_fab_tx_packet_done)
+				.rpc_fab_tx_packet_done(rpc_fab_tx_packet_done),
+
+				.fifo_rdata_valid(fifo_rdata_valid)
 			);
 		end
 
@@ -131,8 +143,8 @@ module TxRouterLinkTester #(
 		.rpc_tx_data(rpc_tx_data_unused),
 		.rpc_tx_ready(1'b0),
 
-		.rpc_rx_en(1'b0),
-		.rpc_rx_data({IN_DATA_WIDTH{1'b0}}),
+		.rpc_rx_en(rpc_tx_en),
+		.rpc_rx_data(rpc_tx_data),
 		.rpc_rx_ready(rpc_tx_ready),
 
 		.rpc_fab_tx_en(1'b0),
@@ -159,16 +171,90 @@ module TxRouterLinkTester #(
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Keep track of the message being sent
+	// FIFO of messages in line waiting to be sent
 
 	//The message we're sending
-	reg[127:0] tx_message = 0;
+	reg[127:0]			tx_message 			= 0;
+	reg[PHASE_BITS-1:0]	txbuf_phase			= 0;
+	reg					write_in_progress	= 0;
+
+	wire[127:0]	tx_message_next		= {tx_message[128 - IN_DATA_WIDTH +: IN_DATA_WIDTH], rpc_fab_tx_wr_data};
 
 	always @(posedge clk) begin
-		if(rpc_fab_tx_wr_en)
-			tx_message	<= {tx_message[128 - IN_DATA_WIDTH +: IN_DATA_WIDTH], rpc_fab_tx_wr_data};
+
+		if(rpc_fab_tx_wr_en) begin
+
+			//Beginning of the message
+			if(rpc_fab_tx_packet_start) begin
+				txbuf_phase			<= 1;
+				write_in_progress	<= 1;
+			end
+
+			//Move through the message
+			else
+				txbuf_phase			<= txbuf_phase + 1'h1;
+
+			//Either way, shift the input
+			tx_message				<= tx_message_next;
+		end
+
 	end
 
+	//Write to the FIFO when we've assembled a full message
+	reg		txbuf_wr_en;
+	always @(*) begin
+		if(IN_DATA_WIDTH == 128)
+			txbuf_wr_en		<= rpc_fab_tx_wr_en;
+		else
+			txbuf_wr_en		<= rpc_fab_tx_wr_en && (txbuf_phase == MESSAGE_MAX)
+	end
+
+	//The set of messages in the queue
+	wire[5:0]			vfifo_message_count;
+	SingleClockShiftRegisterFifo #(
+		.WIDTH(128),
+		.DEPTH(32),
+		.OUT_REG(1)
+	) pending_messages (
+		.clk(clk),
+		.wr(txbuf_wr_en),
+		.din(tx_message_next),
+
+		.rd(),
+		.dout(),
+		.overflow(),
+		.underflow(),
+		.empty(),
+		.full(),
+		.rsize(vfifo_message_count),
+		.wsize(),
+
+		.reset(1'b0)		//never reset the fifo
+	);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Make sure the FIFO sizes line up
+
+	//Number of words of free space
+	wire[10:0]		txvr_words_free		= { rpc_fab_tx_fifo_size, {IN_WORD_SHIFT{1'h0}} };
+
+	//Don't send anything if we lack a full message worth of FIFO space
+	//TODO: allow partial writes when the fifo is full?
+	assume property( implies(rpc_fab_tx_wr_en, (txvr_words_free >= 8)) );
+
+	//Number of valid entries / words in the transceiver FIFO
+	wire[5:0]	txvr_lines_used		= (32 - rpc_fab_tx_fifo_size + fifo_rdata_valid);
+	wire[10:0]	txvr_words_used		= { txvr_lines_used, {IN_WORD_SHIFT{1'h0}} };
+
+	//Number of valid entries / words in the verification FIFO
+	wire[5:0]	vfifo_lines_used	= vfifo_message_count;
+	wire[10:0]	vfifo_words_used	= {vfifo_lines_used, 3'h0};
+
+	//Verify that we always have the same number of messages in each FIFO.
+	//Actual size can vary due to width variations, we only care about *packets*
+	//assert property(txvr_words_used[10:3] == vfifo_words_used[10:3]);
+
+	/*
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Keep track of overall transceiver state
 
@@ -177,29 +263,30 @@ module TxRouterLinkTester #(
 	reg			rpc_fab_tx_packet_start_ff	= 0;
 	reg			rpc_fab_tx_packet_start_ff2	= 0;
 
-	reg[7:0]	tx_bits_valid				= 0;
+	reg[3:0]	tx_words_valid				= 0;
+
+	wire		full_message_in_txbuf	= (txbuf_words_valid == MESSAGE_CYCLES);
+	wire		message_in_txbuf		= (txbuf_words_valid != 0);
+	wire		full_message_sent		= (tx_words_valid == MESSAGE_CYCLES);
+	wire		message_being_sent		= (tx_words_valid != 0) && (tx_words_valid != MESSAGE_CYCLES);
 
 	always @(posedge clk) begin
 
 		//Start a new packet
-		if(rpc_fab_tx_packet_start) begin
+		if(rpc_fab_tx_packet_start)
 			busy		<= 1;
-			bits_valid	<= IN_DATA_WIDTH;
-		end
 
 		//Finish the packet
-		if(rpc_fab_rx_en) begin
+		if(rpc_fab_rx_en)
 			busy		<= 0;
-			bits_valid	<= 0;
-		end
 
 		//Keep track of how many bits have been sent
 		if(rpc_tx_en)
-			tx_bits_valid	<= IN_DATA_WIDTH;
-		else if(busy && (tx_bits_valid > 0) && (tx_bits_valid < 128) )
-			tx_bits_valid	<= tx_bits_valid + IN_DATA_WIDTH;
-		if(rpc_fab_rx_en)
-			tx_bits_valid	<= 0;
+			tx_words_valid	<= 1;
+		else if(busy && message_being_sent )
+			tx_words_valid	<= tx_words_valid + 1'h1;
+		if(rpc_fab_tx_packet_done)
+			tx_words_valid	<= 0;
 
 		//Keep track of iu
 		rpc_fab_tx_packet_start_ff	<= rpc_fab_tx_packet_start;
@@ -211,260 +298,63 @@ module TxRouterLinkTester #(
 	// Constraints on inputs
 
 	//We should never have more than 128 valid bits in a message as that's the whole packet size
-	assert property(bits_valid <= 128);
+	assert property(txbuf_words_valid <= MESSAGE_CYCLES);
+	assert property(tx_words_valid <= MESSAGE_CYCLES);
 
 	//Don't start sending a packet if we don't have enough space for it
 	assume property( implies(rpc_fab_tx_packet_start, rpc_fab_tx_fifo_size > 3) );
 
-	//Simplify initial testing: don't start if the fifo isn't empty
-	assume property( implies(rpc_fab_tx_packet_start, rpc_fab_tx_fifo_size == 32));
+	//Simplify initial testing: don't start if the TX buffer isn't empty
+	assume property( implies(rpc_fab_tx_packet_start, txbuf_words_valid == 0));
 
-	//Always assert wr_en at start of a packet
-	assume property( implies(rpc_fab_tx_packet_start, rpc_fab_tx_wr_en) );
+	//Simplify initial testing: don't start if an RX is in progress
+	assume property( implies(rpc_fab_tx_packet_start, !rpc_fab_rx_en));
 
+	//Simplify initial testing: don't start if we're busy
+	assume property( implies(rpc_fab_tx_packet_start, !busy));
+
+	//Always assert wr_en at start of a packet.
 	//Continue to assert wr_en until we have the entire message
-	assume property( implies( (bits_valid < 128) && busy, rpc_fab_tx_wr_en ) );
+	wire		should_be_writing = rpc_fab_tx_packet_start || ( message_in_txbuf && !full_message_in_txbuf );
+	assume property(should_be_writing == rpc_fab_tx_wr_en );
 
 	//Do not write if we have the whole message, unless we're starting a new one
-	assume property( implies(rpc_fab_tx_wr_en, !(busy && bits_valid == 128) ) );
+	assume property( implies((busy && full_message_in_txbuf), !rpc_fab_tx_wr_en) );
 
 	//Only write if we're busy or starting a message
 	assume property( implies(rpc_fab_tx_wr_en, busy || rpc_fab_tx_packet_start) );
 
+	//Do not write if there's already a full message in the fifo
+	assume property( implies(rpc_fab_tx_packet_start, (tx_words_valid == 0) ) );
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Sanity checks
 
+	//We should always be busy if we have a half-written message
+	assert property( implies( (tx_words_valid != 0) && !full_message_in_txbuf, busy) );
+
 	//FIFO should never have more than 32 words of space in it, since that's the total capacity
 	assert property( rpc_fab_tx_fifo_size <= 32 );
+
+	//FIFO should never have more than N words of space used, since we don't allow pushing until another is popped
+	assert property( rpc_fab_tx_fifo_size >= (32 - MESSAGE_CYCLES) );
+
+	//FIFO should be empty if we are not busy
+	assert property( implies( rpc_fab_tx_fifo_size != 32, busy) );
+	assert property( implies( fifo_rdata_valid, busy) );
+
+	//If we have a message in the transmit buffer, or being sent, we should be busy
+	assert property( implies(message_in_txbuf, busy) );
+	assert property( implies(message_being_sent, busy) );
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Verify the outbound message
 
 	//If we're busy and the receiver is ready, we should send.
-	//Don't send one cycle after we started the packet, though! There's latency in the transmitter
-	wire	should_be_sending	= busy && rpc_tx_ready && !rpc_fab_tx_packet_start_ff && (tx_bits_valid == 0);
+	//Don't send one cycle after we started the packet, though! There's latency in the transmitter.
+	wire	should_be_sending	= busy && rpc_tx_ready && !rpc_fab_tx_packet_start_ff &&
+									message_in_txbuf && !message_being_sent;
 	assert property( rpc_tx_en == should_be_sending);
-
-	/*
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Verification helpers
-
-	//Keep track of whether messages are waiting to be sent
-	reg tx_pending = 0;
-	always @(posedge clk) begin
-
-		//No longer have a message pending once this one gets sent
-		if(rpc_tx_en)
-			tx_pending		<= 0;
-
-		//If we try to send and the link is busy, send it later
-		if(rpc_fab_tx_en && !rpc_tx_ready)
-			tx_pending		<= 1;
-
-		//We can't have a pending message if we're still sending the last one
-		if(word_count != 0)
-			tx_pending		<= 0;
-
-	end
-
-	//True if a message is waiting to be sent, but not being sent this cycle
-	wire tx_pending_unfulfilled = tx_pending && !rpc_tx_en;
-
-	//Indicates a full tx-rx transaction is in progress
-	reg transaction_active		= 0;
-	always @(posedge clk) begin
-
-		if(rpc_fab_rx_packet_done )
-			transaction_active	<= 0;
-
-		if(rpc_tx_en)
-			transaction_active	<= 1;
-
-	end
-
-	//Constrain the initial state: if we have a pending transmit, a transaction must be active
-	assume property(!tx_pending || transaction_active);
-
-	//Counter of cycles since we actually began the transmit (position in the packet)
-	reg[3:0]	word_count = 0;
-	always @(posedge clk) begin
-		if(rpc_tx_en)
-			word_count	<= 1;
-		if(word_count)
-			word_count	<= word_count + 1'h1;
-
-		if(rpc_fab_tx_done)
-			word_count	<= 0;
-	end
-
-	//Word_count value where we are expected to complete sending the packet
-	reg[3:0]	expected_finish_cycle;
-	always @(*) begin
-		expected_finish_cycle				<= 0;
-		case(IN_DATA_WIDTH)
-			64:		expected_finish_cycle	<= 1;
-			32:		expected_finish_cycle	<= 3;
-			16:		expected_finish_cycle	<= 7;
-		endcase
-	end
-
-	//We should be done when word_count is equal to expected_finish_cycle.
-	reg			tx_done_expected;
-	always @(*) begin
-		tx_done_expected		<=	(expected_finish_cycle == word_count);
-	end
-
-	//Keep track of if a transmit just started or finished
-	reg		tx_en_ff	= 0;
-	reg		tx_done_ff	= 0;
-	always @(posedge clk) begin
-		tx_en_ff	<= rpc_tx_en;
-		tx_done_ff	<= rpc_fab_tx_done;
-	end
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Save transmit data when we begin sending
-
-	reg[15:0]	tx_dst_addr_saved	= 0;
-	reg[7:0]	tx_callnum_saved	= 0;
-	reg[2:0]	tx_type_saved		= 0;
-	reg[20:0]	tx_d0_saved			= 0;
-	reg[31:0]	tx_d1_saved			= 0;
-	reg[31:0]	tx_d2_saved			= 0;
-
-	always @(posedge clk) begin
-		if(rpc_tx_en) begin
-			tx_dst_addr_saved	<= rpc_fab_tx_dst_addr;
-			tx_callnum_saved	<= rpc_fab_tx_callnum;
-			tx_type_saved		<= rpc_fab_tx_type;
-			tx_d0_saved			<= rpc_fab_tx_d0;
-			tx_d1_saved			<= rpc_fab_tx_d1;
-			tx_d2_saved			<= rpc_fab_tx_d2;
-		end
-	end
-
-	//Verification helper: Don't allow send when the link is busy
-	//We already verified correct flow control for this elsewhere, no need to re-test
-	//and it makes our verification nasty if we have two messages in the pipe at once
-	assume property(! (rpc_fab_tx_en && rpc_fab_rx_data_valid) );
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Preconditions
-
-	//External test logic should not block receiving for too many cycles
-	reg[3:0] rx_timeout = 0;
-	always @(posedge clk) begin
-
-		//Keep counting up for as long as we're busy, reset when available
-		if(rpc_fab_rx_ready)
-			rx_timeout <= 0;
-		if(!rpc_fab_rx_ready)
-			rx_timeout <= rx_timeout + 1;
-
-		assume(rx_timeout <= 10);
-	end
-
-	always @(posedge clk) begin
-
-		if(transaction_active) begin
-
-			//Result of changing inputs when sending is undefined. Don't do it.
-			assume (rpc_fab_tx_dst_addr	== tx_dst_addr_saved);
-			assume (rpc_fab_tx_callnum	== tx_callnum_saved);
-			assume (rpc_fab_tx_type		== tx_type_saved);
-			assume (rpc_fab_tx_d0		== tx_d0_saved);
-			assume (rpc_fab_tx_d1		== tx_d1_saved);
-			assume (rpc_fab_tx_d2		== tx_d2_saved);
-		end
-
-	end
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Verified properties: receive datapath
-
-	//Can't use x_saved b/c they haven't been set yet
-	wire[127:0] expected_message =
-	{
-		rpc_fab_tx_dst_addr,
-		NODE_ADDR,
-		rpc_fab_tx_callnum,
-		rpc_fab_tx_type,
-		rpc_fab_tx_d0,
-		rpc_fab_tx_d1,
-		rpc_fab_tx_d2
-	};
-
-	//High OUT_DATA_WIDTH bits should be the next block of our message
-	reg[127:0] message_shreg = 0;
-
-	wire[OUT_DATA_WIDTH-1:0] expected_word = message_shreg[127: (128 - OUT_DATA_WIDTH)];
-
-	//When we hit this count value, we should be writing the last message word
-	wire expected_done = ( (out_count + 1) * OUT_DATA_WIDTH == 128 ) && rpc_fab_rx_data_valid;
-
-	reg[3:0] out_count = 0;
-	always @(posedge clk) begin
-
-		//At the end, we should have seen a full 128 bits.
-		//Note that rx_packet_done and rx_data_valid are asserted concurrently on the last message word
-		assert(rpc_fab_rx_packet_done == expected_done);
-
-		//Each time we assert rpc_fab_rx_data_valid we should get another OUT_DATA_WIDTH bits of the message
-		if(rpc_fab_rx_data_valid) begin
-			assert(rpc_fab_rx_data == expected_word);
-			message_shreg	<= {message_shreg[128 - OUT_DATA_WIDTH : 0], {OUT_DATA_WIDTH{1'b0}}};
-		end
-
-		//Keep track of how many output words we've seen so far
-		//We have to check for packet_start after data_valid since we can start and stop packets simultaneously
-		//if two packets are sent back to back.
-		//Same thing applies to writing message_shreg after we do the shift
-		if(rpc_fab_rx_data_valid)
-			out_count		<= out_count + 1'h1;
-		if(rpc_fab_rx_packet_start) begin
-			out_count		<= 0;
-			message_shreg	<= expected_message;
-		end
-
-		//Clear state when the message finishes
-		if(rpc_fab_rx_packet_done)
-			out_count		<= 0;
-
-	end
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Verified properties: timing and sync
-
-	//Receiver should start the packet as soon as the transmit begins
-	assert property(rpc_fab_rx_packet_start == rpc_tx_en);
-
-	generate
-
-		//If expanding, outbound packet is shorter than inbound.
-		//Receiver should be done one cycle after transmit finishes.
-		if(EXPANDING)
-			assert property(rpc_fab_rx_packet_done == tx_done_ff);
-
-		//If collapsing, outbound packet is longer - we need more time
-		else if(COLLAPSING) begin
-
-			//Add a delay to the start flag for determining when the output begins
-			reg rpc_fab_rx_packet_start_ff	= 0;
-			reg rpc_fab_rx_packet_start_ff2	= 0;
-			always @(posedge clk) begin
-				rpc_fab_rx_packet_start_ff	<= rpc_fab_rx_packet_start;
-				rpc_fab_rx_packet_start_ff2	<= rpc_fab_rx_packet_start_ff;
-			end
-
-			//Packet should be output starting two clocks later than the send began
-			assert property(implies(rpc_fab_rx_packet_start_ff2, rpc_fab_rx_data_valid));
-
-			//Packet should be output constantly until the end, with no delays
-			assert property(implies( (out_count != 0), rpc_fab_rx_data_valid) );
-
-		end
-
-	endgenerate
 	*/
 
 endmodule
