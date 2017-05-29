@@ -2,7 +2,7 @@
 #                                                                                                                      #
 # ANTIKERNEL v0.1                                                                                                      #
 #                                                                                                                      #
-# Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          #
+# Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          #
 # All rights reserved.                                                                                                 #
 #                                                                                                                      #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     #
@@ -27,49 +27,20 @@
 #                                                                                                                      #
 ########################################################################################################################
 
-GreenpakTimingTestBitstream:
+GreenpakTimingTest:
+    toolchain:      c++/generic
+    type:           exe
 
-    toolchain:      verilog/ise
-    type:           bitstream
-
-    # use default configs
-
-    # Specify target BSP rather than list of triplets
-    boards:
-        - ../../../bsp/starshipraider-host-x1.yml
-
-    # Signals that we need broken out at the top level (in addition to anything that peripheral IP requires)
-    pins:
-        clk: 1
-        led: 4
-        pmod_dq: 8
-
-    # Pull in NoC address map
     constants:
-        ../../../antikernel-ipcores/debug/JtagDebugBridge_addresses.yml:
-            - verilog/localparam
         ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver_types.yml:
-            - verilog/localparam
+            - c/enum
+
+    sources:
+        - main.cpp
 
     flags:
         - global
-        - optimize/hierarchy/synth_only
-        - output/hierarchy/rebuild
-
-    # All source code for now, no automatic generation
-    sources:
-        - GreenpakTimingTestBitstream.v
-        - ../../../antikernel-ipcores/clock/crossing/HandshakeSynchronizer.v
-        - ../../../antikernel-ipcores/clock/crossing/ThreeStageSynchronizer.v
-        - ../../../antikernel-ipcores/clock/pll/ReconfigurablePLL.v
-        - ../../../antikernel-ipcores/dataflow/CrossClockPacketFifo.v
-        - ../../../antikernel-ipcores/debug/JtagDebugBridge.v
-        - ../../../antikernel-ipcores/debug/JtagUserIdentifier.v
-        - ../../../antikernel-ipcores/device_abstraction/ClockBuffer.v
-        - ../../../antikernel-ipcores/device_abstraction/IODelayCalibration.v
-        - ../../../antikernel-ipcores/device_abstraction/JtagTAP.v
-        - ../../../antikernel-ipcores/math/CRC8_ATM.v
-        - ../../../antikernel-ipcores/math/CRC32_Ethernet_x32.v
-        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3EchoNode.v
-        - ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver.v
-        - ../../../antikernel-ipcores/processor/zynq/XilinxZynq7CPU.v
+        - library/target/jtaghal
+        - library/target/log
+        - library/target/nocbridge
+        - library/target/xptools
