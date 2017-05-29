@@ -1,4 +1,4 @@
-update=Sat 28 Nov 2015 11:04:35 PM PST
+update=Fri 26 May 2017 11:48:40 AM PDT
 version=1
 last_client=kicad
 [pcbnew]
@@ -37,7 +37,7 @@ SpiceUseNetNumbers=0
 LabSize=60
 [eeschema]
 version=1
-LibDir=/nfs4/home/azonenberg/code/azonenberg-devboards/trunk/libs;/nfs4/home/azonenberg/code/3rdparty/kicad-library/library
+LibDir=/nfs4/home/azonenberg/code/3rdparty/kicad-library/library;/nfs4/home/azonenberg/code/kicad-libraries/schematic
 [eeschema/libraries]
 LibName1=analog-azonenberg
 LibName2=cmos
