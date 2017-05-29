@@ -43,6 +43,11 @@ JtagBridgeTestBitstream:
         clk: 1
         led: 4
 
+    # Pull in NoC address map
+    constants:
+        ../../../antikernel-ipcores/debug/JtagDebugBridge_addresses.yml:
+            - verilog/localparam
+
     # All source code for now, no automatic generation
     sources:
         - JtagBridgeTestBitstream.v

@@ -36,13 +36,18 @@ GreenpakTimingTestBitstream:
 
     # Specify target BSP rather than list of triplets
     boards:
-        - ../../../bsp/zybo.yml
+        - ../../../bsp/starshipraider-host-x1.yml
 
     # Signals that we need broken out at the top level (in addition to anything that peripheral IP requires)
     pins:
         clk: 1
         led: 4
-        pmod_e: 8
+        pmod_dq: 8
+
+    # Pull in NoC address map
+    constants:
+        ../../../antikernel-ipcores/debug/JtagDebugBridge_addresses.yml:
+            - verilog/localparam
 
     # All source code for now, no automatic generation
     sources:

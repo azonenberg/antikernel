@@ -34,9 +34,11 @@ PRBSTestBitstream:
 
     # use default configs
 
-    # Pull in RPC message type fields
+    # Pull in RPC message type fields and NoC address map
     constants:
         ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver_types.yml:
+            - verilog/localparam
+        ../../../antikernel-ipcores/debug/JtagDebugBridge_addresses.yml:
             - verilog/localparam
 
     # Specify target BSP rather than list of triplets

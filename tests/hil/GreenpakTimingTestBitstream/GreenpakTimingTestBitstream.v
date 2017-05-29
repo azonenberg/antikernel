@@ -30,7 +30,7 @@
 module GreenpakTimingTestBitstream(
 	input wire clk,
     output reg[3:0] led,
-    inout wire[7:0] pmod_e
+    inout wire[7:0] pmod_dq
     );
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -119,33 +119,32 @@ module GreenpakTimingTestBitstream(
 	/*
 		PIN MAPPING
 
-		pmod_e[0] = DQ1 = P3
-		pmod_e[1] = DQ3 = P5
-		pmod_e[2] = DQ4 = P12
-		pmod_e[3] = DQ6 = P14
-		pmod_e[4] = DQ0 = P2 (input only!!)
-		pmod_e[5] = DQ2 = P4
-		pmod_e[6] = DQ5 = P13
-		pmod_e[7] = DQ7 = P15
+		pmod_dq[0] = DQ1 = P3
+		pmod_dq[1] = DQ3 = P5
+		pmod_dq[2] = DQ4 = P12
+		pmod_dq[3] = DQ6 = P14
+		pmod_dq[4] = DQ0 = P2 (input only!!)
+		pmod_dq[5] = DQ2 = P4
+		pmod_dq[6] = DQ5 = P13
+		pmod_dq[7] = DQ7 = P15
 	 */
 
 	reg test_out = 0;
-    assign pmod_e[0]	= test_out;	//Drive P3
-    assign pmod_e[1]	= 1'bz;		//Float P5
+    assign pmod_dq[0]	= test_out;	//Drive P3
+    assign pmod_dq[1]	= 1'bz;		//Float P5
 
     //Unused signals
-	assign pmod_e[2]	= 1'b0;		//P12
-	assign pmod_e[3]	= 1'b0;		//P14
-	assign pmod_e[4]	= 1'b0;		//P2
-	assign pmod_e[5]	= 1'b0;		//P4
-	assign pmod_e[6]	= 1'b0;		//P13
-	assign pmod_e[7]	= 1'b0;		//P15
+	assign pmod_dq[2]	= 1'b0;		//P12
+	assign pmod_dq[3]	= 1'b0;		//P14
+	assign pmod_dq[4]	= 1'b0;		//P2
+	assign pmod_dq[5]	= 1'b0;		//P4
+	assign pmod_dq[6]	= 1'b0;		//P13
+	assign pmod_dq[7]	= 1'b0;		//P15
 
 	/*
-
 	//Verify we get correct loopback
 	always @(posedge clk_bufg)
-		led <= {3'b000, pmod_e[1]};
+		led <= {3'b000, pmod_dq[1]};
 
     reg[23:0] count = 0;
 
@@ -190,7 +189,7 @@ module GreenpakTimingTestBitstream(
 
 			3: begin
 				count		<= count + 1'h1;
-				if(pmod_e[1] || (count == 15) ) begin
+				if(pmod_dq[1] || (count == 15) ) begin
 					led		<= count;
 					state	<= 4;
 				end
