@@ -55,6 +55,9 @@ int main(int argc, char* argv[])
 		string server;
 		int port = 0;
 
+		int ndrive_raw = 3;
+		int nsample_raw = 4;
+
 		//Parse command-line arguments
 		for(int i=1; i<argc; i++)
 		{
@@ -66,6 +69,10 @@ int main(int argc, char* argv[])
 
 			if(s == "--port")
 				port = atoi(argv[++i]);
+			else if(s == "--drive")
+				ndrive_raw = atoi(argv[++i]);
+			else if(s == "--sample")
+				nsample_raw = atoi(argv[++i]);
 			else if(s == "--server")
 				server = argv[++i];
 			else if(s == "--tty")
@@ -87,7 +94,7 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 
-		LogNotice("Connecting to nocswitch server...\n");
+		LogVerbose("Connecting to nocswitch server...\n");
 		NOCSwitchInterface iface;
 		iface.Connect(server, port);
 
@@ -98,33 +105,132 @@ int main(int argc, char* argv[])
 			LogError("Couldn't allocate an address\n");
 			return 1;
 		}
-		LogNotice("Got address %04x\n", ouraddr);
+		LogVerbose("Got address %04x\n", ouraddr);
 
 		//Address lookup
 		//printf("Looking up address of RPC pinger\n");
 		//NameServer nameserver(&iface);
 		//uint16_t pingaddr = nameserver.ForwardLookup("rpcping");
 		uint16_t dutaddr = 0x8000;
-		LogNotice("DUT is at %04x\n", dutaddr);
+		LogVerbose("DUT is at %04x\n", dutaddr);
 
-		//Send a hello message
-		RPCMessage msg;
-		msg.from = ouraddr;
-		msg.to = dutaddr;
-		msg.type = RPC_TYPE_CALL;
-		msg.callnum = 0;
-		msg.data[0] = 0;	//TODO: delay setting
-		msg.data[1] = 0;
-		msg.data[2] = 0;
-		iface.SendRPCMessage(msg);
-
-		RPCMessage rxm;
-		if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 5))
+		//Map pin to channel numbers
+		int ndrive = 0;
+		int nsample = 0;
+		switch(ndrive_raw)
 		{
-			LogError("no response\n");
+			case 3:
+				ndrive = 0;
+				break;
+			case 5:
+				ndrive = 1;
+				break;
+			case 4:
+				ndrive = 2;
+				break;
+			default:
+				LogError("Invalid drive pin\n");
+				break;
+		}
+		switch(nsample_raw)
+		{
+			case 3:
+				nsample = 0;
+				break;
+			case 5:
+				nsample = 1;
+				break;
+			case 4:
+				nsample = 2;
+				break;
+			default:
+				LogError("Invalid sample pin\n");
+				break;
+		}
+
+		//Sanity check
+		if(ndrive == nsample)
+		{
+			LogError("Cannot drive and sample same channel number\n");
 			return 1;
 		}
-		LogDebug("Got: %s\n", rxm.Format().c_str());
+
+		//Measure round trip time with each delay
+		float nmin = 10000;
+		float nmax = 0;
+		float nsum = 0;
+		int navg = 25;
+		for(int j = 0; j < navg; j ++)
+		{
+			const float ns_per_sample = 2.5;
+			const float ns_per_delay = ns_per_sample / 32;
+			int edge_tap = 0;
+			int edge_sample = 0;
+			float delay_ns = 0;
+			for(int ntap=0; ntap<32; ntap++)
+			{
+				RPCMessage msg;
+				msg.from = ouraddr;
+				msg.to = dutaddr;
+				msg.type = RPC_TYPE_CALL;
+				msg.callnum = 0;
+				msg.data[0] = ntap;
+				msg.data[1] = (ndrive << 2) | nsample;
+				msg.data[2] = 0;
+				iface.SendRPCMessage(msg);
+
+				RPCMessage rxm;
+				if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 5))
+				{
+					LogError("no response\n");
+					return 1;
+				}
+
+				//Record the position of the 0-to-1 edge
+				int edge_w1 = 0;
+				int edge_w2 = 0;
+				for(int i = 0; i<32; i++)
+				{
+					if( (rxm.data[1] >> i) & 1)
+						edge_w1 = 32 - i;
+
+					if( (rxm.data[2] >> i) & 1 )
+						edge_w2 = 32 - i;
+				}
+
+				//The two words are interleaved, d1 then d2
+				//Find the full edge point
+				int edgepos = edge_w1 * 2;
+				if(edge_w2 > edge_w1)
+					edgepos ++;
+
+				//Apply the correction for the delay tap
+				delay_ns = edge_sample * ns_per_sample;
+				delay_ns += ns_per_delay * ntap;
+
+				if(j == 0)
+					LogDebug("Tap %d: sample %d (%.3f ns)\n", ntap, edgepos, delay_ns);
+
+				if(ntap == 0)
+					edge_sample = edgepos;
+				edge_tap = ntap;
+
+				if(edgepos > edge_sample)
+					break;
+			}
+
+			//Convert sample number to ns
+			LogDebug("Final edge found at tap %d, sample %d, delay = %.3f ns\n",
+				edge_tap, edge_sample, delay_ns);
+
+			if(delay_ns < nmin)
+				nmin = delay_ns;
+			if(delay_ns > nmax)
+				nmax = delay_ns;
+			nsum += delay_ns;
+		}
+
+		LogNotice("rtt min/avg/max = %.3f / %.3f / %.3f ns\n", nmin, nmax, nsum/navg);
 	}
 
 	catch(const JtagException& ex)

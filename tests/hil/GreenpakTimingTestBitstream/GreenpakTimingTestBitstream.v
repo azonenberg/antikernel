@@ -30,6 +30,7 @@
 module GreenpakTimingTestBitstream(
 	input wire clk,
     output reg[3:0] led,
+
     inout wire[7:0] pmod_dq
     );
 
@@ -293,8 +294,12 @@ module GreenpakTimingTestBitstream(
 
     IODelayCalibration delaycal(.refclk(clk_iodelay));
 
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // I/O pin mapping and input delay lines
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // I/O buffers
+
+    wire[2:0]	sample_in;
+    reg			test_out = 0;
+    reg[1:0]	drive_channel		= 0;
 
     /*
 		PIN MAPPING
@@ -309,71 +314,124 @@ module GreenpakTimingTestBitstream(
 		pmod_dq[7] = DQ7 = P15
 	 */
 
-	reg test_out = 0;
-    assign pmod_dq[0]	= test_out;	//Drive P3
-    assign pmod_dq[1]	= 1'bz;		//Float P5
-
-	//DDR input buffer to sample the signal
-	wire[1:0]	test_in_arr;
-	IDDR #(
-		.DDR_CLK_EDGE("SAME_EDGE"),
-		.INIT_Q1(0),
-		.INIT_Q2(0),
-		.SRTYPE("SYNC")
-	) sample_iddr (
-		.Q1(test_in_arr[1]),
-		.Q2(test_in_arr[0]),
-		.C(clk_noc),
-		.CE(1'b1),
-		.D(pmod_dq[1]),
-		.R(1'b0),
-		.S(1'b0)
-	);
-
-    //Unused signals
+    //Unused signals, for now
 	assign pmod_dq[2]	= 1'b0;		//P12
 	assign pmod_dq[3]	= 1'b0;		//P14
 	assign pmod_dq[4]	= 1'b0;		//P2
-	assign pmod_dq[5]	= 1'b0;		//P4
 	assign pmod_dq[6]	= 1'b0;		//P13
 	assign pmod_dq[7]	= 1'b0;		//P15
 
-	//The delay line
+    //P3 on greenpak
+    IOBUF iobuf_dq0(
+		.I(test_out),
+		.T(drive_channel != 0),
+		.O(sample_in[0]),
+		.IO(pmod_dq[0])
+	);
+
+	//P5 on greenpak
+    IOBUF iobuf_dq1(
+		.I(test_out),
+		.T(drive_channel != 1),
+		.O(sample_in[1]),
+		.IO(pmod_dq[1])
+	);
+
+	//P4 on greenpak
+	IOBUF iobuf_dq5(
+		.I(test_out),
+		.T(drive_channel != 2),
+		.O(sample_in[2]),
+		.IO(pmod_dq[5])
+	);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // I/O pin mapping and input delay lines
+
+    //The delay line
 	//Each tap is 1 / (64 * Fref) or 78 ps
 	//Full scale on the delay is 32 taps or 2.5 ns.
-	//This is, conveniently enoguh
-	/*
-	IDELAYE2 #(
-		.CINVCTRL_SEL("FALSE"),
-		.DELAY_SRC("IDATAIN"),
-		.HIGH_PERFORMANCE_MODE("TRUE"),
-		.IDELAY_TYPE("VAR_LOAD"),
-		.IDELAY_VALUE(0),
-		.PIPE_SEL("FALSE"),
-		.REFCLK_FREQUENCY(200),
-		.SIGNAL_PATTERN("DATA")
-	) idelay (
-		.C(clk_noc),
-		.CE(
-	*/
+	//This is, conveniently enough, the exact spacing between DDR phases!
+	reg[4:0]	delay_val = 0;
+	wire[4:0]	delay_reg[3:0];
+	reg			delay_load	= 0;
+
+	wire		test_in_delayed[3:0];
+	wire[1:0]	test_in_arr[3:0];
+	genvar i;
+	generate
+		for(i=0; i<3; i=i+1) begin : delayblock
+
+			//Delay the signal
+			IDELAYE2 #(
+				.CINVCTRL_SEL("FALSE"),
+				.DELAY_SRC("IDATAIN"),
+				.HIGH_PERFORMANCE_MODE("TRUE"),
+				.IDELAY_TYPE("VAR_LOAD"),
+				.IDELAY_VALUE(0),
+				.PIPE_SEL("FALSE"),
+				.REFCLK_FREQUENCY(200),
+				.SIGNAL_PATTERN("DATA")
+			) idelay (
+				.C(clk_noc),
+				.CE(1'b0),
+				.CINVCTRL(1'b0),
+				.CNTVALUEIN(delay_val),
+				.CNTVALUEOUT(delay_reg[i]),
+				.DATAIN(),			//from FPGA fabric, not used
+				.DATAOUT(test_in_delayed[i]),
+				.IDATAIN(sample_in[i]),
+				.INC(1'b1),
+				.LD(delay_load),
+				.LDPIPEEN(1'b0),
+				.REGRST(1'b0)
+			);
+
+			//then de-serialize it
+			IDDR #(
+				.DDR_CLK_EDGE("SAME_EDGE"),
+				.INIT_Q1(0),
+				.INIT_Q2(0),
+				.SRTYPE("SYNC")
+			) ddr1 (
+				.Q1(test_in_arr[i][1]),
+				.Q2(test_in_arr[i][0]),
+				.C(clk_noc),
+				.CE(1'b1),
+				.D(test_in_delayed[i]),
+				.R(1'b0),
+				.S(1'b0)
+			);
+
+		end
+	endgenerate
+
+	//tie off unused channel 4
+	assign test_in_delayed[3] = 0;
+	assign test_in_arr[3] = 2'h0;
+	assign delay_reg[3] = 5'h0;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Main state machine
 
-	localparam STATE_IDLE 		= 0;
-	localparam STATE_TESTING	= 1;
-	localparam STATE_TX_WAIT	= 2;
+	localparam STATE_IDLE 		 	= 0;
+	localparam STATE_TESTING	 	= 1;
+	localparam STATE_TEST_WAIT_0	= 2;
+	localparam STATE_TEST_WAIT_1	= 3;
+	localparam STATE_TX_WAIT	 	= 4;
 
 	reg[3:0] 	state	= STATE_IDLE;
 	reg[7:0] 	count	= 0;
 
-	reg[22:0]	lcount = 0;
-
 	always @(*)
 		led[3]		<= pll_locked;
 
+	reg[1:0]		sample_channel		= 0;
+
     always @(posedge clk_noc) begin
 
+		//Clear single-cycle flags
+		delay_load				<= 0;
 		rpc_fab_tx_en			<= 0;
 
 		//TODO: better flow control?
@@ -389,11 +447,13 @@ module GreenpakTimingTestBitstream(
 
 				//If we get a message, doesn't matter what it is, run a test
 				if(rpc_fab_rx_en) begin
-					test_out			<= 1;
-					count				<= 0;
-					state				<= STATE_TESTING;
-
 					led[2:0]			<= 3'h2;
+
+					delay_val			<= rpc_fab_rx_d0[4:0];
+					delay_load			<= 1;
+
+					sample_channel		<= rpc_fab_rx_d1[1:0];
+					drive_channel		<= rpc_fab_rx_d1[3:2];
 
 					//Prepare to reply
 					rpc_fab_tx_src_addr	<= rpc_fab_rx_dst_addr;	//loop back src/dst address
@@ -403,42 +463,43 @@ module GreenpakTimingTestBitstream(
 					rpc_fab_tx_d0		<= 0;
 					rpc_fab_tx_d1		<= 0;
 					rpc_fab_tx_d2		<= 0;
+
+					count				<= 0;
+
+					state				<= STATE_TEST_WAIT_0;
 				end
 
 			end	//end STATE_IDLE
 
+			STATE_TEST_WAIT_0: begin
+
+				//Wait until delay line finishes updating
+				if( (delay_val == delay_reg[0]) && (delay_val == delay_reg[1]) ) begin
+					test_out			<= 1;
+					state				<= STATE_TESTING;
+				end
+
+			end
+
 			STATE_TESTING: begin
 
-				//Test completed
-				//Send the completion message
-				if(test_in_arr) begin
+				//Record current input values
+				//First bit goes at left so shift from right to left
+				rpc_fab_tx_d0			<= delay_reg[sample_channel];
+				rpc_fab_tx_d1			<= { rpc_fab_tx_d1[30:0], test_in_arr[sample_channel][1] };
+				rpc_fab_tx_d2			<= { rpc_fab_tx_d2[30:0], test_in_arr[sample_channel][0] };
+
+				//See if we're done
+				if(count == 31) begin
 					led[2:0]		<= 3'h3;
-
 					rpc_fab_tx_en	<= 1;
-
-					//If we hit on the left side of the DDR word, it was the first cycle
-					if(test_in_arr[1])
-						rpc_fab_tx_d0	<= {count[7:1], 1'h0};
-
-					//Second cycle is higher count
-					else
-						rpc_fab_tx_d0	<= {count[7:1], 1'h1};
-
 					state			<= STATE_TX_WAIT;
 				end
 
-				//If counter is about to overflow, give up - open circuit?
-				else if(count == 8'hff) begin
-					led[2:0]		<= 3'h7;
-
-					rpc_fab_tx_en	<= 1;
-					rpc_fab_tx_type	<= RPC_TYPE_RETURN_FAIL;
-					state			<= STATE_TX_WAIT;
-				end
-
-				//no go, keep waiting (bump by two DDR cycles each step)
+				//No, bump count and keep sampling
 				else
-					count			<= count + 4'h2;
+					count			<= count + 1'h1;
+
 			end	//end STATE_TESTING
 
 			//Wait for send to complete
