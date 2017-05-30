@@ -164,9 +164,7 @@ int main(int argc, char* argv[])
 		{
 			const float ns_per_sample = 2.5;
 			const float ns_per_delay = ns_per_sample / 32;
-			int edge_tap = 0;
-			int edge_sample = 0;
-			float delay_ns = 0;
+			float delay_ns = 10000000;
 			for(int ntap=0; ntap<32; ntap++)
 			{
 				RPCMessage msg;
@@ -186,42 +184,37 @@ int main(int argc, char* argv[])
 					return 1;
 				}
 
-				//Record the position of the 0-to-1 edge
-				int edge_w1 = 0;
-				int edge_w2 = 0;
-				for(int i = 0; i<32; i++)
+				//If it failed, we have an open circuit (or stupidly long wire) - complain!
+				if( (rxm.type != RPC_TYPE_RETURN_SUCCESS) || (rxm.data[0] == 0) )
 				{
-					if( (rxm.data[1] >> i) & 1)
-						edge_w1 = 32 - i;
-
-					if( (rxm.data[2] >> i) & 1 )
-						edge_w2 = 32 - i;
+					LogError("No rising edge found within 64k clocks (open circuit?)\n");
+					return 1;
 				}
 
-				//The two words are interleaved, d1 then d2
-				//Find the full edge point
-				int edgepos = edge_w1 * 2;
-				if(edge_w2 > edge_w1)
-					edgepos ++;
+				//Record the position of the 0-to-1 edge
+				int edgepos = rxm.data[0];
+				float new_delay = edgepos * ns_per_sample - ns_per_delay * ntap;
+
+				if(j == 0)
+				{
+					LogDebug("Tap %d: sample %d (%.3f ns), %08x, %08x\n", ntap, edgepos, delay_ns,
+						rxm.data[1], rxm.data[2]);
+				}
+
+				//Stop if we hit the edge
+				if(new_delay > delay_ns)
+				{
+					if(j == 0)
+						LogDebug("Stopping (edgepos = %d)\n", edgepos);
+					break;
+				}
 
 				//Apply the correction for the delay tap
-				delay_ns = edge_sample * ns_per_sample;
-				delay_ns += ns_per_delay * ntap;
+				delay_ns = new_delay;
 
 				if(j == 0)
 					LogDebug("Tap %d: sample %d (%.3f ns)\n", ntap, edgepos, delay_ns);
-
-				if(ntap == 0)
-					edge_sample = edgepos;
-				edge_tap = ntap;
-
-				if(edgepos > edge_sample)
-					break;
 			}
-
-			//Convert sample number to ns
-			LogDebug("Final edge found at tap %d, sample %d, delay = %.3f ns\n",
-				edge_tap, edge_sample, delay_ns);
 
 			if(delay_ns < nmin)
 				nmin = delay_ns;

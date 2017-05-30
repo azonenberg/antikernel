@@ -389,7 +389,7 @@ module GreenpakTimingTestBitstream(
 
 			//then de-serialize it
 			IDDR #(
-				.DDR_CLK_EDGE("SAME_EDGE"),
+				.DDR_CLK_EDGE("SAME_EDGE_PIPELINED"),
 				.INIT_Q1(0),
 				.INIT_Q2(0),
 				.SRTYPE("SYNC")
@@ -421,7 +421,7 @@ module GreenpakTimingTestBitstream(
 	localparam STATE_TX_WAIT	 	= 4;
 
 	reg[3:0] 	state	= STATE_IDLE;
-	reg[7:0] 	count	= 0;
+	reg[15:0] 	count	= 0;
 
 	always @(*)
 		led[3]		<= pll_locked;
@@ -483,22 +483,36 @@ module GreenpakTimingTestBitstream(
 
 			STATE_TESTING: begin
 
-				//Record current input values
-				//First bit goes at left so shift from right to left
-				rpc_fab_tx_d0			<= delay_reg[sample_channel];
-				rpc_fab_tx_d1			<= { rpc_fab_tx_d1[30:0], test_in_arr[sample_channel][1] };
-				rpc_fab_tx_d2			<= { rpc_fab_tx_d2[30:0], test_in_arr[sample_channel][0] };
+				//Bump count by 1 since it counts the number of SDR cycles (DDR cycles are 2x this)
+				count			<= count + 1'h1;
 
-				//See if we're done
-				if(count == 31) begin
-					led[2:0]		<= 3'h3;
+				//Push new data down the shift register for debugging
+				rpc_fab_tx_d1			<= {rpc_fab_tx_d1[30:0], test_in_arr[sample_channel][0]};
+				rpc_fab_tx_d2			<= {rpc_fab_tx_d2[30:0], test_in_arr[sample_channel][1]};
+
+				//We're done if we hit the maximum count value, or if either bit goes high
+				if(test_in_arr[sample_channel]) begin
+
+					//EVEN phase
+					if(test_in_arr[sample_channel][0] == test_in_arr[sample_channel][1])
+						rpc_fab_tx_d0		<= {count, 1'h0};
+
+					//ODD phase
+					else
+						rpc_fab_tx_d0		<= {count, 1'h1};
+
+
+					led[2:0]				<= 3'h3;
+					rpc_fab_tx_en			<= 1;
+					state					<= STATE_TX_WAIT;
+				end
+
+				else if(count == 16'hffff) begin
+					led[2:0]		<= 3'h5;
+					rpc_fab_tx_type	<= RPC_TYPE_RETURN_FAIL;
 					rpc_fab_tx_en	<= 1;
 					state			<= STATE_TX_WAIT;
 				end
-
-				//No, bump count and keep sampling
-				else
-					count			<= count + 1'h1;
 
 			end	//end STATE_TESTING
 
