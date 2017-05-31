@@ -47,6 +47,13 @@
 
 using namespace std;
 
+float RunTest(
+	NOCSwitchInterface& iface,
+	uint16_t ouraddr,
+	uint16_t dutaddr,
+	unsigned int drive,
+	unsigned int sample);
+
 int main(int argc, char* argv[])
 {
 	try
@@ -54,9 +61,7 @@ int main(int argc, char* argv[])
 		Severity console_verbosity = Severity::NOTICE;
 		string server;
 		int port = 0;
-
-		int ndrive_raw = 3;
-		int nsample_raw = 4;
+		int lport = 53000;
 
 		//Parse command-line arguments
 		for(int i=1; i<argc; i++)
@@ -69,14 +74,10 @@ int main(int argc, char* argv[])
 
 			if(s == "--port")
 				port = atoi(argv[++i]);
-			else if(s == "--drive")
-				ndrive_raw = atoi(argv[++i]);
-			else if(s == "--sample")
-				nsample_raw = atoi(argv[++i]);
+			else if(s == "--lport")
+				lport = atoi(argv[++i]);
 			else if(s == "--server")
 				server = argv[++i];
-			else if(s == "--tty")
-				++i;
 			else
 			{
 				printf("Unrecognized command-line argument \"%s\", expected --server or --port\n", s.c_str());
@@ -114,116 +115,55 @@ int main(int argc, char* argv[])
 		uint16_t dutaddr = 0x8000;
 		LogVerbose("DUT is at %04x\n", dutaddr);
 
-		//Map pin to channel numbers
-		int ndrive = 0;
-		int nsample = 0;
-		switch(ndrive_raw)
+		//Create our listening socket
+		Socket sock(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+		if(!sock.DisableNagle())
 		{
-			case 3:
-				ndrive = 0;
-				break;
-			case 5:
-				ndrive = 1;
-				break;
-			case 4:
-				ndrive = 2;
-				break;
-			default:
-				LogError("Invalid drive pin\n");
-				break;
+			LogError("Couldn't disable Nagle\n");
+			return 1;
 		}
-		switch(nsample_raw)
+		if(!sock.Bind(lport))
 		{
-			case 3:
-				nsample = 0;
-				break;
-			case 5:
-				nsample = 1;
-				break;
-			case 4:
-				nsample = 2;
-				break;
-			default:
-				LogError("Invalid sample pin\n");
-				break;
+			LogError("Couldn't bind socket\n");
+			return 1;
 		}
-
-		//Sanity check
-		if(ndrive == nsample)
+		if(!sock.Listen())
 		{
-			LogError("Cannot drive and sample same channel number\n");
+			LogError("Couldn't listen to socket\n");
 			return 1;
 		}
 
-		//Measure round trip time with each delay
-		float nmin = 10000;
-		float nmax = 0;
-		float nsum = 0;
-		int navg = 25;
-		for(int j = 0; j < navg; j ++)
+		//Wait for connections and crunch them
+		while(true)
 		{
-			const float ns_per_sample = 2.5;
-			const float ns_per_delay = ns_per_sample / 32;
-			float delay_ns = 10000000;
-			for(int ntap=0; ntap<32; ntap++)
-			{
-				RPCMessage msg;
-				msg.from = ouraddr;
-				msg.to = dutaddr;
-				msg.type = RPC_TYPE_CALL;
-				msg.callnum = 0;
-				msg.data[0] = ntap;
-				msg.data[1] = (ndrive << 2) | nsample;
-				msg.data[2] = 0;
-				iface.SendRPCMessage(msg);
+			Socket client = sock.Accept();
 
-				RPCMessage rxm;
-				if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 5))
-				{
-					LogError("no response\n");
-					return 1;
-				}
+			/*
+			Read test parameters
+				uint8_t		drive_channel
+				uint8_t		sample_channel
+			*/
+			uint8_t		drive;
+			uint8_t		sample;
+			if(!client.RecvLooped(&drive, 1))
+				break;
+			if(!client.RecvLooped(&sample, 1))
+				break;
 
-				//If it failed, we have an open circuit (or stupidly long wire) - complain!
-				if( (rxm.type != RPC_TYPE_RETURN_SUCCESS) || (rxm.data[0] == 0) )
-				{
-					LogError("No rising edge found within 64k clocks (open circuit?)\n");
-					return 1;
-				}
+			//Run the actual test
+			float latency = RunTest(iface, ouraddr, dutaddr, drive, sample);
 
-				//Record the position of the 0-to-1 edge
-				int edgepos = rxm.data[0];
-				float new_delay = edgepos * ns_per_sample - ns_per_delay * ntap;
-
-				if(j == 0)
-				{
-					LogDebug("Tap %d: sample %d (%.3f ns), %08x, %08x\n", ntap, edgepos, delay_ns,
-						rxm.data[1], rxm.data[2]);
-				}
-
-				//Stop if we hit the edge
-				if(new_delay > delay_ns)
-				{
-					if(j == 0)
-						LogDebug("Stopping (edgepos = %d)\n", edgepos);
-					break;
-				}
-
-				//Apply the correction for the delay tap
-				delay_ns = new_delay;
-
-				if(j == 0)
-					LogDebug("Tap %d: sample %d (%.3f ns)\n", ntap, edgepos, delay_ns);
-			}
-
-			if(delay_ns < nmin)
-				nmin = delay_ns;
-			if(delay_ns > nmax)
-				nmax = delay_ns;
-			nsum += delay_ns;
+			/*
+			Send results back to the server
+				uint8_t		ok
+				float		latency
+			*/
+			uint8_t		ok = (latency > 0);
+			if(!client.SendLooped(&ok, 1))
+				break;
+			if(!client.SendLooped((unsigned char*)&latency, sizeof(latency)))
+				break;
 		}
-
-		LogNotice("rtt min/avg/max = %.3f / %.3f / %.3f ns\n", nmin, nmax, nsum/navg);
 	}
 
 	catch(const JtagException& ex)
@@ -234,4 +174,126 @@ int main(int argc, char* argv[])
 
 	//Done
 	return 0;
+}
+
+float RunTest(
+	NOCSwitchInterface& iface,
+	uint16_t ouraddr,
+	uint16_t dutaddr,
+	unsigned int drive,
+	unsigned int sample)
+{
+	LogVerbose("Running test: drive pin %u, sample pin %u\n", drive, sample);
+
+	//Map pin to channel numbers
+	int ndrive = 0;
+	int nsample = 0;
+	switch(drive)
+	{
+		case 3:
+			ndrive = 0;
+			break;
+		case 5:
+			ndrive = 1;
+			break;
+		case 4:
+			ndrive = 2;
+			break;
+		default:
+			LogError("Invalid drive pin\n");
+			break;
+	}
+	switch(sample)
+	{
+		case 3:
+			nsample = 0;
+			break;
+		case 5:
+			nsample = 1;
+			break;
+		case 4:
+			nsample = 2;
+			break;
+		default:
+			LogError("Invalid sample pin\n");
+			break;
+	}
+
+	//Sanity check
+	if(ndrive == nsample)
+	{
+		LogError("Cannot drive and sample same channel number\n");
+		return -1;
+	}
+
+	//Measure round trip time with each delay
+	float nmin = 10000;
+	float nmax = 0;
+	float nsum = 0;
+	int navg = 25;
+	for(int j = 0; j < navg; j ++)
+	{
+		const float ns_per_sample = 2.5;
+		const float ns_per_delay = ns_per_sample / 32;
+		float delay_ns = 10000000;
+		for(int ntap=0; ntap<32; ntap++)
+		{
+			RPCMessage msg;
+			msg.from = ouraddr;
+			msg.to = dutaddr;
+			msg.type = RPC_TYPE_CALL;
+			msg.callnum = 0;
+			msg.data[0] = ntap;
+			msg.data[1] = (ndrive << 2) | nsample;
+			msg.data[2] = 0;
+			iface.SendRPCMessage(msg);
+
+			RPCMessage rxm;
+			if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 5))
+			{
+				LogError("no response\n");
+				return -1;
+			}
+
+			//If it failed, we have an open circuit (or stupidly long wire) - complain!
+			if( (rxm.type != RPC_TYPE_RETURN_SUCCESS) || (rxm.data[0] == 0) )
+			{
+				LogError("No rising edge found within 64k clocks (open circuit?)\n");
+				return -1;
+			}
+
+			//Record the position of the 0-to-1 edge
+			int edgepos = rxm.data[0];
+			float new_delay = edgepos * ns_per_sample - ns_per_delay * ntap;
+
+			if(j == 0)
+			{
+				LogDebug("Tap %d: sample %d (%.3f ns), %08x, %08x\n", ntap, edgepos, delay_ns,
+					rxm.data[1], rxm.data[2]);
+			}
+
+			//Stop if we hit the edge
+			if(new_delay > delay_ns)
+			{
+				if(j == 0)
+					LogDebug("Stopping (edgepos = %d)\n", edgepos);
+				break;
+			}
+
+			//Apply the correction for the delay tap
+			delay_ns = new_delay;
+
+			if(j == 0)
+				LogDebug("Tap %d: sample %d (%.3f ns)\n", ntap, edgepos, delay_ns);
+		}
+
+		if(delay_ns < nmin)
+			nmin = delay_ns;
+		if(delay_ns > nmax)
+			nmax = delay_ns;
+		nsum += delay_ns;
+	}
+
+	LogNotice("rtt min/avg/max = %.3f / %.3f / %.3f ns\n", nmin, nmax, nsum/navg);
+	return nsum / navg;
 }
