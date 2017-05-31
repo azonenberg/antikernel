@@ -137,32 +137,34 @@ int main(int argc, char* argv[])
 		while(true)
 		{
 			Socket client = sock.Accept();
+			while(true)
+			{
+				/*
+				Read test parameters
+					uint8_t		drive_channel
+					uint8_t		sample_channel
+				*/
+				uint8_t		drive;
+				uint8_t		sample;
+				if(!client.RecvLooped(&drive, 1))
+					break;
+				if(!client.RecvLooped(&sample, 1))
+					break;
 
-			/*
-			Read test parameters
-				uint8_t		drive_channel
-				uint8_t		sample_channel
-			*/
-			uint8_t		drive;
-			uint8_t		sample;
-			if(!client.RecvLooped(&drive, 1))
-				break;
-			if(!client.RecvLooped(&sample, 1))
-				break;
+				//Run the actual test
+				float latency = RunTest(iface, ouraddr, dutaddr, drive, sample);
 
-			//Run the actual test
-			float latency = RunTest(iface, ouraddr, dutaddr, drive, sample);
-
-			/*
-			Send results back to the server
-				uint8_t		ok
-				float		latency
-			*/
-			uint8_t		ok = (latency > 0);
-			if(!client.SendLooped(&ok, 1))
-				break;
-			if(!client.SendLooped((unsigned char*)&latency, sizeof(latency)))
-				break;
+				/*
+				Send results back to the server
+					uint8_t		ok
+					float		latency
+				*/
+				uint8_t		ok = (latency > 0);
+				if(!client.SendLooped(&ok, 1))
+					break;
+				if(!client.SendLooped((unsigned char*)&latency, sizeof(latency)))
+					break;
+			}
 		}
 	}
 
