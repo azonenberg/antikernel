@@ -201,6 +201,15 @@ float RunTest(
 		case 4:
 			ndrive = 2;
 			break;
+		case 13:
+			ndrive = 3;
+			break;
+		case 15:
+			ndrive = 4;
+			break;
+		case 14:
+			ndrive = 5;
+			break;
 		default:
 			LogError("Invalid drive pin\n");
 			break;
@@ -215,6 +224,15 @@ float RunTest(
 			break;
 		case 4:
 			nsample = 2;
+			break;
+		case 13:
+			ndrive = 3;
+			break;
+		case 15:
+			ndrive = 4;
+			break;
+		case 14:
+			ndrive = 5;
 			break;
 		default:
 			LogError("Invalid sample pin\n");
@@ -246,7 +264,7 @@ float RunTest(
 			msg.type = RPC_TYPE_CALL;
 			msg.callnum = 0;
 			msg.data[0] = ntap;
-			msg.data[1] = (ndrive << 2) | nsample;
+			msg.data[1] = (ndrive << 3) | nsample;
 			msg.data[2] = 0;
 			iface.SendRPCMessage(msg);
 

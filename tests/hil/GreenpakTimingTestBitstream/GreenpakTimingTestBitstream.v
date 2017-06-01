@@ -297,9 +297,9 @@ module GreenpakTimingTestBitstream(
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // I/O buffers
 
-    wire[2:0]	sample_in;
+    wire[5:0]	sample_in;
     reg			test_out = 0;
-    reg[1:0]	drive_channel		= 0;
+    reg[2:0]	drive_channel		= 0;
 
     /*
 		PIN MAPPING
@@ -316,10 +316,7 @@ module GreenpakTimingTestBitstream(
 
     //Unused signals, for now
 	assign pmod_dq[2]	= 1'b0;		//P12
-	assign pmod_dq[3]	= 1'b0;		//P14
 	assign pmod_dq[4]	= 1'b0;		//P2
-	assign pmod_dq[6]	= 1'b0;		//P13
-	assign pmod_dq[7]	= 1'b0;		//P15
 
     //P3 on greenpak
     IOBUF iobuf_dq0(
@@ -345,6 +342,30 @@ module GreenpakTimingTestBitstream(
 		.IO(pmod_dq[5])
 	);
 
+	//P13 on greenpak
+    IOBUF iobuf_dq6(
+		.I(test_out),
+		.T(drive_channel != 3),
+		.O(sample_in[3]),
+		.IO(pmod_dq[6])
+	);
+
+	//P15 on greenpak
+    IOBUF iobuf_dq7(
+		.I(test_out),
+		.T(drive_channel != 4),
+		.O(sample_in[4]),
+		.IO(pmod_dq[7])
+	);
+
+	//P14 on greenpak
+	IOBUF iobuf_dq3(
+		.I(test_out),
+		.T(drive_channel != 5),
+		.O(sample_in[5]),
+		.IO(pmod_dq[3])
+	);
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // I/O pin mapping and input delay lines
 
@@ -353,14 +374,14 @@ module GreenpakTimingTestBitstream(
 	//Full scale on the delay is 32 taps or 2.5 ns.
 	//This is, conveniently enough, the exact spacing between DDR phases!
 	reg[4:0]	delay_val = 0;
-	wire[4:0]	delay_reg[3:0];
+	wire[4:0]	delay_reg[7:0];
 	reg			delay_load	= 0;
 
-	wire		test_in_delayed[3:0];
-	wire[1:0]	test_in_arr[3:0];
+	wire		test_in_delayed[7:0];
+	wire[1:0]	test_in_arr[7:0];
 	genvar i;
 	generate
-		for(i=0; i<3; i=i+1) begin : delayblock
+		for(i=0; i<6; i=i+1) begin : delayblock
 
 			//Delay the signal
 			IDELAYE2 #(
@@ -406,10 +427,14 @@ module GreenpakTimingTestBitstream(
 		end
 	endgenerate
 
-	//tie off unused channel 4
-	assign test_in_delayed[3] = 0;
-	assign test_in_arr[3] = 2'h0;
-	assign delay_reg[3] = 5'h0;
+	//tie off unused channel 6/7
+	assign test_in_delayed[6] = 0;
+	assign test_in_arr[6] = 2'h0;
+	assign delay_reg[6] = 5'h0;
+
+	assign test_in_delayed[7] = 0;
+	assign test_in_arr[7] = 2'h0;
+	assign delay_reg[7] = 5'h0;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Main state machine
@@ -426,7 +451,7 @@ module GreenpakTimingTestBitstream(
 	always @(*)
 		led[3]		<= pll_locked;
 
-	reg[1:0]		sample_channel		= 0;
+	reg[2:0]		sample_channel		= 0;
 
     always @(posedge clk_noc) begin
 
@@ -452,8 +477,8 @@ module GreenpakTimingTestBitstream(
 					delay_val			<= rpc_fab_rx_d0[4:0];
 					delay_load			<= 1;
 
-					sample_channel		<= rpc_fab_rx_d1[1:0];
-					drive_channel		<= rpc_fab_rx_d1[3:2];
+					sample_channel		<= rpc_fab_rx_d1[2:0];
+					drive_channel		<= rpc_fab_rx_d1[5:3];
 
 					//Prepare to reply
 					rpc_fab_tx_src_addr	<= rpc_fab_rx_dst_addr;	//loop back src/dst address
@@ -473,8 +498,11 @@ module GreenpakTimingTestBitstream(
 
 			STATE_TEST_WAIT_0: begin
 
-				//Wait until delay line finishes updating
-				if( (delay_val == delay_reg[0]) && (delay_val == delay_reg[1]) ) begin
+				count					<= count + 1'h1;
+
+				//Wait a little while to let delay lines update and stabilize (TODO: is this necessary?)
+				if(count == 7) begin
+					count				<= 0;
 					test_out			<= 1;
 					state				<= STATE_TESTING;
 				end
