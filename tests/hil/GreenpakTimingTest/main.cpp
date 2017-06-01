@@ -226,13 +226,13 @@ float RunTest(
 			nsample = 2;
 			break;
 		case 13:
-			ndrive = 3;
+			nsample = 3;
 			break;
 		case 15:
-			ndrive = 4;
+			nsample = 4;
 			break;
 		case 14:
-			ndrive = 5;
+			nsample = 5;
 			break;
 		default:
 			LogError("Invalid sample pin\n");
@@ -250,7 +250,7 @@ float RunTest(
 	float nmin = 10000;
 	float nmax = 0;
 	float nsum = 0;
-	int navg = 25;
+	int navg = 100;
 	for(int j = 0; j < navg; j ++)
 	{
 		const float ns_per_sample = 2.5;
