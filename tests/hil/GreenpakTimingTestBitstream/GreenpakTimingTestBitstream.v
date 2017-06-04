@@ -459,8 +459,8 @@ module GreenpakTimingTestBitstream(
 		delay_load				<= 0;
 		rpc_fab_tx_en			<= 0;
 
-		//TODO: better flow control?
-		rpc_fab_rx_ready		<= 1;
+		//Default to not ready!
+		rpc_fab_rx_ready		<= 0;
 
 		case(state)
 
@@ -493,6 +493,8 @@ module GreenpakTimingTestBitstream(
 
 					state				<= STATE_TEST_WAIT_0;
 				end
+				else
+					rpc_fab_rx_ready	<= 1;
 
 			end	//end STATE_IDLE
 

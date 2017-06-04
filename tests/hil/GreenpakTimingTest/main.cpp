@@ -256,6 +256,8 @@ float RunTest(
 		const float ns_per_sample = 2.5;
 		const float ns_per_delay = ns_per_sample / 32;
 		float delay_ns = 10000000;
+
+		//Batch-send all 32 test requests
 		for(int ntap=0; ntap<32; ntap++)
 		{
 			RPCMessage msg;
@@ -267,7 +269,11 @@ float RunTest(
 			msg.data[1] = (ndrive << 3) | nsample;
 			msg.data[2] = 0;
 			iface.SendRPCMessage(msg);
+		}
 
+		//then receive them in sequence
+		for(int ntap=0; ntap<32; ntap++)
+		{
 			RPCMessage rxm;
 			if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 5))
 			{
