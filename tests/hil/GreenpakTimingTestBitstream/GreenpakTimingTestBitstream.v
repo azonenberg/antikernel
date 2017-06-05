@@ -559,7 +559,10 @@ module GreenpakTimingTestBitstream(
 					//But if we have more to try, keep going!
 					else begin
 						test_out		<= 0;
+						rpc_fab_tx_d1	<= 0;
+						rpc_fab_tx_d2	<= 0;
 						delay_load		<= 1;
+						count			<= 0;
 						state			<= STATE_TEST_WAIT_0;
 					end
 

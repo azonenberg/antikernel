@@ -269,6 +269,7 @@ float RunTest(
 		iface.SendRPCMessage(msg);
 
 		//then receive the results in sequence
+		bool skipping = false;
 		for(int ntap=0; ntap<32; ntap++)
 		{
 			RPCMessage rxm;
@@ -277,6 +278,10 @@ float RunTest(
 				LogError("no response\n");
 				return -1;
 			}
+
+			//need to still read and discard the message!
+			if(skipping)
+				continue;
 
 			//Record the position of the 0-to-1 edge
 			int edgepos = rxm.data[0];
@@ -301,7 +306,8 @@ float RunTest(
 			{
 				if(j == 0)
 					LogDebug("Stopping (edgepos = %d)\n", edgepos);
-				break;
+				skipping = true;
+				continue;
 			}
 
 			//Apply the correction for the delay tap
