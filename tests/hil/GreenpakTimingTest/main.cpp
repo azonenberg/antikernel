@@ -256,6 +256,7 @@ float RunTest(
 	float nmax = 0;
 	float nsum = 0;
 	int navg = 100;
+	bool fail = false;
 	for(int j = 0; j < navg; j ++)
 	{
 		const float ns_per_sample = 2.5;
@@ -288,7 +289,7 @@ float RunTest(
 			if(skipping)
 				continue;
 
-			//Record the position of the 0-to-1 edge
+			//Record the position of the edge
 			int edgepos = rxm.data[0];
 			float new_delay = edgepos * ns_per_sample - ns_per_delay * ntap;
 
@@ -301,9 +302,11 @@ float RunTest(
 			//If it failed, we have an open circuit (or stupidly long wire) - complain!
 			if( (rxm.type != RPC_TYPE_RETURN_SUCCESS) || (rxm.data[0] == 0) )
 			{
-				LogError("No rising edge found within 64k clocks (open circuit? d1=%08x, d2=%08x)\n",
-					rxm.data[1], rxm.data[2]);
-				return -1;
+				LogError("No edge found within 64k clocks (open circuit? d0 = %08x, d1=%08x, d2=%08x)\n",
+					rxm.data[0], rxm.data[1], rxm.data[2]);
+				fail = true;
+				skipping = true;
+				continue;
 			}
 
 			//Stop if we hit the edge
@@ -328,6 +331,9 @@ float RunTest(
 			nmax = delay_ns;
 		nsum += delay_ns;
 	}
+
+	if(fail)
+		return -1;
 
 	LogNotice("rtt min/avg/max = %.3f / %.3f / %.3f ns\n", nmin, nmax, nsum/navg);
 	return nsum / navg;
