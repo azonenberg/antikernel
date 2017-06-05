@@ -138,6 +138,11 @@ int main(int argc, char* argv[])
 		while(true)
 		{
 			Socket client = sock.Accept();
+			if(!client.DisableNagle())
+			{
+				LogError("Couldn't disable Nagle\n");
+				return 1;
+			}
 			while(true)
 			{
 				/*
@@ -300,7 +305,7 @@ float RunTest(
 			}
 
 			//If it failed, we have an open circuit (or stupidly long wire) - complain!
-			if( (rxm.type != RPC_TYPE_RETURN_SUCCESS) || (rxm.data[0] == 0) )
+			if( (rxm.type != RPC_TYPE_RETURN_SUCCESS) || (rxm.data[0] == 0) || (rxm.data[0] >= 0xffff) )
 			{
 				LogError("No edge found within 64k clocks (open circuit? d0 = %08x, d1=%08x, d2=%08x)\n",
 					rxm.data[0], rxm.data[1], rxm.data[2]);

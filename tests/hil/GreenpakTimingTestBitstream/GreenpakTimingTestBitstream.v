@@ -563,10 +563,10 @@ module GreenpakTimingTestBitstream(
 						rpc_fab_tx_d0		<= {count, 1'h1};
 
 					//FAIL if count is zero, that doesn't make sense. Dump some stats to help debug.
-					if(count == 0) begin
+					//if(count == 0) begin
 						//rpc_fab_tx_d0		<= {rx_idle, 6'h0, test_out, tx_value, 6'h0, test_in_arr[sample_channel]};
-						rpc_fab_tx_type		<= RPC_TYPE_RETURN_FAIL;
-					end
+					//	rpc_fab_tx_type		<= RPC_TYPE_RETURN_FAIL;
+					//end
 
 
 					rpc_fab_tx_en			<= 1;
@@ -574,7 +574,6 @@ module GreenpakTimingTestBitstream(
 				end
 
 				else if(count == 16'hffff) begin
-					rpc_fab_tx_type			<= RPC_TYPE_RETURN_FAIL;
 					rpc_fab_tx_en			<= 1;
 					state					<= STATE_TX_WAIT;
 				end
