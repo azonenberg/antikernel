@@ -257,34 +257,24 @@ float RunTest(
 		const float ns_per_delay = ns_per_sample / 32;
 		float delay_ns = 10000000;
 
-		//Batch-send all 32 test requests
-		for(int ntap=0; ntap<32; ntap++)
-		{
-			RPCMessage msg;
-			msg.from = ouraddr;
-			msg.to = dutaddr;
-			msg.type = RPC_TYPE_CALL;
-			msg.callnum = 0;
-			msg.data[0] = ntap;
-			msg.data[1] = (ndrive << 3) | nsample;
-			msg.data[2] = 0;
-			iface.SendRPCMessage(msg);
-		}
+		//Send the single test request
+		RPCMessage msg;
+		msg.from = ouraddr;
+		msg.to = dutaddr;
+		msg.type = RPC_TYPE_CALL;
+		msg.callnum = 0;
+		msg.data[0] = 0;
+		msg.data[1] = (ndrive << 3) | nsample;
+		msg.data[2] = 0;
+		iface.SendRPCMessage(msg);
 
-		//then receive them in sequence
+		//then receive the results in sequence
 		for(int ntap=0; ntap<32; ntap++)
 		{
 			RPCMessage rxm;
 			if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 5))
 			{
 				LogError("no response\n");
-				return -1;
-			}
-
-			//If it failed, we have an open circuit (or stupidly long wire) - complain!
-			if( (rxm.type != RPC_TYPE_RETURN_SUCCESS) || (rxm.data[0] == 0) )
-			{
-				LogError("No rising edge found within 64k clocks (open circuit?)\n");
 				return -1;
 			}
 
@@ -296,6 +286,14 @@ float RunTest(
 			{
 				LogDebug("Tap %d: sample %d (%.3f ns), %08x, %08x\n", ntap, edgepos, delay_ns,
 					rxm.data[1], rxm.data[2]);
+			}
+
+			//If it failed, we have an open circuit (or stupidly long wire) - complain!
+			if( (rxm.type != RPC_TYPE_RETURN_SUCCESS) || (rxm.data[0] == 0) )
+			{
+				LogError("No rising edge found within 64k clocks (open circuit? d1=%08x, d2=%08x)\n",
+					rxm.data[1], rxm.data[2]);
+				return -1;
 			}
 
 			//Stop if we hit the edge

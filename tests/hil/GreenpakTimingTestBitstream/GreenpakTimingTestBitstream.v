@@ -374,7 +374,6 @@ module GreenpakTimingTestBitstream(
 	//Full scale on the delay is 32 taps or 2.5 ns.
 	//This is, conveniently enough, the exact spacing between DDR phases!
 	reg[4:0]	delay_val = 0;
-	wire[4:0]	delay_reg[7:0];
 	reg			delay_load	= 0;
 
 	wire		test_in_delayed[7:0];
@@ -398,7 +397,7 @@ module GreenpakTimingTestBitstream(
 				.CE(1'b0),
 				.CINVCTRL(1'b0),
 				.CNTVALUEIN(delay_val),
-				.CNTVALUEOUT(delay_reg[i]),
+				.CNTVALUEOUT(),
 				.DATAIN(),			//from FPGA fabric, not used
 				.DATAOUT(test_in_delayed[i]),
 				.IDATAIN(sample_in[i]),
@@ -430,11 +429,9 @@ module GreenpakTimingTestBitstream(
 	//tie off unused channel 6/7
 	assign test_in_delayed[6] = 0;
 	assign test_in_arr[6] = 2'h0;
-	assign delay_reg[6] = 5'h0;
 
 	assign test_in_delayed[7] = 0;
 	assign test_in_arr[7] = 2'h0;
-	assign delay_reg[7] = 5'h0;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Main state machine
@@ -474,7 +471,7 @@ module GreenpakTimingTestBitstream(
 				if(rpc_fab_rx_en) begin
 					led[2:0]			<= 3'h2;
 
-					delay_val			<= rpc_fab_rx_d0[4:0];
+					delay_val			<= 0;
 					delay_load			<= 1;
 
 					sample_channel		<= rpc_fab_rx_d1[2:0];
@@ -502,8 +499,10 @@ module GreenpakTimingTestBitstream(
 
 				count					<= count + 1'h1;
 
-				//Wait a little while to let delay lines update and stabilize (TODO: is this necessary?)
-				if(count == 7) begin
+				//Wait a little while to let delay lines update and stabilize, and ensure that the old
+				//test_out passed all the way through the DUT.
+				//1024 clocks = 5120 ns which should be plenty
+				if(count == 16'h03ff) begin
 					count				<= 0;
 					test_out			<= 1;
 					state				<= STATE_TESTING;
@@ -549,8 +548,21 @@ module GreenpakTimingTestBitstream(
 			//Wait for send to complete
 			STATE_TX_WAIT: begin
 				if(rpc_fab_tx_done) begin
-					led[2:0]		<= 3'h4;
-					state			<= STATE_IDLE;
+					led[2:0]			<= 3'h4;
+
+					delay_val			<= delay_val + 1'h1;
+
+					//If this was the last delay, stop.
+					if(delay_val == 'd31)
+						state			<= STATE_IDLE;
+
+					//But if we have more to try, keep going!
+					else begin
+						test_out		<= 0;
+						delay_load		<= 1;
+						state			<= STATE_TEST_WAIT_0;
+					end
+
 				end
 			end	//end STATE_TX_WAIT
 
