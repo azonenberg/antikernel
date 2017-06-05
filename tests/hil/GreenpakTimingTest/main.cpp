@@ -52,7 +52,8 @@ float RunTest(
 	uint16_t ouraddr,
 	uint16_t dutaddr,
 	unsigned int drive,
-	unsigned int sample);
+	unsigned int sample,
+	unsigned int polarity);
 
 int main(int argc, char* argv[])
 {
@@ -143,16 +144,18 @@ int main(int argc, char* argv[])
 				Read test parameters
 					uint8_t		drive_channel
 					uint8_t		sample_channel
+					uint8_t		test_polarity
+									0 = drive low, expect low
+									1 = drive low, expect high
+									2 = drive high, expect low
+									3 = drive high, expect high
 				*/
-				uint8_t		drive;
-				uint8_t		sample;
-				if(!client.RecvLooped(&drive, 1))
-					break;
-				if(!client.RecvLooped(&sample, 1))
+				uint8_t rxbuf[3];
+				if(!client.RecvLooped(rxbuf, sizeof(rxbuf)))
 					break;
 
 				//Run the actual test
-				float latency = RunTest(iface, ouraddr, dutaddr, drive, sample);
+				float latency = RunTest(iface, ouraddr, dutaddr, rxbuf[0], rxbuf[1], rxbuf[2]);
 
 				/*
 				Send results back to the server
@@ -183,9 +186,11 @@ float RunTest(
 	uint16_t ouraddr,
 	uint16_t dutaddr,
 	unsigned int drive,
-	unsigned int sample)
+	unsigned int sample,
+	unsigned int polarity)
 {
-	LogVerbose("Running test: drive pin %u, sample pin %u\n", drive, sample);
+	LogVerbose("Running test: drive pin %u, sample pin %u, drive value %d, expect value %d\n",
+		drive, sample, polarity >> 1, polarity & 1);
 
 	//Map pin to channel numbers
 	int ndrive = 0;
@@ -263,7 +268,7 @@ float RunTest(
 		msg.to = dutaddr;
 		msg.type = RPC_TYPE_CALL;
 		msg.callnum = 0;
-		msg.data[0] = 0;
+		msg.data[0] = polarity;
 		msg.data[1] = (ndrive << 3) | nsample;
 		msg.data[2] = 0;
 		iface.SendRPCMessage(msg);

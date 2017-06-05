@@ -449,6 +449,8 @@ module GreenpakTimingTestBitstream(
 		led[3]		<= pll_locked;
 
 	reg[2:0]		sample_channel		= 0;
+	reg				tx_value			= 0;
+	reg[1:0]		rx_idle				= 0;
 
     always @(posedge clk_noc) begin
 
@@ -464,9 +466,6 @@ module GreenpakTimingTestBitstream(
 			//Sit around and wait for a message
 			STATE_IDLE: begin
 
-				//Drive the output low
-				test_out				<= 0;
-
 				//If we get a message, doesn't matter what it is, run a test
 				if(rpc_fab_rx_en) begin
 					led[2:0]			<= 3'h2;
@@ -476,6 +475,8 @@ module GreenpakTimingTestBitstream(
 
 					sample_channel		<= rpc_fab_rx_d1[2:0];
 					drive_channel		<= rpc_fab_rx_d1[5:3];
+					rx_idle				<= {!rpc_fab_rx_d0[0], !rpc_fab_rx_d0[0]};
+					tx_value			<= rpc_fab_rx_d0[1];
 
 					//Prepare to reply
 					rpc_fab_tx_src_addr	<= rpc_fab_rx_dst_addr;	//loop back src/dst address
@@ -499,12 +500,15 @@ module GreenpakTimingTestBitstream(
 
 				count					<= count + 1'h1;
 
+				//Drive the complement of our target value to flush out the combinatorial paths
+				test_out				<= !tx_value;
+
 				//Wait a little while to let delay lines update and stabilize, and ensure that the old
 				//test_out passed all the way through the DUT.
 				//1024 clocks = 5120 ns which should be plenty
 				if(count == 16'h03ff) begin
 					count				<= 0;
-					test_out			<= 1;
+					test_out			<= tx_value;
 					state				<= STATE_TESTING;
 				end
 
@@ -513,14 +517,14 @@ module GreenpakTimingTestBitstream(
 			STATE_TESTING: begin
 
 				//Bump count by 1 since it counts the number of SDR cycles (DDR cycles are 2x this)
-				count			<= count + 1'h1;
+				count						<= count + 1'h1;
 
 				//Push new data down the shift register for debugging
-				rpc_fab_tx_d1			<= {rpc_fab_tx_d1[30:0], test_in_arr[sample_channel][0]};
-				rpc_fab_tx_d2			<= {rpc_fab_tx_d2[30:0], test_in_arr[sample_channel][1]};
+				rpc_fab_tx_d1				<= {rpc_fab_tx_d1[30:0], test_in_arr[sample_channel][0]};
+				rpc_fab_tx_d2				<= {rpc_fab_tx_d2[30:0], test_in_arr[sample_channel][1]};
 
-				//We're done if we hit the maximum count value, or if either bit goes high
-				if(test_in_arr[sample_channel]) begin
+				//We're done if we hit the maximum count value, or if either bit toggles
+				if(test_in_arr[sample_channel] != rx_idle) begin
 
 					//EVEN phase
 					if(test_in_arr[sample_channel][0] == test_in_arr[sample_channel][1])
@@ -558,7 +562,6 @@ module GreenpakTimingTestBitstream(
 
 					//But if we have more to try, keep going!
 					else begin
-						test_out		<= 0;
 						rpc_fab_tx_d1	<= 0;
 						rpc_fab_tx_d2	<= 0;
 						delay_load		<= 1;

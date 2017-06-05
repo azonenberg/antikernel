@@ -74,7 +74,8 @@ void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 		uint8_t opcode;
 		while(true)
 		{
-			ctx.m_socket.RecvLooped(&opcode, 1);
+			if(!ctx.m_socket.RecvLooped(&opcode, 1))
+				throw JtagExceptionWrapper("connection dropped", "");
 
 			bool quit = g_quitting;
 
@@ -88,19 +89,22 @@ void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 					lock_guard<mutex> lock(ctx.m_mutex);
 
 					//Send back the opcode
-					ctx.m_socket.SendLooped(&opcode, 1);
+					if(!ctx.m_socket.SendLooped(&opcode, 1))
+						throw JtagExceptionWrapper("connection dropped", "");
 
 					//Try to allocate the address and tell the client how it went
 					uint16_t addr;
 					uint8_t ok = iface->AllocateClientAddress(addr);
-					ctx.m_socket.SendLooped(&ok, 1);
+					if(!ctx.m_socket.SendLooped(&ok, 1))
+						throw JtagExceptionWrapper("connection dropped", "");
 
 					//If it worked, send the actual data.
 					//(Note that we don't send the address field if the allocation failed!)
 					//Also record the address so we know to check stuff destined to it in the future
 					if(ok)
 					{
-						ctx.m_socket.SendLooped((unsigned char*)&addr, 2);
+						if(!ctx.m_socket.SendLooped((unsigned char*)&addr, 2))
+							throw JtagExceptionWrapper("connection dropped", "");
 
 						our_addresses.emplace(addr);
 
@@ -121,7 +125,8 @@ void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 				{
 					//Read the message
 					unsigned char buf[16];
-					ctx.m_socket.RecvLooped(buf, 16);
+					if(!ctx.m_socket.RecvLooped(buf, 16))
+						throw JtagExceptionWrapper("connection dropped", "");
 					RPCMessage msg;
 					msg.Unpack(buf);
 
@@ -156,7 +161,8 @@ void ConnectionThread(int sock, JTAGNOCBridgeInterface* iface)
 					lock_guard<mutex> lock(ctx.m_mutex);
 
 					//Send back the opcode (that's all there is to it)
-					ctx.m_socket.SendLooped(&opcode, 1);
+					if(!ctx.m_socket.SendLooped(&opcode, 1))
+						throw JtagExceptionWrapper("connection dropped", "");
 				}
 				break;
 
