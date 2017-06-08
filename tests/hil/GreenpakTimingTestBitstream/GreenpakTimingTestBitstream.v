@@ -442,6 +442,7 @@ module GreenpakTimingTestBitstream(
 	localparam STATE_TEST_1		 	= 3;
 	localparam STATE_TEST_2			= 4;
 	localparam STATE_TEST_3			= 5;
+	localparam STATE_TEST_4			= 6;
 
 	reg[3:0] 	state	= STATE_IDLE;
 	reg[15:0] 	count	= 0;
@@ -453,7 +454,11 @@ module GreenpakTimingTestBitstream(
 	wire			din_not_idle		= (test_in_arr[sample_channel] != rx_idle);
 	reg				din_not_idle_ff		= 0;
 
-	reg[31:0]		tx_delay			= 0;
+	reg[31:0]		tx_delay			= 0;				//measured in delay line taps (1/32 of 2.5 ns, ~78 ps)
+	reg[31:0]		tx_smallest_delay	= 32'hffffffff;
+
+	reg				delay_is_bigger	= 0;
+	reg				delay_is_max	= 0;
 
     always @(posedge clk_noc) begin
 
@@ -495,6 +500,7 @@ module GreenpakTimingTestBitstream(
 
 					count				<= 0;
 
+					tx_smallest_delay	<= 32'hffffffff;
 					state				<= STATE_TEST_0;
 				end
 
@@ -549,11 +555,11 @@ module GreenpakTimingTestBitstream(
 
 					//EVEN phase
 					if(test_in_arr[sample_channel][0] == test_in_arr[sample_channel][1])
-						tx_delay		<= {count, 1'h0, 5'h0};
+						tx_delay		<= {count, 1'h0, 5'h0} - delay_val;
 
 					//ODD phase
 					else
-						tx_delay		<= {count, 1'h1, 5'h0};
+						tx_delay		<= {count, 1'h1, 5'h0} - delay_val;
 
 					state				<= STATE_TEST_3;
 				end
@@ -566,34 +572,43 @@ module GreenpakTimingTestBitstream(
 			end	//end STATE_TEST_2
 
 			STATE_TEST_3: begin
-
-				//Send is done, report results
-				rpc_fab_tx_d1			<= tx_delay - delay_val;
-
-				rpc_fab_tx_en			<= 1;
-				state					<= STATE_TX_WAIT;
-
+				delay_is_bigger			<= (tx_delay > tx_smallest_delay);
+				delay_is_max			<= (delay_val == 'd31);
+				state					<= STATE_TEST_4;
 			end	//end STATE_TEST_3
+
+			STATE_TEST_4: begin
+
+				//Is this delay bigger than the last one? We're wrapping, stop and send the last value.
+				//If we're on the last delay tap, automatically declare us to be done since no previous tap was a hit
+				if( delay_is_bigger || delay_is_max) begin
+					rpc_fab_tx_en		<= 1;
+					state				<= STATE_TX_WAIT;
+				end
+
+				//Nope, nothing special going on. Save this delay as the new smallest,
+				//then go on and try another delay value
+				else begin
+					tx_smallest_delay	<= tx_delay;
+
+					//Prepare to send results, if needed
+					rpc_fab_tx_d0		<= delay_val;
+					rpc_fab_tx_d1		<= tx_delay;
+
+					delay_val			<= delay_val + 1'h1;
+					delay_load			<= 1;
+					count				<= 0;
+					state				<= STATE_TEST_0;
+				end
+
+			end	//end STATE_TEST_4
 
 			////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// Wait for send to complete
 
 			STATE_TX_WAIT: begin
-				if(rpc_fab_tx_done) begin
-					delay_val			<= delay_val + 1'h1;
-
-					//If this was the last delay, stop.
-					if(delay_val == 'd31)
-						state			<= STATE_IDLE;
-
-					//But if we have more to try, keep going!
-					else begin
-						delay_load		<= 1;
-						count			<= 0;
-						state			<= STATE_TEST_0;
-					end
-
-				end
+				if(rpc_fab_tx_done)
+					state			<= STATE_IDLE;
 			end	//end STATE_TX_WAIT
 
 		endcase

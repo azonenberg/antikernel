@@ -266,7 +266,6 @@ float RunTest(
 	{
 		const float ns_per_sample = 2.5;
 		const float ns_per_tap = ns_per_sample / 32;
-		float delay_ns = 10000000;
 
 		//Send the single test request
 		RPCMessage msg;
@@ -279,48 +278,28 @@ float RunTest(
 		msg.data[2] = 0;
 		iface.SendRPCMessage(msg);
 
-		//then receive the results in sequence
-		bool skipping = false;
-		for(int ntap=0; ntap<32; ntap++)
+		//then receive the results
+		RPCMessage rxm;
+		if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 5))
 		{
-			RPCMessage rxm;
-			if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 5))
-			{
-				LogError("no response\n");
-				return -1;
-			}
+			LogError("no response\n");
+			return -1;
+		}
 
-			//need to still read and discard the message!
-			if(skipping)
-				continue;
+		//Record the position of the edge
+		int ntap = rxm.data[0];
+		int edgepos = rxm.data[1];
+		float delay_ns = edgepos * ns_per_tap;
 
-			//Record the position of the edge
-			int edgepos = rxm.data[1];
-			float new_delay = edgepos * ns_per_tap;
+		if(j == 0)
+			LogDebug("Tap %d: sample %d (%.3f ns)\n", ntap, edgepos, delay_ns);
 
-			if(j == 0)
-				LogDebug("Tap %d: sample %d (%.3f ns)\n", ntap, edgepos, delay_ns);
-
-			//If it failed, we have an open circuit (or stupidly long wire) - complain!
-			if( (rxm.type != RPC_TYPE_RETURN_SUCCESS) || (rxm.data[1] == 0) || (rxm.data[1] >= 0x1fffff) )
-			{
-				LogError("No edge found within 64k clocks (open circuit?)\n");
-				fail = true;
-				skipping = true;
-				continue;
-			}
-
-			//Stop if we hit the edge
-			if(new_delay > delay_ns)
-			{
-				if(j == 0)
-					LogDebug("Stopping (edgepos = %d)\n", edgepos);
-				skipping = true;
-				continue;
-			}
-
-			//Apply the correction for the delay tap
-			delay_ns = new_delay;
+		//If it failed, we have an open circuit (or stupidly long wire) - complain!
+		if( (rxm.type != RPC_TYPE_RETURN_SUCCESS) || (rxm.data[1] == 0) || (rxm.data[1] >= 0x1fffff) )
+		{
+			LogError("No edge found within 64k clocks (open circuit?)\n");
+			fail = true;
+			continue;
 		}
 
 		if(delay_ns < nmin)
