@@ -437,10 +437,11 @@ module GreenpakTimingTestBitstream(
     // Main state machine
 
 	localparam STATE_IDLE 		 	= 0;
-	localparam STATE_TESTING	 	= 1;
-	localparam STATE_TEST_WAIT_0	= 2;
-	localparam STATE_TEST_WAIT_1	= 3;
-	localparam STATE_TX_WAIT	 	= 4;
+	localparam STATE_TX_WAIT	 	= 1;
+	localparam STATE_TEST_0			= 2;
+	localparam STATE_TEST_1		 	= 3;
+	localparam STATE_TEST_2			= 4;
+	localparam STATE_TEST_3			= 5;
 
 	reg[3:0] 	state	= STATE_IDLE;
 	reg[15:0] 	count	= 0;
@@ -451,6 +452,8 @@ module GreenpakTimingTestBitstream(
 
 	wire			din_not_idle		= (test_in_arr[sample_channel] != rx_idle);
 	reg				din_not_idle_ff		= 0;
+
+	reg[31:0]		tx_delay			= 0;
 
     always @(posedge clk_noc) begin
 
@@ -465,7 +468,8 @@ module GreenpakTimingTestBitstream(
 
 		case(state)
 
-			//Sit around and wait for a message
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// Sit around and wait for a message
 			STATE_IDLE: begin
 
 				led				<= 4'h5;
@@ -491,7 +495,7 @@ module GreenpakTimingTestBitstream(
 
 					count				<= 0;
 
-					state				<= STATE_TEST_WAIT_0;
+					state				<= STATE_TEST_0;
 				end
 
 				else
@@ -499,7 +503,10 @@ module GreenpakTimingTestBitstream(
 
 			end	//end STATE_IDLE
 
-			STATE_TEST_WAIT_0: begin
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// Run the actual test
+
+			STATE_TEST_0: begin
 
 				count					<= count + 1'h1;
 
@@ -511,76 +518,66 @@ module GreenpakTimingTestBitstream(
 				//1024 clocks = 5120 ns which should be plenty
 				//if(count == 16'h03ff)
 				if(count == 16'hffff)
-					state				<= STATE_TEST_WAIT_1;
+					state				<= STATE_TEST_1;
 
-			end
+			end	//end STATE_TEST_0
 
-			STATE_TEST_WAIT_1: begin
+			STATE_TEST_1: begin
 
 				//Get ready to do the actual test
 				count					<= 0;
 				test_out				<= tx_value;
-				state					<= STATE_TESTING;
+				state					<= STATE_TEST_2;
 
 				//If incoming link is not idle, something is wrong
 				if(din_not_idle_ff) begin
-					/*
-					rpc_fab_tx_d0		<=
-					{
-						rx_idle,
-						1'h0, drive_channel, 2'h0, test_out, tx_value,
-						1'h0, sample_channel, 2'h0, test_in_arr[sample_channel]
-					};
-					*/
 					rpc_fab_tx_d1		<= 32'hcccccccc;
 					rpc_fab_tx_type		<= RPC_TYPE_RETURN_FAIL;
 					rpc_fab_tx_en		<= 1;
 					state				<= STATE_TX_WAIT;
 				end
 
-			end
+			end	//end STATE_TEST_1
 
-			STATE_TESTING: begin
+			STATE_TEST_2: begin
 
 				//Bump count by 1 since it counts the number of SDR cycles (DDR cycles are 2x this)
 				count						<= count + 1'h1;
-
-				/*
-				//Push new data down the shift register for debugging
-				rpc_fab_tx_d1				<= {rpc_fab_tx_d1[30:0], test_in_arr[sample_channel][0]};
-				rpc_fab_tx_d2				<= {rpc_fab_tx_d2[30:0], test_in_arr[sample_channel][1]};
-				*/
 
 				//We're done if we hit the maximum count value, or if either bit toggles
 				if(din_not_idle) begin
 
 					//EVEN phase
 					if(test_in_arr[sample_channel][0] == test_in_arr[sample_channel][1])
-						rpc_fab_tx_d0		<= {count, 1'h0};
+						tx_delay		<= {count, 1'h0, 5'h0};
 
 					//ODD phase
 					else
-						rpc_fab_tx_d0		<= {count, 1'h1};
+						tx_delay		<= {count, 1'h1, 5'h0};
 
-					//FAIL if count is zero, that doesn't make sense. Dump some stats to help debug.
-					//if(count == 0) begin
-						//rpc_fab_tx_d0		<= {rx_idle, 6'h0, test_out, tx_value, 6'h0, test_in_arr[sample_channel]};
-					//	rpc_fab_tx_type		<= RPC_TYPE_RETURN_FAIL;
-					//end
-
-
-					rpc_fab_tx_en			<= 1;
-					state					<= STATE_TX_WAIT;
+					state				<= STATE_TEST_3;
 				end
 
 				else if(count == 16'hffff) begin
-					rpc_fab_tx_en			<= 1;
-					state					<= STATE_TX_WAIT;
+					rpc_fab_tx_en		<= 1;
+					state				<= STATE_TX_WAIT;
 				end
 
-			end	//end STATE_TESTING
+			end	//end STATE_TEST_2
 
-			//Wait for send to complete
+			STATE_TEST_3: begin
+
+				//Send is done, report results
+				rpc_fab_tx_d1			<= tx_delay - delay_val;
+
+				rpc_fab_tx_en			<= 1;
+				state					<= STATE_TX_WAIT;
+
+			end	//end STATE_TEST_3
+
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// Wait for send to complete
+
 			STATE_TX_WAIT: begin
 				if(rpc_fab_tx_done) begin
 					delay_val			<= delay_val + 1'h1;
@@ -591,11 +588,9 @@ module GreenpakTimingTestBitstream(
 
 					//But if we have more to try, keep going!
 					else begin
-						//rpc_fab_tx_d1	<= 0;
-						//rpc_fab_tx_d2	<= 0;
 						delay_load		<= 1;
 						count			<= 0;
-						state			<= STATE_TEST_WAIT_0;
+						state			<= STATE_TEST_0;
 					end
 
 				end
