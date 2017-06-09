@@ -264,6 +264,8 @@ float RunTest(
 	bool fail = false;
 	for(int j = 0; j < navg; j ++)
 	{
+		double start = GetTime();
+
 		const float ns_per_sample = 2.5;
 		const float ns_per_tap = ns_per_sample / 32;
 
@@ -285,6 +287,10 @@ float RunTest(
 			LogError("no response\n");
 			return -1;
 		}
+
+		//profiling
+		if(j == 0)
+			LogDebug("Measurement took %.3f ms\n", 1000 * (GetTime() - start) );
 
 		//Record the position of the edge
 		int ntap = rxm.data[0];

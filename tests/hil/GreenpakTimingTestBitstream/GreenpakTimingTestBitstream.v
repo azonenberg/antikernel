@@ -458,7 +458,7 @@ module GreenpakTimingTestBitstream(
 	reg[31:0]		tx_smallest_delay	= 32'hffffffff;
 
 	reg				delay_is_bigger	= 0;
-	reg				delay_is_max	= 0;
+	reg				tap_is_max	= 0;
 
     always @(posedge clk_noc) begin
 
@@ -521,9 +521,10 @@ module GreenpakTimingTestBitstream(
 
 				//Wait a little while to let delay lines update and stabilize, and ensure that the old
 				//test_out passed all the way through the DUT.
-				//1024 clocks = 5120 ns which should be plenty
-				//if(count == 16'h03ff)
-				if(count == 16'hffff)
+				//200 MHz = 5 ns per cycle * 2k = 10.24 us.
+				//This is massively longer than the propagation delay of even the slowest delay line on the device
+				//at 1.8V, so we should be fine.
+				if(count == 16'h7ff)
 					state				<= STATE_TEST_1;
 
 			end	//end STATE_TEST_0
@@ -548,7 +549,7 @@ module GreenpakTimingTestBitstream(
 			STATE_TEST_2: begin
 
 				//Bump count by 1 since it counts the number of SDR cycles (DDR cycles are 2x this)
-				count						<= count + 1'h1;
+				count					<= count + 1'h1;
 
 				//We're done if we hit the maximum count value, or if either bit toggles
 				if(din_not_idle) begin
@@ -564,16 +565,19 @@ module GreenpakTimingTestBitstream(
 					state				<= STATE_TEST_3;
 				end
 
-				else if(count == 16'hffff) begin
-					rpc_fab_tx_en		<= 1;
-					state				<= STATE_TX_WAIT;
+				//Something's wrong, complain
+				//Max allowed propagation delay is 10.24 us
+				else if(count == 16'h7ff) begin
+					tx_delay			<= 32'hffffffff;
+					state				<= STATE_TEST_3;
 				end
 
 			end	//end STATE_TEST_2
 
+			//Just pipeline some stuff for faster Fmax
 			STATE_TEST_3: begin
 				delay_is_bigger			<= (tx_delay > tx_smallest_delay);
-				delay_is_max			<= (delay_val == 'd31);
+				tap_is_max				<= (delay_val == 'd31);
 				state					<= STATE_TEST_4;
 			end	//end STATE_TEST_3
 
@@ -581,7 +585,7 @@ module GreenpakTimingTestBitstream(
 
 				//Is this delay bigger than the last one? We're wrapping, stop and send the last value.
 				//If we're on the last delay tap, automatically declare us to be done since no previous tap was a hit
-				if( delay_is_bigger || delay_is_max) begin
+				if(delay_is_bigger || tap_is_max) begin
 					rpc_fab_tx_en		<= 1;
 					state				<= STATE_TX_WAIT;
 				end
