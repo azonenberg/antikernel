@@ -160,17 +160,23 @@ int main(int argc, char* argv[])
 					break;
 
 				//Run the actual test
-				float latency = RunTest(iface, ouraddr, dutaddr, rxbuf[0], rxbuf[1], rxbuf[2]);
+				//3, inv is 2
+				//0, inv is 1
+				float latency_rising = RunTest(iface, ouraddr, dutaddr, rxbuf[0], rxbuf[1], rxbuf[2]);
+				float latency_falling = RunTest(iface, ouraddr, dutaddr, rxbuf[0], rxbuf[1], rxbuf[2] ^ 3);
 
 				/*
 				Send results back to the server
 					uint8_t		ok
-					float		latency
+					float		latency_rising
+					float		latency_falling
 				*/
-				uint8_t		ok = (latency > 0);
+				uint8_t		ok = (latency_rising > 0) && (latency_falling > 0);
 				if(!client.SendLooped(&ok, 1))
 					break;
-				if(!client.SendLooped((unsigned char*)&latency, sizeof(latency)))
+				if(!client.SendLooped((unsigned char*)&latency_rising, sizeof(latency_rising)))
+					break;
+				if(!client.SendLooped((unsigned char*)&latency_falling, sizeof(latency_falling)))
 					break;
 			}
 		}
