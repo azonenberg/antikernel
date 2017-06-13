@@ -299,26 +299,34 @@ float RunTest(
 			LogDebug("Measurement took %.3f ms\n", 1000 * (GetTime() - start) );
 
 		//Record the position of the edge
-		int ntap = rxm.data[0];
-		int edgepos = rxm.data[1];
-		float delay_ns = edgepos * ns_per_tap;
+		int rising_ntap = rxm.data[0] & 0xff;
+		int rising_edgepos = rxm.data[1];
+		float rising_delay_ns = rising_edgepos * ns_per_tap;
+
+		int falling_ntap = (rxm.data[0] >> 8) & 0xff;
+		int falling_edgepos = rxm.data[2];
+		float falling_delay_ns = falling_edgepos * ns_per_tap;
 
 		if(j == 0)
-			LogDebug("Tap %d: sample %d (%.3f ns)\n", ntap, edgepos, delay_ns);
+		{
+			LogDebug("Rising:  tap %d, sample %d (%.3f ns)\n", rising_ntap, rising_edgepos, rising_delay_ns);
+			LogDebug("Falling: tap %d, sample %d (%.3f ns)\n", falling_ntap, falling_edgepos, falling_delay_ns);
+			LogDebug("RXD: %08x %08x %08x\n", rxm.data[0], rxm.data[1], rxm.data[2]);
+		}
 
 		//If it failed, we have an open circuit (or stupidly long wire) - complain!
-		if( (rxm.type != RPC_TYPE_RETURN_SUCCESS) || (rxm.data[1] == 0) || (rxm.data[1] >= 0x1fffff) )
+		if( (rxm.type != RPC_TYPE_RETURN_SUCCESS) || (rising_edgepos == 0) || (rising_edgepos >= 0x1fffff) )
 		{
 			LogError("No edge found within 64k clocks (open circuit?)\n");
 			fail = true;
 			continue;
 		}
 
-		if(delay_ns < nmin)
-			nmin = delay_ns;
-		if(delay_ns > nmax)
-			nmax = delay_ns;
-		nsum += delay_ns;
+		if(rising_delay_ns < nmin)
+			nmin = rising_delay_ns;
+		if(rising_delay_ns > nmax)
+			nmax = rising_delay_ns;
+		nsum += rising_delay_ns;
 	}
 
 	if(fail)

@@ -443,6 +443,7 @@ module GreenpakTimingTestBitstream(
 	localparam STATE_TEST_2			= 4;
 	localparam STATE_TEST_3			= 5;
 	localparam STATE_TEST_4			= 6;
+	localparam STATE_TEST_5			= 7;
 
 	reg[3:0] 	state	= STATE_IDLE;
 	reg[15:0] 	count	= 0;
@@ -455,10 +456,19 @@ module GreenpakTimingTestBitstream(
 	reg				din_not_idle_ff		= 0;
 
 	reg[31:0]		tx_delay			= 0;				//measured in delay line taps (1/32 of 2.5 ns, ~78 ps)
-	reg[31:0]		tx_smallest_delay	= 32'hffffffff;
+	reg[31:0]		tx_smallest_rdelay	= 32'hffffffff;
+	reg[31:0]		tx_smallest_fdelay	= 32'hffffffff;
 
-	reg				delay_is_bigger	= 0;
-	reg				tap_is_max	= 0;
+	//we look for both rising and falling edges in one RPC call
+	localparam		EDGE_RISING 		= 0;
+	localparam		EDGE_FALLING 		= 0;
+	reg				target_edge			= EDGE_RISING;
+
+	reg				done_with_rising	= 0;
+	reg				done_with_falling	= 0;
+
+	reg				delay_is_bigger		= 0;
+	reg				tap_is_max			= 0;
 
     always @(posedge clk_noc) begin
 
@@ -477,7 +487,7 @@ module GreenpakTimingTestBitstream(
 			// Sit around and wait for a message
 			STATE_IDLE: begin
 
-				led				<= 4'h5;
+				led						<= 4'h5;
 
 				//If we get a message, doesn't matter what it is, run a test
 				if(rpc_fab_rx_en) begin
@@ -488,6 +498,10 @@ module GreenpakTimingTestBitstream(
 					drive_channel		<= rpc_fab_rx_d1[5:3];
 					rx_idle				<= {!rpc_fab_rx_d0[0], !rpc_fab_rx_d0[0]};
 					tx_value			<= rpc_fab_rx_d0[1];
+
+					target_edge			<= EDGE_RISING;
+					done_with_rising	<= 0;
+					done_with_falling	<= 0;
 
 					//Prepare to reply
 					rpc_fab_tx_src_addr	<= rpc_fab_rx_dst_addr;	//loop back src/dst address
@@ -500,7 +514,8 @@ module GreenpakTimingTestBitstream(
 
 					count				<= 0;
 
-					tx_smallest_delay	<= 32'hffffffff;
+					tx_smallest_rdelay	<= 32'hffffffff;
+					tx_smallest_fdelay	<= 32'hffffffff;
 					state				<= STATE_TEST_0;
 				end
 
@@ -551,7 +566,7 @@ module GreenpakTimingTestBitstream(
 				//Bump count by 1 since it counts the number of SDR cycles (DDR cycles are 2x this)
 				count					<= count + 1'h1;
 
-				//We're done if we hit the maximum count value, or if either bit toggles
+				//We're done if either bit toggles
 				if(din_not_idle) begin
 
 					//EVEN phase
@@ -576,36 +591,85 @@ module GreenpakTimingTestBitstream(
 
 			//Just pipeline some stuff for faster Fmax
 			STATE_TEST_3: begin
-				delay_is_bigger			<= (tx_delay > tx_smallest_delay);
+				if(target_edge == EDGE_RISING)
+					delay_is_bigger		<= (tx_delay > tx_smallest_rdelay);
+				else
+					delay_is_bigger		<= (tx_delay > tx_smallest_fdelay);
+
 				tap_is_max				<= (delay_val == 'd31);
 				state					<= STATE_TEST_4;
+
+				//Skip followup if we're already done with this edge
+				if( (target_edge == EDGE_RISING) && done_with_rising)
+					state				<= STATE_TEST_5;
+				if( (target_edge == EDGE_FALLING) && done_with_falling)
+					state				<= STATE_TEST_5;
+
 			end	//end STATE_TEST_3
 
 			STATE_TEST_4: begin
 
-				//Is this delay bigger than the last one? We're wrapping, stop and send the last value.
+				//Is this delay bigger than the last one? We're wrapping, done with this pass.
 				//If we're on the last delay tap, automatically declare us to be done since no previous tap was a hit
 				if(delay_is_bigger || tap_is_max) begin
+					if(target_edge == EDGE_RISING)
+						done_with_rising	<= 1;
+					else begin
+						if(delay_is_bigger)
+							rpc_fab_tx_d0[19:16]	<= 4'ha;
+						else
+							rpc_fab_tx_d0[19:16]	<= 4'hb;	//why are we always ending up here???
+						done_with_falling	<= 1;
+					end
+				end
+
+				//Nope, nothing special going on. Save this delay as the new smallest
+				//(unless we're done with that edge already)
+				else if(target_edge == EDGE_RISING) begin
+					rpc_fab_tx_d0[5:0]	<= delay_val;
+					rpc_fab_tx_d1		<= tx_delay;
+					tx_smallest_rdelay	<= tx_delay;
+				end
+				else begin
+					rpc_fab_tx_d0[13:8]	<= delay_val;
+					rpc_fab_tx_d2		<= tx_delay;
+					rpc_fab_tx_d0[19:16]	<= 4'hc;	//debug
+					tx_smallest_fdelay	<= tx_delay;
+				end
+
+				state						<= STATE_TEST_5;
+
+			end	//end STATE_TEST_4
+
+			//Done with the current test pass
+			STATE_TEST_5: begin
+
+				//Did we hit BOTH edges?
+				if(done_with_rising && done_with_falling) begin
 					rpc_fab_tx_en		<= 1;
 					state				<= STATE_TX_WAIT;
 				end
 
-				//Nope, nothing special going on. Save this delay as the new smallest,
-				//then go on and try another delay value
+				//Nope, move on to the next pass
 				else begin
-					tx_smallest_delay	<= tx_delay;
-
-					//Prepare to send results, if needed
-					rpc_fab_tx_d0		<= delay_val;
-					rpc_fab_tx_d1		<= tx_delay;
-
-					delay_val			<= delay_val + 1'h1;
-					delay_load			<= 1;
-					count				<= 0;
 					state				<= STATE_TEST_0;
+					count				<= 0;
+
+					//To switch between rising and falling edges we invert
+					//both the value we're sending, and the value we're looking for
+					target_edge			<= ~target_edge;
+					tx_value			<= ~tx_value;
+					rx_idle				<= ~rx_idle;
+
+					//Bump delay after a (rising, falling) pair
+					if(target_edge == EDGE_FALLING) begin
+						delay_val		<= delay_val + 1'h1;
+						delay_load		<= 1;
+					end
+
 				end
 
-			end	//end STATE_TEST_4
+			end	//end STATE_TEST_5
 
 			////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// Wait for send to complete
