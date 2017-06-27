@@ -110,12 +110,16 @@ int main(int argc, char* argv[])
 
 		//Sweep the DAC in a sawtooth pattern
 		//(note: actual DAC resolution is 12 bits, we send 16 for future proofing.
-		//Do 256 steps to speed edge rate for now
+		const unsigned int num_ypoints = 4096;
+		const unsigned int codemax = 65536;
+		const unsigned int codestep = codemax / num_ypoints;
 		const unsigned int navg = 4;
 		const unsigned int nphase = 40;
-		unsigned int sample_values[256][nphase][navg] = {0};
-		//unsigned int sample_blocks[256][nphase][navg] = {0};
-		for(unsigned int adc_code=0; adc_code<65536; adc_code += 256)
+		const unsigned int sync_taps = 3;
+		const bool eye_plot = true;
+		unsigned int sample_values[num_ypoints][nphase][navg] = {0};
+		//unsigned int sample_blocks[num_ypoints][nphase][navg] = {0};
+		for(unsigned int adc_code=0; adc_code<codemax; adc_code += codestep)
 		{
 			//Set up the DAC
 			RPCMessage msg;
@@ -191,9 +195,9 @@ int main(int argc, char* argv[])
 							int bk = base + nbit;		//Number of the sample we're looking at
 														//(within this phase)
 							if( (rxm.data[1] >> nbit) & 1 )
-								sample_values[bk][phase][avg_pass] = adc_code;
+								sample_values[bk][phase][avg_pass] = adc_code / codestep;
 							if( (rxm.data[2] >> nbit) & 1 )
-								sample_values[bk + 32][phase][avg_pass] = adc_code;
+								sample_values[bk + 32][phase][avg_pass] = adc_code / codestep;
 
 							//sample_blocks[bk][phase][avg_pass] = nblock*2;
 							//sample_blocks[bk + 32][phase][avg_pass] = nblock*2 + 1;
@@ -205,13 +209,14 @@ int main(int argc, char* argv[])
 
 		//DAC code scale: 3.3V is full scale DAC output
 		//Input is attenuated by a factor of 2 (3 dB) so compensate for that
-		//float scale = (3.3f / 65535.0f) * 2;
-		float scale = 1 / 256.0f;
+		//(but we also have a 20x probe)
+		//float scale = 1.0f / num_ypoints;
+		float scale = 1.0f;
 
 		//Do final CSV export
 		//LogDebug("time (ps),voltage\n");
 		LogDebug("time (ns), voltage, nscan, phase\n");
-		for(unsigned int t=0; t<256; t++)
+		for(unsigned int t=0; t<num_ypoints; t++)
 		{
 			for(unsigned int phase=0; phase<nphase; phase++)
 			{
@@ -220,7 +225,7 @@ int main(int argc, char* argv[])
 
 				//DEBUG WORKAROUND: Shift first few phases by one full cycle
 				//TODO: seems like variable synchronizer latency? Have to calibrate somehow
-				if(phase < 7)
+				if(phase < sync_taps)
 					ns += 4;
 
 				//There's some delay in the wires etc. Add a further phase shift to center our eye in the plot
@@ -230,13 +235,16 @@ int main(int argc, char* argv[])
 				//float ns = (t%4)*4 + phase*0.1f;
 				//ns -= 6;
 
-				//Convert time to UIs
-				const float eye_width = 2;
+				const float eye_width = 4;	//4 ns = 250 MHz
 				const float halfwidth = eye_width / 2;
-				ns = fmodf(ns, eye_width);
+				if(eye_plot)
+				{
+					//Convert time to UIs
+					ns = fmodf(ns, eye_width);
 
-				//Center it fully
-				ns -= halfwidth;
+					//Center it fully
+					ns -= halfwidth;
+				}
 
 				//Convert to picoseconds so we have a nicer looking label
 				//float ps = ns * 1000;
@@ -249,18 +257,21 @@ int main(int argc, char* argv[])
 						n,
 						phase);
 
-					//Make copies left and right to complete the eye
-					LogDebug("%.3f, %.3f, %d, %d\n",
-						ns - eye_width,
-						sample_values[t][phase][n] * scale,
-						n,
-						phase);
+					if(eye_plot)
+					{
+						//Make copies left and right to complete the eye
+						LogDebug("%.3f, %.3f, %d, %d\n",
+							ns - eye_width,
+							sample_values[t][phase][n] * scale,
+							n,
+							phase);
 
-					LogDebug("%.3f, %.3f, %d, %d\n",
-						ns + eye_width,
-						sample_values[t][phase][n] * scale,
-						n,
-						phase);
+						LogDebug("%.3f, %.3f, %d, %d\n",
+							ns + eye_width,
+							sample_values[t][phase][n] * scale,
+							n,
+							phase);
+					}
 				}
 			}
 		}

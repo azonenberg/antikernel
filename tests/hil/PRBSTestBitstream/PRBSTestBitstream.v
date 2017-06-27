@@ -30,7 +30,13 @@
 module PRBSTestBitstream(
 	input wire clk,
     output reg[3:0] led = 0,
-    inout wire[7:0] pmod_c
+    inout wire scope_i2c_sda,
+    inout wire scope_i2c_scl,
+    input wire scope_out_p,
+    input wire scope_out_n,
+    output wire scope_le_p,
+    output wire scope_le_n,
+    inout wire[7:0] pmod_dq
     );
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,8 +103,8 @@ module PRBSTestBitstream(
 		.OUTPUT_GATE(6'b001111),		//Gate the outputs we use when not in use
 		.OUTPUT_BUF_GLOBAL(6'b001111),	//Use BUFGs on everything
 		.OUTPUT_BUF_LOCAL(6'b000000),	//Don't use BUFHs
-		.IN0_PERIOD(8.000),				//125 MHz input
-		.IN1_PERIOD(8.000),				//unused, but same as IN0
+		.IN0_PERIOD(10.000),			//100 MHz input
+		.IN1_PERIOD(10.000),			//unused, but same as IN0
 		.OUT0_MIN_PERIOD(8.000),		//125 MHz output for NoC
 		.OUT1_MIN_PERIOD(4.000),		//250 MHz output for PRBS generation
 		.OUT2_MIN_PERIOD(4.000),		//250 MHz output for sampling clock
@@ -175,7 +181,7 @@ module PRBSTestBitstream(
 		case(pll_state)
 
 			////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			// INIT: Load VCO configuration (8x multiplier)
+			// INIT: Load VCO configuration
 
 			//Wait for busy flag to clear, then start the reconfig process
 			PLL_STATE_INIT_0: begin
@@ -188,8 +194,8 @@ module PRBSTestBitstream(
 			//Reconfigure the VCO
 			PLL_STATE_INIT_1: begin
 				reconfig_vco_en			<= 1;
-				reconfig_vco_mult		<= 10;	//1.25 GHz Fvco (800 ps per tick)
-				reconfig_vco_indiv		<= 1;
+				reconfig_vco_mult		<= 25;	//1.25 GHz Fvco (800 ps per tick)
+				reconfig_vco_indiv		<= 2;
 				reconfig_vco_bandwidth	<= 1;
 
 				reconfig_output_idx		<= 7;	//channel -1 (mod 8) so we wrap to 0 next cycle
@@ -343,21 +349,18 @@ module PRBSTestBitstream(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // I/O buffers
 
-    //Drive PRBS single ended, tie off the adjacent signal to prevent noise from coupling into it
-    assign pmod_c[1] = 1'b0;
-
     wire	cmp_le;
 
     OBUFDS obuf_cmp_le(
 		.I(cmp_le),
-		.O(pmod_c[4]),
-		.OB(pmod_c[5])
+		.O(scope_le_p),
+		.OB(scope_le_n)
 	);
 
 	wire	cmp_out;
 	IBUFDS ibuf_cmp_out(
-		.I(pmod_c[6]),
-		.IB(pmod_c[7]),
+		.I(scope_out_p),
+		.IB(scope_out_n),
 		.O(cmp_out)
 	);
 
@@ -394,8 +397,8 @@ module PRBSTestBitstream(
 		.clk(clk_noc),
 		.clkdiv(16'd1000),		//125 kHz
 
-		.i2c_scl(pmod_c[3]),
-		.i2c_sda(pmod_c[2]),
+		.i2c_scl(scope_i2c_scl),
+		.i2c_sda(scope_i2c_sda),
 
 		.tx_en(i2c_tx_en),
 		.tx_ack(i2c_tx_ack),
@@ -486,6 +489,7 @@ module PRBSTestBitstream(
     wire[6:0]	prbs_shreg_next = { prbs_shreg[5:0], prbs_shreg[6] ^ prbs_shreg[5] };
     wire[6:0]	prbs_shreg_next2 = { prbs_shreg_next[5:0], prbs_shreg_next[6] ^ prbs_shreg_next[5] };
 
+	/*
 	//and drive them out the pin at double rate
     DDROutputBuffer #(
 		.WIDTH(1)
@@ -499,14 +503,42 @@ module PRBSTestBitstream(
 		.din1(prbs_shreg_next[0]),
 		.dout(pmod_c[0])
 	);
+	*/
+
+	//Drive out the CCLK pin b/c that's what we have a probe on
+	STARTUPE2 #(
+		.PROG_USR("FALSE"),
+		.SIM_CCLK_FREQ(15.0)
+	)
+	startup (
+		.CFGCLK(),
+		.CFGMCLK(),
+		.EOS(),
+		.CLK(),
+		.GSR(1'b0),
+		.GTS(1'b0),
+		.KEYCLEARB(1'b1),
+		.PREQ(),
+		.PACK(1'b0),
+
+		.USRCCLKO(prbs_shreg[0]),
+		.USRCCLKTS(1'b0),
+
+		.USRDONEO(1'b1),
+		.USRDONETS(1'b1)
+		);
+
+	assign pmod_dq[7:0] = 0;
+	//assign pmod_dq[6:0] = 0;
+	//assign pmod_dq[7] = prbs_shreg[0];
 
 	always @(posedge clk_prbs) begin
 
 		//DDR PRBS7 generator
-		prbs_shreg	<= prbs_shreg_next2;
+		//prbs_shreg	<= prbs_shreg_next2;
 
 		//SDR PRBS7 generator
-		//prbs_shreg	<= prbs_shreg_next;
+		prbs_shreg	<= prbs_shreg_next;
 
 		//Slow PRBS7 generator
 		//prbs_count	<= prbs_count + 1'h1;

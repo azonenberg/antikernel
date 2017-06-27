@@ -43,13 +43,19 @@ PRBSTestBitstream:
 
     # Specify target BSP rather than list of triplets
     boards:
-        - ../../../bsp/zybo-scope.yml
+        - ../../../bsp/starshipraider-host-x1.yml
 
     # Signals that we need broken out at the top level (in addition to anything that peripheral IP requires)
     pins:
         clk: 1
         led: 4
-        pmod_c: 8
+        scope_i2c_sda: 1
+        scope_i2c_scl: 1
+        scope_out_p: 1
+        scope_out_n: 1
+        scope_le_p: 1
+        scope_le_n: 1
+        pmod_dq : 8
 
     # Cross-clock timing requirements
     # It's annoying... we have to use the auto-generated timespec name, which isn't very useful!
