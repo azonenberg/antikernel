@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -55,6 +55,7 @@ int main(int argc, char* argv[])
 		{
 			API_DIGILENT,
 			API_FTDI,
+			API_PIPE,
 			API_UNSPECIFIED
 		} api_type = API_UNSPECIFIED;
 		string adapter_serial = "";
@@ -94,6 +95,8 @@ int main(int argc, char* argv[])
 					api_type = API_DIGILENT;
 				else if(sapi == "ftdi")
 					api_type = API_FTDI;
+				else if(sapi == "pipe")
+					api_type = API_PIPE;
 				else
 				{
 					printf("Unrecognized interface API \"%s\", use --help\n", sapi.c_str());
@@ -220,6 +223,10 @@ int main(int argc, char* argv[])
 				#endif
 				break;
 
+			case API_PIPE:
+				iface = new PipeJtagInterface;
+				break;
+
 			default:
 				LogError("Unrecognized API\n");
 				return 1;
@@ -267,6 +274,8 @@ int main(int argc, char* argv[])
 			try
 			{
 				Socket client = g_socket.Accept();
+				if(!client.IsValid())
+					break;
 				LogNotice("Client connected\n");
 				ProcessConnection(iface, client);
 				LogNotice("Client disconnected\n");
