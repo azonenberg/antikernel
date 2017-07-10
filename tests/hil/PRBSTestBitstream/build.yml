@@ -56,6 +56,7 @@ PRBSTestBitstream:
         scope_le_p: 1
         scope_le_n: 1
         pmod_dq : 8
+        ram0_dq : 8
 
     # Cross-clock timing requirements
     # It's annoying... we have to use the auto-generated timespec name, which isn't very useful!

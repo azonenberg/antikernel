@@ -36,7 +36,8 @@ module PRBSTestBitstream(
     input wire scope_out_n,
     output wire scope_le_p,
     output wire scope_le_n,
-    inout wire[7:0] pmod_dq
+    inout wire[7:0] pmod_dq,
+    output wire[7:0] ram0_dq
     );
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -485,26 +486,25 @@ module PRBSTestBitstream(
     reg[2:0]	prbs_count		= 0;
     reg[6:0]	prbs_shreg		= 1;
 
+    //Tie off unused pins
+    assign ram0_dq[7:1]			= 7'h0;
+
 	//Step the PRBS shift register by TWO bits per clock
     wire[6:0]	prbs_shreg_next = { prbs_shreg[5:0], prbs_shreg[6] ^ prbs_shreg[5] };
     wire[6:0]	prbs_shreg_next2 = { prbs_shreg_next[5:0], prbs_shreg_next[6] ^ prbs_shreg_next[5] };
 
-	/*
 	//and drive them out the pin at double rate
     DDROutputBuffer #(
 		.WIDTH(1)
 	) prbs_ddrbuf (
 		.clk_p(clk_prbs),
 		.clk_n(!clk_prbs),
-		//.din0(1'b0),
-		//.din1(1'b1),
 		.din0(prbs_shreg[0]),
-		//.din1(prbs_shreg[0]),
 		.din1(prbs_shreg_next[0]),
-		.dout(pmod_c[0])
+		.dout(ram0_dq[0])
 	);
-	*/
 
+	/*
 	//Drive out the CCLK pin b/c that's what we have a probe on
 	STARTUPE2 #(
 		.PROG_USR("FALSE"),
@@ -527,28 +527,22 @@ module PRBSTestBitstream(
 		.USRDONEO(1'b1),
 		.USRDONETS(1'b1)
 		);
+	*/
 
 	assign pmod_dq[7:0] = 0;
-	//assign pmod_dq[6:0] = 0;
-	//assign pmod_dq[7] = prbs_shreg[0];
 
 	always @(posedge clk_prbs) begin
 
 		//DDR PRBS7 generator
-		//prbs_shreg	<= prbs_shreg_next2;
+		prbs_shreg	<= prbs_shreg_next2;
 
 		//SDR PRBS7 generator
-		prbs_shreg	<= prbs_shreg_next;
+		//prbs_shreg	<= prbs_shreg_next;
 
 		//Slow PRBS7 generator
 		//prbs_count	<= prbs_count + 1'h1;
 		//if(prbs_count == 0)
 		//	prbs_shreg	<= prbs_shreg_next;
-
-		//Squarewave at 1/4 rate
-		//prbs_count	<= prbs_count + 1'h1;
-		//if(prbs_count == 0)
-		//	prbs_shreg		<= ~prbs_shreg;
 
 		//Reset the shreg
 		//Our clock is phase locked to, and faster than,  the NoC clock so this should be safe to use in the PRBS domain

@@ -235,7 +235,7 @@ int main(int argc, char* argv[])
 				//float ns = (t%4)*4 + phase*0.1f;
 				//ns -= 6;
 
-				const float eye_width = 4;	//4 ns = 250 MHz
+				const float eye_width = 2;	//2 ns = 500 Mbps
 				const float halfwidth = eye_width / 2;
 				if(eye_plot)
 				{
