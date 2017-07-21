@@ -31,6 +31,9 @@ module GreenpakTimingTestBitstream(
 	input wire clk,
     output reg[3:0] led,
 
+    output wire scope_i2c_scl,
+    inout wire scope_i2c_sda,
+
     inout wire[7:0] pmod_dq
     );
 
@@ -434,6 +437,211 @@ module GreenpakTimingTestBitstream(
 	assign test_in_arr[7] = 2'h0;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // I2C bus for talking to the INA226 and thermal sensor
+
+	//8'h80 = Si7050 thermal sensor
+
+	reg			sensor_i2c_tx_en		= 0;
+	reg[7:0]	sensor_i2c_tx_data		= 0;
+	wire		sensor_i2c_tx_ack;
+
+	reg			sensor_i2c_rx_en		= 0;
+	wire		sensor_i2c_rx_rdy;
+	wire[7:0]	sensor_i2c_rx_data;
+	reg			sensor_i2c_rx_ack		= 1;
+
+	wire		sensor_i2c_busy;
+
+	reg			sensor_i2c_start_en		= 0;
+	reg			sensor_i2c_restart_en	= 0;
+	reg			sensor_i2c_stop_en		= 0;
+
+    I2CTransceiver sensor_i2c_txvr(
+		.clk(clk_noc),
+		.clkdiv(16'd2000),			//200 MHz -> 100 kHz
+
+		.i2c_scl(scope_i2c_scl),
+		.i2c_sda(scope_i2c_sda),
+
+		.tx_en(sensor_i2c_tx_en),
+		.tx_ack(sensor_i2c_tx_ack),
+		.tx_data(sensor_i2c_tx_data),
+
+		.rx_en(sensor_i2c_rx_en),
+		.rx_rdy(sensor_i2c_rx_rdy),
+		.rx_out(sensor_i2c_rx_data),
+		.rx_ack(sensor_i2c_rx_ack),
+
+		.start_en(sensor_i2c_start_en),
+		.restart_en(sensor_i2c_restart_en),
+		.stop_en(sensor_i2c_stop_en),
+		.busy(sensor_i2c_busy)
+	);
+
+	//Interface from NoC to sensor state machines
+	reg			temp_read_en		= 0;
+	reg			sensor_read_done	= 0;
+	reg[16:0]	temp_value			= 0;	//Temperature (9.8 fixed point)
+
+	/*
+		Conversion to fixed point deg C.
+		Approximate, but accurate to well under 0.25C across our operating range.
+		Since the sensor is only accurate to +/- 1C this should be plenty good enough
+
+		Equation in datasheet
+			degC = ( (code * 175.72) / 65536 ) - 46.85
+
+		Rearranging terms...
+			degC =  (code * 0.002681274) - 46.85
+
+		Converting to 9.8 fixed point (base unit = 1/256 C)
+			fpDeg = (code * 0.68640625) - 11993.6
+			fpDeg = (code>>4 * 10.9825) - 11993.6
+			fpDeg ~= (code * 11) >> 4 - 11994
+
+		Example conversion:
+			Exact: 0x669C = 23.5817 C
+			FP:    0x669C = 6065 fp16 = 23.6914 C
+
+			Exact: 0x1e24 = -26.16 C
+			FP:    0x1e24 = -6690 fp16 = -26.13 C
+	 */
+
+	localparam SENSOR_STATE_IDLE	= 4'h0;
+	localparam SENSOR_STATE_TEMP_0	= 4'h1;
+	localparam SENSOR_STATE_TEMP_1	= 4'h2;
+	localparam SENSOR_STATE_TEMP_2	= 4'h3;
+	localparam SENSOR_STATE_TEMP_3	= 4'h4;
+	localparam SENSOR_STATE_TEMP_4	= 4'h5;
+	localparam SENSOR_STATE_TEMP_5	= 4'h6;
+	localparam SENSOR_STATE_TEMP_6	= 4'h7;
+	localparam SENSOR_STATE_TEMP_7	= 4'h8;
+
+	reg[3:0]	sensor_state		= SENSOR_STATE_IDLE;
+	reg[15:0]	raw_temp			= 0;
+
+	reg[20:0]	raw_temp_x11		= 0;
+
+	always @(posedge clk_noc) begin
+
+		sensor_i2c_start_en		<= 0;
+		sensor_i2c_restart_en	<= 0;
+		sensor_i2c_stop_en		<= 0;
+		sensor_i2c_tx_en		<= 0;
+		sensor_i2c_rx_en		<= 0;
+
+		sensor_read_done		<= 0;
+
+		//not using it
+		led						<= 0;
+
+		//Multiply by 11
+		raw_temp_x11			<= (raw_temp << 3) + (raw_temp << 1) + (raw_temp);
+
+		case(sensor_state)
+
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// IDLE - wait for a read command to come in
+
+			SENSOR_STATE_IDLE: begin
+				if(temp_read_en) begin
+					sensor_i2c_start_en		<= 1;
+					sensor_state			<= SENSOR_STATE_TEMP_0;
+				end
+
+			end	//end SENSOR_STATE_IDLE
+
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// TEMP - read the temp sensor
+
+			//Send address
+			SENSOR_STATE_TEMP_0: begin
+				if(!sensor_i2c_busy) begin
+					sensor_i2c_tx_en		<= 1;
+					sensor_i2c_tx_data		<= 8'h80;
+					sensor_state			<= SENSOR_STATE_TEMP_1;
+				end
+			end	//end SENSOR_STATE_TEMP_0
+
+			//We should get an ACK, ignore the result for now
+			//Send the measure command
+			SENSOR_STATE_TEMP_1: begin
+				if(!sensor_i2c_busy) begin
+					sensor_i2c_tx_en		<= 1;
+					sensor_i2c_tx_data		<= 8'hf3;	//measure, no hold
+					sensor_state			<= SENSOR_STATE_TEMP_2;
+				end
+			end	//end SENSOR_STATE_TEMP_1
+
+			//Send a restart command
+			SENSOR_STATE_TEMP_2: begin
+				if(!sensor_i2c_busy) begin
+					sensor_i2c_restart_en	<= 1;
+					sensor_state			<= SENSOR_STATE_TEMP_3;
+				end
+			end	//end SENSOR_STATE_TEMP_2
+
+			//Send the address again, reading this time
+			SENSOR_STATE_TEMP_3: begin
+				if(!sensor_i2c_busy) begin
+					sensor_i2c_tx_en		<= 1;
+					sensor_i2c_tx_data		<= 8'h81;
+					sensor_state			<= SENSOR_STATE_TEMP_4;
+				end
+			end	//end SENSOR_STATE_TEMP_3
+
+			//See if we get an ACK or a NAK
+			SENSOR_STATE_TEMP_4: begin
+				if(!sensor_i2c_busy) begin
+
+					//ACK, we're good to read - go get the data
+					if(sensor_i2c_tx_ack) begin
+						sensor_i2c_rx_en	<= 1;
+						sensor_i2c_rx_ack	<= 1;
+						sensor_state		<= SENSOR_STATE_TEMP_5;
+					end
+
+					//NAK, still converting - go read again
+					else
+						sensor_state		<= SENSOR_STATE_TEMP_2;
+
+				end
+			end	//end SENSOR_STATE_TEMP_4
+
+			//Read MSB of temp data
+			SENSOR_STATE_TEMP_5: begin
+				if(!sensor_i2c_busy) begin
+					raw_temp[15:8]			<= sensor_i2c_rx_data;
+
+					sensor_i2c_rx_en		<= 1;
+					sensor_i2c_rx_ack		<= 0;	//don't ask for checksum
+					sensor_state			<= SENSOR_STATE_TEMP_6;
+				end
+			end	//end SENSOR_STATE_TEMP_5
+
+			//Read LSB of temp data
+			SENSOR_STATE_TEMP_6: begin
+				if(!sensor_i2c_busy) begin
+					raw_temp[7:0]			<= sensor_i2c_rx_data;
+					sensor_state			<= SENSOR_STATE_TEMP_7;
+					sensor_i2c_stop_en		<= 1;
+				end
+			end	//end SENSOR_STATE_TEMP_6
+
+			//Convert to fixed point degC
+			SENSOR_STATE_TEMP_7: begin
+				if(!sensor_i2c_busy) begin
+					sensor_read_done		<= 1;
+					temp_value				<= raw_temp_x11[20:4] - 16'd11994;
+					sensor_state			<= SENSOR_STATE_IDLE;
+				end
+			end
+
+		endcase
+
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Main state machine
 
 	localparam STATE_IDLE 		 	= 0;
@@ -444,6 +652,7 @@ module GreenpakTimingTestBitstream(
 	localparam STATE_TEST_3			= 5;
 	localparam STATE_TEST_4			= 6;
 	localparam STATE_TEST_5			= 7;
+	localparam STATE_TEMP_0			= 8;
 
 	reg[3:0] 	state	= STATE_IDLE;
 	reg[15:0] 	count	= 0;
@@ -454,6 +663,8 @@ module GreenpakTimingTestBitstream(
 
 	wire			din_not_idle		= (test_in_arr[sample_channel] != rx_idle);
 	reg				din_not_idle_ff		= 0;
+	wire			even_phase			= test_in_arr[sample_channel][0] == test_in_arr[sample_channel][1];
+	reg				even_phase_ff		= 0;
 
 	reg[31:0]		tx_delay			= 0;				//measured in delay line taps (1/32 of 2.5 ns, ~78 ps)
 	reg[31:0]		tx_smallest_rdelay	= 32'hffffffff;
@@ -475,11 +686,14 @@ module GreenpakTimingTestBitstream(
 		//Clear single-cycle flags
 		delay_load				<= 0;
 		rpc_fab_tx_en			<= 0;
+		temp_read_en			<= 0;
 
 		//Default to not ready!
 		rpc_fab_rx_ready		<= 0;
 
+		//Pipeline input data
 		din_not_idle_ff			<= din_not_idle;
+		even_phase_ff			<= even_phase;
 
 		case(state)
 
@@ -487,42 +701,74 @@ module GreenpakTimingTestBitstream(
 			// Sit around and wait for a message
 			STATE_IDLE: begin
 
-				led						<= 4'h5;
+				//Clear our delay lines
+				delay_val			<= 0;
+				delay_load			<= 1;
+
+				//Clear a bunch of state regardless of what message we might be getting
+				rpc_fab_tx_d0		<= 0;
+				rpc_fab_tx_d1		<= 0;
+				rpc_fab_tx_d2		<= 0;
+				count				<= 0;
+				done_with_rising	<= 0;
+				done_with_falling	<= 0;
+
+				//Prepare to reply
+				rpc_fab_tx_src_addr	<= rpc_fab_rx_dst_addr;	//loop back src/dst address
+				rpc_fab_tx_dst_addr	<= rpc_fab_rx_src_addr;
+				rpc_fab_tx_callnum	<= rpc_fab_rx_callnum;
+				rpc_fab_tx_type		<= RPC_TYPE_RETURN_SUCCESS;
+
+				//Prepare to do a round trip time measurement (only valid for call #0 but ignored otherwise)
+				sample_channel		<= rpc_fab_rx_d1[2:0];
+				drive_channel		<= rpc_fab_rx_d1[5:3];
+				rx_idle				<= {!rpc_fab_rx_d0[0], !rpc_fab_rx_d0[0]};
+				tx_value			<= rpc_fab_rx_d0[1];
+
+				target_edge			<= EDGE_RISING;
+
+				tx_smallest_rdelay	<= 32'hffffffff;
+				tx_smallest_fdelay	<= 32'hffffffff;
 
 				//If we get a message, doesn't matter what it is, run a test
 				if(rpc_fab_rx_en) begin
-					delay_val			<= 0;
-					delay_load			<= 1;
 
-					sample_channel		<= rpc_fab_rx_d1[2:0];
-					drive_channel		<= rpc_fab_rx_d1[5:3];
-					rx_idle				<= {!rpc_fab_rx_d0[0], !rpc_fab_rx_d0[0]};
-					tx_value			<= rpc_fab_rx_d0[1];
+					case(rpc_fab_rx_callnum)
 
-					target_edge			<= EDGE_RISING;
-					done_with_rising	<= 0;
-					done_with_falling	<= 0;
+						//TODO: name
+						//Round trip time measurement
+						0: begin
+							state			<= STATE_TEST_0;
+						end
 
-					//Prepare to reply
-					rpc_fab_tx_src_addr	<= rpc_fab_rx_dst_addr;	//loop back src/dst address
-					rpc_fab_tx_dst_addr	<= rpc_fab_rx_src_addr;
-					rpc_fab_tx_callnum	<= rpc_fab_rx_callnum;
-					rpc_fab_tx_type		<= RPC_TYPE_RETURN_SUCCESS;
-					rpc_fab_tx_d0		<= 0;
-					rpc_fab_tx_d1		<= 0;
-					rpc_fab_tx_d2		<= 0;
+						//Temperature measurement
+						1: begin
+							temp_read_en	<= 1;
+							state			<= STATE_TEMP_0;
+						end
 
-					count				<= 0;
+					endcase
 
-					tx_smallest_rdelay	<= 32'hffffffff;
-					tx_smallest_fdelay	<= 32'hffffffff;
-					state				<= STATE_TEST_0;
 				end
 
 				else
-					rpc_fab_rx_ready	<= 1;
+					rpc_fab_rx_ready		<= 1;
 
 			end	//end STATE_IDLE
+
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// Collect a temperature measurement
+
+			STATE_TEMP_0: begin
+
+				if(sensor_read_done) begin
+					//sign extend to 32 bits
+					rpc_fab_tx_d1			<= { {15{temp_value[16]}}, temp_value };
+					rpc_fab_tx_en			<= 1;
+					state					<= STATE_TX_WAIT;
+				end
+
+			end	//end STATE_TEMP_0
 
 			////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// Run the actual test
@@ -566,11 +812,13 @@ module GreenpakTimingTestBitstream(
 				//Bump count by 1 since it counts the number of SDR cycles (DDR cycles are 2x this)
 				count					<= count + 1'h1;
 
-				//We're done if either bit toggles
-				if(din_not_idle) begin
+				//We're done if either bit toggled one clock ago.
+				//The extra clock of delay isn't important, we can just calibrate this out when we
+				//measure the PCB trace/level shifter delays
+				if(din_not_idle_ff) begin
 
 					//EVEN phase
-					if(test_in_arr[sample_channel][0] == test_in_arr[sample_channel][1])
+					if(even_phase_ff)
 						tx_delay		<= {count, 1'h0, 5'h0} - delay_val;
 
 					//ODD phase
@@ -626,15 +874,15 @@ module GreenpakTimingTestBitstream(
 				//Nope, nothing special going on. Save this delay as the new smallest
 				//(unless we're done with that edge already)
 				else if(target_edge == EDGE_RISING) begin
-					rpc_fab_tx_d0[5:0]	<= delay_val;
-					rpc_fab_tx_d1		<= tx_delay;
-					tx_smallest_rdelay	<= tx_delay;
+					rpc_fab_tx_d0[5:0]		<= delay_val;
+					rpc_fab_tx_d1			<= tx_delay;
+					tx_smallest_rdelay		<= tx_delay;
 				end
 				else begin
-					rpc_fab_tx_d0[13:8]	<= delay_val;
-					rpc_fab_tx_d2		<= tx_delay;
+					rpc_fab_tx_d0[13:8]		<= delay_val;
+					rpc_fab_tx_d2			<= tx_delay;
 					rpc_fab_tx_d0[19:16]	<= 4'hc;	//debug
-					tx_smallest_fdelay	<= tx_delay;
+					tx_smallest_fdelay		<= tx_delay;
 				end
 
 				state						<= STATE_TEST_5;

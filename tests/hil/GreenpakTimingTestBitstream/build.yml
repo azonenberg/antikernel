@@ -43,6 +43,8 @@ GreenpakTimingTestBitstream:
         clk: 1
         led: 4
         pmod_dq: 8
+        scope_i2c_sda: 1
+        scope_i2c_scl: 1
 
     # Pull in NoC address map
     constants:
@@ -68,6 +70,7 @@ GreenpakTimingTestBitstream:
         - ../../../antikernel-ipcores/device_abstraction/ClockBuffer.v
         - ../../../antikernel-ipcores/device_abstraction/IODelayCalibration.v
         - ../../../antikernel-ipcores/device_abstraction/JtagTAP.v
+        - ../../../antikernel-ipcores/interface/i2c/I2CTransceiver.v
         - ../../../antikernel-ipcores/math/CRC8_ATM.v
         - ../../../antikernel-ipcores/math/CRC32_Ethernet_x32.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3EchoNode.v

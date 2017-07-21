@@ -134,6 +134,26 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 
+		//Read the board temperature
+		RPCMessage msg;
+		msg.from = ouraddr;
+		msg.to = dutaddr;
+		msg.type = RPC_TYPE_CALL;
+		msg.callnum = 1;		//read temperature
+		msg.data[0] = 0;
+		msg.data[1] = 0;
+		msg.data[2] = 0;
+		iface.SendRPCMessage(msg);
+		RPCMessage rxm;
+		if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 5))
+		{
+			LogError("no response\n");
+			return -1;
+		}
+		int signtemp = rxm.data[1];
+		LogNotice("rxm d1 = %08x\n", signtemp);
+		LogNotice("temp = %.2f\n", signtemp / 256.0f);
+
 		//Wait for connections and crunch them
 		while(true)
 		{
@@ -280,7 +300,7 @@ float RunTest(
 		msg.from = ouraddr;
 		msg.to = dutaddr;
 		msg.type = RPC_TYPE_CALL;
-		msg.callnum = 0;
+		msg.callnum = 0;							//Do a round trip time measurement
 		msg.data[0] = polarity;
 		msg.data[1] = (ndrive << 3) | nsample;
 		msg.data[2] = 0;
