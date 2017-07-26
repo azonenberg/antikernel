@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -50,31 +50,31 @@ public:
 
 	/**
 		@brief The time scale, in picoseconds per timestep, used by this channel.
-		
+
 		This is used as a scaking factor for individual sample time values as well as to compute the maximum zoom value
 		for the time axis.
 	 */
 	int64_t m_timescale;
-	
+
 	virtual size_t GetDepth() =0;
-	
+
 	/**
 		@brief Gets the time the capture ends at, in time steps
 	 */
 	virtual int64_t GetEndTime() =0;
-	
+
 	virtual int64_t GetSampleStart(size_t i) =0;
 	virtual int64_t GetSampleLen(size_t i) =0;
-	
+
 	virtual bool EqualityTest(size_t i, size_t j) =0;
 };
 
 /**
 	@brief A single channel of an oscilloscope capture.
-	
+
 	One channel contains a time-series of OscilloscopeSample objects as well as scale information etc. The samples may
 	or may not be at regular intervals depending on whether the Oscilloscope uses RLE compression.
-	
+
 	The channel data is independent of the renderer.
  */
 template<class S>
@@ -86,27 +86,27 @@ public:
 		@brief The actual samples
 	 */
 	std::vector< OscilloscopeSample<S> > m_samples;
-	
+
 	virtual size_t GetDepth()
 	{
 		return m_samples.size();
 	}
-	
+
 	virtual int64_t GetSampleStart(size_t i)
 	{
 		return m_samples[i].m_offset;
 	}
-	
+
 	virtual int64_t GetSampleLen(size_t i)
 	{
 		return m_samples[i].m_duration;
 	}
-	
+
 	virtual bool EqualityTest(size_t i, size_t j)
 	{
 		return (m_samples[i].m_sample == m_samples[j].m_sample);
 	}
-	
+
 	virtual int64_t GetEndTime()
 	{
 		if(m_samples.empty())
@@ -114,13 +114,13 @@ public:
 		const OscilloscopeSample<S>& samp = m_samples[m_samples.size() - 1];
 		return samp.m_offset + samp.m_duration;
 	}
-	
+
 	size_t size()
 	{ return m_samples.size(); }
-	
+
 	S& operator[](size_t i)
 	{ return m_samples[i]; }
-	
+
 };
 
 typedef CaptureChannel<bool> DigitalCapture;
