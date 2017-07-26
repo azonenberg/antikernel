@@ -36,7 +36,7 @@
 #ifndef scopehal_h
 #define scopehal_h
 
-//#include "../jtaghal/jtaghal.h"
+#include "../jtaghal/jtaghal.h"
 
 #include <vector>
 #include <string>

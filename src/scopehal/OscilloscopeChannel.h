@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -41,7 +41,7 @@
 
 /**
 	@brief A single channel on the oscilloscope.
-	
+
 	Each time the scope is triggered a new CaptureChannel is created with the new capture's data.
  */
 class OscilloscopeChannel
@@ -51,39 +51,39 @@ public:
 	{
 		CHANNEL_TYPE_ANALOG,
 		CHANNEL_TYPE_DIGITAL,
-		
+
 		//Complex datatype from a protocol decoder
 		CHANNEL_TYPE_COMPLEX
 	};
 
 	OscilloscopeChannel(std::string hwname, OscilloscopeChannel::ChannelType type, std::string color, bool procedural = false, int width = 1);
 	virtual ~OscilloscopeChannel();
-	
+
 	///Display color (any valid GDK format)
 	std::string m_displaycolor;
 
 	///Display name (user defined, defaults to m_hwname)
 	std::string m_displayname;
-	
+
 	//Stuff here is set once at init and can't be changed
 	ChannelType GetType();
 	std::string GetHwname();
 
 	///Get the channel's data
 	CaptureChannelBase* GetData();
-	
+
 	///Set new data, overwriting the old data as appropriate
 	void SetData(CaptureChannelBase* pNew);
 
 	bool IsProcedural();
-	
-	virtual ChannelRenderer* CreateRenderer();	
+
+	//virtual ChannelRenderer* CreateRenderer();
 
 	///If not displayed OR used for trigger, may be disabled in the instrument if supported
 	bool m_visible;
-	
+
 	int GetWidth();
-	
+
 	//Display time scale (normally the same for all channels)
 	float m_timescale;
 
@@ -91,16 +91,16 @@ protected:
 
 	///Capture data
 	CaptureChannelBase* m_data;
-		
+
 	///Channel type
 	ChannelType m_type;
 
 	///Hardware name as labeled on the scope
 	std::string m_hwname;
-	
+
 	///Bus width (1 to N)
 	int m_width;
-	
+
 	///Set to true if we're the output of a protocol decoder
 	bool m_procedural;
 };

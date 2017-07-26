@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -35,8 +35,10 @@
 
 #include "scopehal.h"
 #include "OscilloscopeChannel.h"
+/*
 #include "AnalogRenderer.h"
 #include "DigitalRenderer.h"
+*/
 
 using namespace std;
 
@@ -50,13 +52,13 @@ OscilloscopeChannel::OscilloscopeChannel(string hwname, OscilloscopeChannel::Cha
 	, m_hwname(hwname)
 {
 	m_data = NULL;
-	
+
 	m_procedural = procedural;
-	
+
 	m_visible = true;
-	
+
 	m_width = width;
-	
+
 	m_timescale = 1E-2;
 }
 
@@ -83,7 +85,7 @@ CaptureChannelBase* OscilloscopeChannel::GetData()
 {
 	return m_data;
 }
-	
+
 void OscilloscopeChannel::SetData(CaptureChannelBase* pNew)
 {
 	delete m_data;
@@ -103,6 +105,7 @@ int OscilloscopeChannel::GetWidth()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Factory methods
 
+/*
 ChannelRenderer* OscilloscopeChannel::CreateRenderer()
 {
 	if(!m_procedural)
@@ -113,7 +116,7 @@ ChannelRenderer* OscilloscopeChannel::CreateRenderer()
 			return new AnalogRenderer(this);
 		case CHANNEL_TYPE_DIGITAL:
 			return new DigitalRenderer(this);
-			
+
 		//complex channels must be procedural
 		case CHANNEL_TYPE_COMPLEX:
 			throw JtagExceptionWrapper(
@@ -123,10 +126,11 @@ ChannelRenderer* OscilloscopeChannel::CreateRenderer()
 			break;
 		}
 	}
-	
+
 	//procedural channels must override this
 	throw JtagExceptionWrapper(
 		"Invalid channel type",
 		"",
 		JtagException::EXCEPTION_TYPE_GIGO);
 }
+*/
