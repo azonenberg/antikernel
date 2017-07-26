@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -48,7 +48,7 @@ using namespace std;
 // Construction / destruction
 Oscilloscope::Oscilloscope()
 {
-	
+
 }
 
 Oscilloscope::~Oscilloscope()
@@ -75,16 +75,16 @@ int Oscilloscope::GetDeviceCount()
 		//Skip everything but USB TMC
 		if(NULL == strstr(dent->d_name, "usbtmc"))
 			continue;
-		
+
 		//Read the count (may not be sorted)
 		int tmp = -1;
 		sscanf(dent->d_name, "usbtmc%3d", &tmp);
-		
+
 		//Keep track of the max
 		if(tmp > usbtmc_max)
 			usbtmc_max = tmp;
 	}
-	
+
 	//Add 1 since indexes are zero-based
 	closedir(dir);
 	return usbtmc_max + 1;
@@ -92,7 +92,7 @@ int Oscilloscope::GetDeviceCount()
 
 /**
 	@brief Creates the Nth device on the system
-	
+
 	@param ndev		Device index (zero based)
  */
 Oscilloscope* Oscilloscope::CreateDevice(int ndev)
@@ -108,7 +108,7 @@ Oscilloscope* Oscilloscope::CreateDevice(int ndev)
 			"",
 			JtagException::EXCEPTION_TYPE_ADAPTER);
 	}
-	
+
 	//Ask the device for its ID
 	write(hfile, "*IDN?", 5);
 	char idcode[1024];
@@ -121,7 +121,7 @@ Oscilloscope* Oscilloscope::CreateDevice(int ndev)
 			JtagException::EXCEPTION_TYPE_ADAPTER);
 	}
 	idcode[len] = 0;
-	
+
 	//Parse ID code
 	char vendor[1024];
 	char model[1024];
@@ -129,7 +129,7 @@ Oscilloscope* Oscilloscope::CreateDevice(int ndev)
 	char firmware[1024];
 	sscanf(idcode, "%1023[^,],%1023[^,],%1023[^,],%1023s", vendor, model, serl, firmware);
 	close(hfile);
-	
+
 	//Check vendors
 	if(!strcmp(vendor, "Rigol Technologies"))
 	{
@@ -144,7 +144,7 @@ Oscilloscope* Oscilloscope::CreateDevice(int ndev)
 				JtagException::EXCEPTION_TYPE_ADAPTER);
 		}
 	}
-	
+
 	throw JtagExceptionWrapper(
 		"Unrecognized USBTMC vendor - not supported",
 		"",
@@ -179,7 +179,7 @@ OscilloscopeChannel* Oscilloscope::GetChannel(std::string name, bool bThrowOnFai
 		if(m_channels[i]->m_displayname == name)
 			return m_channels[i];
 	}
-	
+
 	//not found
 	if(bThrowOnFailure)
 	{
@@ -188,7 +188,7 @@ OscilloscopeChannel* Oscilloscope::GetChannel(std::string name, bool bThrowOnFai
 			"",
 			JtagException::EXCEPTION_TYPE_GIGO);
 	}
-	
+
 	return NULL;
 }
 
@@ -216,6 +216,6 @@ bool Oscilloscope::WaitForTrigger(int timeout, bool exception_on_timeout)
 			"",
 			JtagException::EXCEPTION_TYPE_FIRMWARE);
 	}
-	
+
 	return trig;
 }
