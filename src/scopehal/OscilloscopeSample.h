@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -36,9 +36,9 @@
 #ifndef OscilloscopeSample_h
 #define OscilloscopeSample_h
 
-/** 
+/**
 	@brief Base class for all OscilloscopeSample specializations
-	
+
 	This class, and its derived classes, must not have any virtual functions.
  */
 class OscilloscopeSampleBase
@@ -48,17 +48,17 @@ public:
 	: m_offset(off)
 	, m_duration(dur)
 	{}
-	
+
 	/**
 		@brief Offset from the start of the capture, in sample clock cycles.
-		
+
 		May not count at a constant rate depending on whether the capture is RLE compressed or not.
 	 */
 	int64_t m_offset;
-	
+
 	/**
 		@brief Duration of the sample.
-		
+
 		Indicates how wide the sample should appear in the time graph. Samples may be directly adjacent in case of
 		primitives, or have space between them for higher level protocols.
 	 */
@@ -81,7 +81,7 @@ public:
 		@brief The actual sample
 	 */
 	T m_sample;
-	
+
 	operator T&()
 	{ return m_sample; }
 };
@@ -103,21 +103,21 @@ typedef OscilloscopeSample<float> AnalogSample;
 
 /**
 	@brief ASCII sample.
-	
+
 	Represents ASCII text sent over an arbitrary physical layer (such as RS-232).
  */
 typedef OscilloscopeSample<char> AsciiSample;
 
 /**
 	@brief Byte sample.
-	
+
 	Represents bytewise data sent over an arbitrary physical layer (such as RS-232).
  */
 typedef OscilloscopeSample<unsigned char> ByteSample;
 
 /**
 	@brief String sample.
-	
+
 	Output by a protocol decoder.
  */
 typedef OscilloscopeSample<std::string> StringSample;
