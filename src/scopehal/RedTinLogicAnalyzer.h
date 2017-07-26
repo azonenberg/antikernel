@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -43,39 +43,39 @@ public:
 	RedTinLogicAnalyzer(const std::string& host, unsigned short port, const std::string& nochost);
 	RedTinLogicAnalyzer(const std::string& host, unsigned short port);
 	void Connect(const std::string& nochost);
-	
+
 	virtual ~RedTinLogicAnalyzer();
-	
+
 	virtual std::string GetName();
 	virtual std::string GetVendor();
 	virtual std::string GetSerial();
-	
+
 	//Triggering
 	virtual Oscilloscope::TriggerMode PollTrigger();
 	virtual void AcquireData(sigc::slot1<int, float> progress_callback);
 	virtual void Start();
 	virtual void StartSingleTrigger();
 	virtual void Stop();
-	
+
 	NOCSwitchInterface m_iface;
-	
+
 	virtual void ResetTriggerConditions();
 	virtual void SetTriggerForChannel(OscilloscopeChannel* channel, std::vector<TriggerType> triggerbits);
-	
+
 protected:
 	void LoadChannels();
-	
+
 	std::string ReadString(const unsigned char* data, int& pos);
-	
+
 	std::string m_nochost;
 	uint16_t m_scopeaddr;
-	
+
 	std::vector<int> m_triggers;
-	
+
 	uint32_t m_timescale;
 	uint32_t m_depth;
 	uint32_t m_width;
-	
+
 	NameServer* m_nameserver;
 };
 

@@ -38,6 +38,8 @@
 
 #include "../jtaghal/jtaghal.h"
 
+#include <sigc++/sigc++.h>
+
 #include <vector>
 #include <string>
 #include <stdint.h>

@@ -34,9 +34,12 @@ scopehal:
     sources:
         - Oscilloscope.cpp
         - OscilloscopeChannel.cpp
+        - RedTinLogicAnalyzer.cpp
 
     flags:
         - global
         - output/reloc
         - library/target/jtaghal
         - library/target/log
+        - library/required/sigc-2.0
+        - library/incpkg/sigc++-2.0
