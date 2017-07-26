@@ -35,20 +35,18 @@
 
 #include "scopehal.h"
 #include "RedTinLogicAnalyzer.h"
+/*
 #include "ProtocolDecoder.h"
 #include "StateDecoder.h"
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <netdb.h>
+*/
 
 #include <memory.h>
 
+/*
 #include <NOCSysinfo_constants.h>
 #include <RPCv2Router_type_constants.h>
 #include <RPCv2Router_ack_constants.h>
+*/
 
 using namespace std;
 
@@ -62,6 +60,7 @@ int MakeTruthTable(int state_0, int state_1);
 /**
 	@brief Connects to nocswitch and then establishes a connection to the LA core
  */
+/*
 RedTinLogicAnalyzer::RedTinLogicAnalyzer(const std::string& host, unsigned short port, const std::string& nochost)
 	: m_nameserver(NULL)
 {
@@ -73,6 +72,7 @@ RedTinLogicAnalyzer::RedTinLogicAnalyzer(const std::string& host, unsigned short
 	//and the LA
 	Connect(nochost);
 }
+*/
 
 /**
 	@brief Connects to nocswitch but does not establish a connection to the LA core.
@@ -80,6 +80,7 @@ RedTinLogicAnalyzer::RedTinLogicAnalyzer(const std::string& host, unsigned short
 	Useful if doing LA device enumeration. Use Connect() to connect to a specific LA on the device. The result of
 	calling any other member functions before Connect() is undefined.
  */
+/*
 RedTinLogicAnalyzer::RedTinLogicAnalyzer(const std::string& host, unsigned short port)
 	: m_nameserver(NULL)
 {
@@ -88,10 +89,12 @@ RedTinLogicAnalyzer::RedTinLogicAnalyzer(const std::string& host, unsigned short
 	//Connect to nocswitch only
 	m_iface.Connect(host, port);
 }
+*/
 
 /**
 	@brief Connects to the LA core
  */
+/*
 void RedTinLogicAnalyzer::Connect(const std::string& nochost)
 {
 	//Connect to the LA
@@ -106,10 +109,10 @@ void RedTinLogicAnalyzer::Connect(const std::string& nochost)
 	//Clear out trigger
 	ResetTriggerConditions();
 }
-
+*/
 RedTinLogicAnalyzer::~RedTinLogicAnalyzer()
 {
-	delete m_nameserver;
+	//delete m_nameserver;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -117,7 +120,8 @@ RedTinLogicAnalyzer::~RedTinLogicAnalyzer()
 
 string RedTinLogicAnalyzer::GetName()
 {
-	return m_nochost;
+	//return m_nochost;
+	return "NoName";
 }
 
 string RedTinLogicAnalyzer::GetVendor()
@@ -132,6 +136,7 @@ string RedTinLogicAnalyzer::GetSerial()
 
 void RedTinLogicAnalyzer::LoadChannels()
 {
+	/*
 	//Get the table
 	DMAMessage msg;
 	msg.from = 0x0000;
@@ -167,6 +172,7 @@ void RedTinLogicAnalyzer::LoadChannels()
 		"#ffa0ff",
 		"#a0ffd0",
 	};
+	*/
 
 	/*
 		Serialized data format
@@ -187,6 +193,7 @@ void RedTinLogicAnalyzer::LoadChannels()
 						Decoder name data
 		A frame with zero for signal width indicates the end of the buffer.
 	*/
+	/*
 	const unsigned char* data = (const unsigned char*)&rxm.data[0];
 	int pos = 0;
 	for(; pos<4; pos++)
@@ -281,13 +288,14 @@ void RedTinLogicAnalyzer::LoadChannels()
 				JtagException::EXCEPTION_TYPE_FIRMWARE);
 		}
 	}
-
+	*/
 	//Initialize trigger
 	m_triggers.clear();
 	for(uint32_t i=0; i<m_width; i++)
 		m_triggers.push_back(RedTinLogicAnalyzer::TRIGGER_TYPE_DONTCARE);
 }
 
+/*
 string RedTinLogicAnalyzer::ReadString(const unsigned char* data, int& pos)
 {
 	int namelen = data[pos++];
@@ -297,12 +305,14 @@ string RedTinLogicAnalyzer::ReadString(const unsigned char* data, int& pos)
 
 	return string(str);
 }
+*/
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Triggering
 
 Oscilloscope::TriggerMode RedTinLogicAnalyzer::PollTrigger()
 {
+	/*
 	//Wait for trigger notification
 	RPCMessage rxm;
 	//printf("[%.3f] Trigger poll\n", GetTime());
@@ -324,12 +334,13 @@ Oscilloscope::TriggerMode RedTinLogicAnalyzer::PollTrigger()
 			return TRIGGER_MODE_RUN;
 		}
 	}
-
+	*/
 	return TRIGGER_MODE_RUN;
 }
 
 void RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 {
+	/*
 	printf("Acquiring data...\n");
 
 	bool* rx_buf = new bool[m_depth * m_width];
@@ -532,6 +543,7 @@ void RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 
 	delete[] timestamp;
 	delete[] rx_buf;
+	*/
 }
 
 void RedTinLogicAnalyzer::StartSingleTrigger()
@@ -549,6 +561,7 @@ void RedTinLogicAnalyzer::StartSingleTrigger()
 		printf("    %08x\n", truth_tables[i]);
 	*/
 
+	/*
 	//We send the bitstream to the board as a DMA packet (WIDTH/2 32-bit words).
 	//Set up the initial message parameters
 	DMAMessage trigmsg;
@@ -587,7 +600,7 @@ void RedTinLogicAnalyzer::StartSingleTrigger()
 
 	//Flip endianness
 	FlipEndian32Array((unsigned char*)&trigmsg.data[0], trigmsg.len * 4);
-
+	*/
 	/*
 	//Debug print
 	printf("Trigger message\n");
@@ -596,7 +609,7 @@ void RedTinLogicAnalyzer::StartSingleTrigger()
 	*/
 
 	//Done, send it
-	m_iface.SendDMAMessage(trigmsg);
+	//m_iface.SendDMAMessage(trigmsg);
 }
 
 void RedTinLogicAnalyzer::Start()
@@ -640,8 +653,7 @@ void RedTinLogicAnalyzer::SetTriggerForChannel(OscilloscopeChannel* channel, std
 		{
 			throw JtagExceptionWrapper(
 				"Trigger array size does not match signal width",
-				"",
-				JtagException::EXCEPTION_TYPE_GIGO);
+				"");
 		}
 
 		//printf("Signal %s = bits %d to %d\n", chan->m_displayname.c_str(), hi, lo);

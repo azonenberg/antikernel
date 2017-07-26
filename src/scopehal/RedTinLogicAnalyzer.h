@@ -40,10 +40,11 @@ class RedTinLogicAnalyzer : public Oscilloscope
 {
 public:
 
+	/*
 	RedTinLogicAnalyzer(const std::string& host, unsigned short port, const std::string& nochost);
 	RedTinLogicAnalyzer(const std::string& host, unsigned short port);
 	void Connect(const std::string& nochost);
-
+	*/
 	virtual ~RedTinLogicAnalyzer();
 
 	virtual std::string GetName();
@@ -57,7 +58,7 @@ public:
 	virtual void StartSingleTrigger();
 	virtual void Stop();
 
-	NOCSwitchInterface m_iface;
+	//NOCSwitchInterface m_iface;
 
 	virtual void ResetTriggerConditions();
 	virtual void SetTriggerForChannel(OscilloscopeChannel* channel, std::vector<TriggerType> triggerbits);
@@ -65,10 +66,10 @@ public:
 protected:
 	void LoadChannels();
 
-	std::string ReadString(const unsigned char* data, int& pos);
+	//std::string ReadString(const unsigned char* data, int& pos);
 
-	std::string m_nochost;
-	uint16_t m_scopeaddr;
+	//std::string m_nochost;
+	//uint16_t m_scopeaddr;
 
 	std::vector<int> m_triggers;
 
@@ -76,7 +77,7 @@ protected:
 	uint32_t m_depth;
 	uint32_t m_width;
 
-	NameServer* m_nameserver;
+	//NameServer* m_nameserver;
 };
 
 #endif
