@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -33,23 +33,24 @@
 	@brief Implementation of global functions
  */
 #include "scopehal.h"
-#include <gtkmm/drawingarea.h>
+//#include <gtkmm/drawingarea.h>
 
 using namespace std;
 
 /**
 	@brief Draws a string
-	
+
 	@param x X coordinate
 	@param y Y position
 	@param cr Cairo context
 	@param str String to draw
 	@param bBig Font size selector (small or large)
  */
+/*
 void DrawString(float x, float y, const Cairo::RefPtr<Cairo::Context>& cr, string str, bool bBig)
 {
 	cr->save();
-	
+
 		Glib::RefPtr<Pango::Layout> tlayout = Pango::Layout::create (cr);
 		cr->move_to(x, y);
 		string desc = "sans normal 8";
@@ -61,7 +62,7 @@ void DrawString(float x, float y, const Cairo::RefPtr<Cairo::Context>& cr, strin
 		tlayout->set_text(str);
 		tlayout->update_from_cairo_context(cr);
 		tlayout->show_in_cairo_context(cr);
-		
+
 	cr->restore();
 }
 
@@ -75,14 +76,15 @@ void GetStringWidth(const Cairo::RefPtr<Cairo::Context>& cr, std::string str, bo
 	font.set_weight(Pango::WEIGHT_NORMAL);
 	tlayout->set_font_description(font);
 	tlayout->set_text(str);
-	
+
 	tlayout->get_pixel_size(width, height);
 }
+*/
 
 /**
 	@brief Converts a vector bus signal into a scalar (up to 64 bits wide)
  */
-uint64_t ConvertVectorSignalToScalar(std::vector<bool> bits)
+uint64_t ConvertVectorSignalToScalar(vector<bool> bits)
 {
 	uint64_t rval = 0;
 	for(auto b : bits)

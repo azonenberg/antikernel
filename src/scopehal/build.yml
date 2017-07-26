@@ -33,4 +33,8 @@ scopehal:
 
     sources:
         - Oscilloscope.cpp
-        
+
+    flags:
+        - global
+        - output/reloc
+        - library/target/log

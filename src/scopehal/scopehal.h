@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -36,18 +36,20 @@
 #ifndef scopehal_h
 #define scopehal_h
 
-#include "../jtaghal/jtaghal.h"
+//#include "../jtaghal/jtaghal.h"
 
+#include <vector>
 #include <string>
 #include <stdint.h>
 
 #include "Oscilloscope.h"
 
+/*
 #include <cairomm/context.h>
 
 void DrawString(float x, float y, const Cairo::RefPtr<Cairo::Context>& cr, std::string str, bool bBig);
 void GetStringWidth(const Cairo::RefPtr<Cairo::Context>& cr, std::string str, bool bBig, int& width, int& height);
-
+*/
 uint64_t ConvertVectorSignalToScalar(std::vector<bool> bits);
 
 #endif

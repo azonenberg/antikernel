@@ -40,7 +40,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#include "RigolDS1000SeriesOscilloscope.h"
+//#include "RigolDS1000SeriesOscilloscope.h"
 
 using namespace std;
 
@@ -66,6 +66,7 @@ Oscilloscope::~Oscilloscope()
  */
 int Oscilloscope::GetDeviceCount()
 {
+	/*
 	//Search /dev for "usbtmc*"
 	DIR* dir = opendir("/dev");
 	dirent* dent = NULL;
@@ -88,6 +89,8 @@ int Oscilloscope::GetDeviceCount()
 	//Add 1 since indexes are zero-based
 	closedir(dir);
 	return usbtmc_max + 1;
+	*/
+	return 0;
 }
 
 /**
@@ -97,6 +100,7 @@ int Oscilloscope::GetDeviceCount()
  */
 Oscilloscope* Oscilloscope::CreateDevice(int ndev)
 {
+	/*
 	//Open the file
 	char fname[32];
 	snprintf(fname, sizeof(fname), "/dev/usbtmc%d", ndev);
@@ -134,9 +138,9 @@ Oscilloscope* Oscilloscope::CreateDevice(int ndev)
 	if(!strcmp(vendor, "Rigol Technologies"))
 	{
 		//Check model
-		/*if(NULL != strstr(model, "DS1"))
+		if(NULL != strstr(model, "DS1"))
 			return new RigolDS1000SeriesOscilloscope(fname, serl);
-		else*/
+		else
 		{
 			throw JtagExceptionWrapper(
 				"Unrecognized Rigol device found - not supported",
@@ -144,11 +148,10 @@ Oscilloscope* Oscilloscope::CreateDevice(int ndev)
 				JtagException::EXCEPTION_TYPE_ADAPTER);
 		}
 	}
-
+	*/
 	throw JtagExceptionWrapper(
 		"Unrecognized USBTMC vendor - not supported",
-		"",
-		JtagException::EXCEPTION_TYPE_ADAPTER);
+		"");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -167,8 +170,7 @@ OscilloscopeChannel* Oscilloscope::GetChannel(size_t i)
 	{
 		throw JtagExceptionWrapper(
 			"Invalid channel number",
-			"",
-			JtagException::EXCEPTION_TYPE_GIGO);
+			"");
 	}
 }
 
@@ -185,8 +187,7 @@ OscilloscopeChannel* Oscilloscope::GetChannel(std::string name, bool bThrowOnFai
 	{
 		throw JtagExceptionWrapper(
 			"Invalid channel name",
-			"",
-			JtagException::EXCEPTION_TYPE_GIGO);
+			"");
 	}
 
 	return NULL;
@@ -213,8 +214,7 @@ bool Oscilloscope::WaitForTrigger(int timeout, bool exception_on_timeout)
 	{
 		throw JtagExceptionWrapper(
 			"Expected scope to trigger but it didn't",
-			"",
-			JtagException::EXCEPTION_TYPE_FIRMWARE);
+			"");
 	}
 
 	return trig;
