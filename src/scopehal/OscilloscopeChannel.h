@@ -37,7 +37,7 @@
 #define OscilloscopeChannel_h
 
 #include "CaptureChannel.h"
-#include "ChannelRenderer.h"
+//#include "ChannelRenderer.h"
 
 /**
 	@brief A single channel on the oscilloscope.
