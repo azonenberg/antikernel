@@ -45,3 +45,5 @@ UartLATest:
         - library/target/nocbridge
         - library/target/scopehal
         - library/target/xptools
+        - library/required/sigc-2.0
+        - library/incpkg/sigc++-2.0

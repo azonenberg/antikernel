@@ -40,6 +40,7 @@
 #include <list>
 #include <map>
 
+#include "../../../src/scopehal/scopehal.h"
 #include "../../../src/scopehal/RedTinLogicAnalyzer.h"
 
 #include "../../../src/jtaghal/jtaghal.h"
@@ -84,7 +85,6 @@ int main(int argc, char* argv[])
 		//Set up logging
 		g_log_sinks.emplace(g_log_sinks.begin(), new ColoredSTDLogSink(console_verbosity));
 
-		/*
 		//Connect to the server
 		if( (server == "") || (port == 0) )
 		{
@@ -104,12 +104,7 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 		LogNotice("Got address %04x\n", ouraddr);
-		*/
 
-		//Create the LA
-		RedTinLogicAnalyzer la(tty, 115200);
-
-		/*
 		//Address lookup
 		//printf("Looking up address of RPC pinger\n");
 		//NameServer nameserver(&iface);
@@ -117,89 +112,77 @@ int main(int argc, char* argv[])
 		uint16_t pingaddr = 0xfeed;
 		LogNotice("Pinger is at %04x\n", pingaddr);
 
+		//Create the LA and connect to the DUT to download the channel configs
+		LogNotice("Connecting to logic analyzer...\n");
+		RedTinLogicAnalyzer la(tty, 115200);
+
+		//See what we've got
+		size_t count = la.GetChannelCount();
+		LogNotice("LA has %zu channels\n", count);
+		for(size_t i=0; i<count; i++)
+		{
+			auto channel = la.GetChannel(i);
+			LogNotice("[%2zu] %16s: %2d bits, color %s\n",
+				i,
+				channel->m_displayname.c_str(),
+				channel->GetWidth(),
+				channel->m_displaycolor.c_str());
+		}
+
+		//Set up triggers
+		LogNotice("Setting up triggers...\n");
+		la.ResetTriggerConditions();
+		vector<Oscilloscope::TriggerType> triggers;
+		triggers.push_back(Oscilloscope::TRIGGER_TYPE_HIGH);
+		la.SetTriggerForChannel(la.GetChannel("rpc_rx_en"), triggers);
+
+		//Start the capture
+		LogNotice("Starting LA...\n");
+		la.StartSingleTrigger();
+
 		//Needs to be deterministic for testing
 		srand(0);
 
-		//Send a bunch of messages and make sure we get the same thing back
-		LogNotice("Sending ping packets...\n");
-		double start = GetTime();
-		int npack = 1000;
-		double sumping = 0;
-		double minping = 999999;
-		double maxping = 0;
-		for(int i=0; i<npack; i++)
+		//Generate some activity
+		LogNotice("Generating some traffic to sniff...\n");
+		RPCMessage msg;
+		msg.from = ouraddr;
+		msg.to = pingaddr;
+		msg.type = RPC_TYPE_INTERRUPT;
+		msg.callnum = rand() & 0xff;
+		msg.data[0] = rand() & 0x001fffff;
+		msg.data[1] = rand();
+		msg.data[2] = rand();
+		iface.SendRPCMessage(msg);
+
+		//Don't care about reply, just throw it away
+		RPCMessage rxm;
+		if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 5))
 		{
-			if( (i % 100) == 0)
-				LogNotice("Message %d\n", i);
+			LogError("Timeout on message - expected response within 5 sec but nothing arrived\n");
+			LogVerbose("Sent:\n    %s\n\n", msg.Format().c_str());
 
-			RPCMessage msg;
-			msg.from = ouraddr;
-			msg.to = pingaddr;
-			msg.type = RPC_TYPE_INTERRUPT;
-			msg.callnum = rand() & 0xff;
-			msg.data[0] = rand() & 0x001fffff;
-			msg.data[1] = rand();
-			msg.data[2] = rand();
-			double tsend = GetTime();
-			iface.SendRPCMessage(msg);
-			//LogDebug("Sending: %s\n", msg.Format().c_str());
-
-			RPCMessage rxm;
-			if(!iface.RecvRPCMessageBlockingWithTimeout(rxm, 5))
-			{
-				LogError("Timeout on message %d - expected response within 5 sec but nothing arrived\n", i);
-				LogVerbose("Sent:\n    %s\n\n", msg.Format().c_str());
-
-				throw JtagExceptionWrapper(
-					"Message timeout",
-					"");
-			}
-			//LogDebug("Got: %s\n", rxm.Format().c_str());
-
-			double trcv = GetTime();
-			double rtt = (trcv - tsend);
-			sumping += rtt;
-			if(minping > rtt)
-				minping = rtt;
-			if(maxping < rtt)
-				maxping = rtt;
-
-			if( (rxm.from == pingaddr) &&
-				(rxm.data[0] == msg.data[0]) &&
-				(rxm.data[1] == msg.data[1]) &&
-				(rxm.data[2] == msg.data[2])
-			)
-			{
-				//LogDebug("Message %d OK\n", i);
-			}
-			else
-			{
-				LogError("Message %d FAIL\n", i);
-				LogError("Sent:\n    %s\nReceived:\n    %s\n", msg.Format().c_str(), rxm.Format().c_str());
-				throw JtagExceptionWrapper(
-					"Invalid message came back",
-					"");
-			}
+			throw JtagExceptionWrapper(
+				"Message timeout",
+				"");
 		}
 
-		int packets_sent = npack * 2;
-		int header_size = packets_sent * 96;
-		int payload_size = packets_sent * 128;
+		//Expect capture
+		usleep(100 * 1000);
+		LogNotice("Checking for trigger...\n");
+		if(la.PollTrigger() != Oscilloscope::TRIGGER_MODE_TRIGGERED)
+		{
+			throw JtagExceptionWrapper(
+				"Expected scope to trigger but it didn't",
+				"");
+		}
 
-		//Print statistics
-		double end = GetTime();
-		double dt = end - start;
-		LogNotice("Done, all OK\n");
-		LogNotice("%d packets sent in %.2f ms (%.2f Kbps raw, %.2f Kbps after overhead)\n",
-			packets_sent,
-			dt * 1000,
-			(payload_size + header_size) / (1000 * dt),
-			(payload_size) / (1000 * dt));
-		LogNotice("RTT latency: %.2f ms min / %.2f ms avg / %.2f max\n",
-			minping * 1000,
-			(sumping / npack) * 1000,
-			maxping * 1000);
-		*/
+		//Pull the data
+		LogNotice("Acquiring data...\n");
+		sigc::slot1<int, float> null_callback;
+		la.AcquireData(null_callback);
+
+		//TODO: Do something with it
 	}
 
 	catch(const JtagException& ex)

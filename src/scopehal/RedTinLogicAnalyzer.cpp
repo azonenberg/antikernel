@@ -55,15 +55,36 @@ int bit_test_pair(int state_0, int state_1, int current_1, int old_1, int curren
 int bit_test(int state, int current, int old);
 int MakeTruthTable(int state_0, int state_1);
 
+#define NUM_COLORS 12
+const char* g_colorTable[NUM_COLORS]=
+{
+	"#ffa0a0",
+	"#a0ffff",
+	"#ffd0a0",
+	"#a0d0ff",
+	"#ffffa0",
+	"#a0a0ff",
+	"#ffa0d0",
+	"#d0ffa0",
+	"#d0a0ff",
+	"#a0ffa0",
+	"#ffa0ff",
+	"#a0ffd0",
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
 /**
 	@brief Connects to a UART and reads the stuff off it
  */
-RedTinLogicAnalyzer::RedTinLogicAnalyzer(const string& tty, unsigned int baud)
+RedTinLogicAnalyzer::RedTinLogicAnalyzer(const string& tty, int baud)
 {
+	m_uart = new UART(tty, baud);
 
+	m_laname = tty;
+	LoadChannels();
+	ResetTriggerConditions();
 }
 
 /**
@@ -121,6 +142,8 @@ void RedTinLogicAnalyzer::Connect(const std::string& nochost)
 */
 RedTinLogicAnalyzer::~RedTinLogicAnalyzer()
 {
+	if(m_uart)
+		delete m_uart;
 	//delete m_nameserver;
 }
 
@@ -129,8 +152,7 @@ RedTinLogicAnalyzer::~RedTinLogicAnalyzer()
 
 string RedTinLogicAnalyzer::GetName()
 {
-	//return m_nochost;
-	return "NoName";
+	return m_laname;
 }
 
 string RedTinLogicAnalyzer::GetVendor()
@@ -145,6 +167,114 @@ string RedTinLogicAnalyzer::GetSerial()
 
 void RedTinLogicAnalyzer::LoadChannels()
 {
+	LogDebug("Logic analyzer: loading channel metadata\n");
+	LogIndenter li;
+
+	int color_num = 0;
+
+	if(m_uart)
+	{
+		//Read the symbol table ROM
+		uint8_t op = REDTIN_READ_SYMTAB;
+		m_uart->Write(&op, 1);
+		uint8_t rxbuf[2048];
+		if(!m_uart->Read(rxbuf, 2048))
+		{
+			LogError("Couldn't read symbol ROM\n");
+			return;
+		}
+
+		//Skip the leading zeroes
+		uint8_t* end = rxbuf + 2048;
+		uint8_t* ptr = rxbuf;
+		for(; ptr < (end-8) && (*ptr == 0); ptr ++)
+		{}
+
+		//First nonzero bytes should be "DEBUGROM"
+		if(0 != memcmp(ptr, "DEBUGROM", 8))
+		{
+			LogError("Missing magic number at start of symbol ROM\n");
+			return;
+		}
+		ptr += 8;
+
+		//Verify we have room in the buffer, then read metadata about the capture
+		if(ptr >= (end - 12) )
+		{
+			LogError("Not enough room for full header\n");
+			return;
+		}
+		m_timescale = (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3];
+		m_depth = (ptr[4] << 24) | (ptr[5] << 16) | (ptr[6] << 8) | ptr[7];
+		m_width = (ptr[8] << 24) | (ptr[9] << 16) | (ptr[10] << 8) | ptr[11];
+		ptr += 12;
+
+		//LogDebug("Timescale: %u ps\n", m_timescale);
+		//LogDebug("Buffer: %u words of %u samples\n", m_depth, m_width);
+
+		//From here on, we have a series of packets that should end at the end of the buffer:
+		//Signal name (null terminated)
+		//Signal width (1 byte)
+		//Reserved for protocol decodes etc (1 byte)
+		while(ptr < end)
+		{
+			//Read signal name, then skip trailing null
+			string name;
+			for(; ptr<end && (*ptr != 0); ptr ++)
+				name += *ptr;
+			ptr ++;
+
+			//Signal width, then skip reserved field
+			if(ptr + 2 > end)
+			{
+				LogError("Last signal is truncated\n");
+				return;
+			}
+
+			unsigned int width = ptr[0];
+			unsigned int type = ptr[1];
+			ptr += 2;
+
+			//Allocate a color for it
+			string color = g_colorTable[color_num];
+			color_num = (color_num + 1) % NUM_COLORS;
+
+			//Normal channel (no protocol decoders)
+			if(type == 0)
+			{
+				OscilloscopeChannel* chan = NULL;
+				if(width == 1)
+				{
+					m_channels.push_back(chan = new OscilloscopeChannel(
+						name, OscilloscopeChannel::CHANNEL_TYPE_DIGITAL, color));
+				}
+				else
+				{
+					m_channels.push_back(chan = new OscilloscopeChannel(
+						name, OscilloscopeChannel::CHANNEL_TYPE_DIGITAL, color, false, width));
+				}
+			}
+
+			//TODO
+			else
+			{
+				LogError("Don't have support for protocol decoders yet\n");
+				continue;
+			}
+		}
+
+		if(ptr != end)
+		{
+			LogError("Data didn't end exactly at end of buffer\n");
+			return;
+		}
+	}
+
+	else
+	{
+		//TODO: NoC transport
+	}
+
 	/*
 	//Get the table
 	DMAMessage msg;
@@ -166,21 +296,6 @@ void RedTinLogicAnalyzer::LoadChannels()
 
 	//Color table
 	int color_num = 0;
-	string color_table[]=
-	{
-		"#ffa0a0",
-		"#a0ffff",
-		"#ffd0a0",
-		"#a0d0ff",
-		"#ffffa0",
-		"#a0a0ff",
-		"#ffa0d0",
-		"#d0ffa0",
-		"#d0a0ff",
-		"#a0ffa0",
-		"#ffa0ff",
-		"#a0ffd0",
-	};
 	*/
 
 	/*

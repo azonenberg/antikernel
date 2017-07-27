@@ -128,18 +128,29 @@ module UartLATestBitstream(
 			{
 				16384'h0,
 				"DEBUGROM",
-				{ "rpc_rx_en", 8'd1, 8'h0 },
-				{ "rpc_rx_ready", 8'd1, 8'h0},
-				{ "rpc_rx_data", 8'd32, 8'h0},
-				{ "rpc_tx_en", 8'd1, 8'h0 },
-				{ "rpc_tx_ready", 8'd1, 8'h0},
-				{ "rpc_tx_data", 8'd32, 8'h0}
+				32'd8000,		//8000 ps = 8 ns = 125 MHz
+				32'd512,		//Capture depth (TODO auto-patch this?)
+				32'd96,			//Capture width (TODO auto-patch this?)
+				{ "rpc_rx_en\0", 8'd1, 8'h0 },
+				{ "rpc_rx_ready\0", 8'd1, 8'h0},
+				{ "rpc_rx_data\0", 8'd32, 8'h0},
+				{ "rpc_tx_en\0", 8'd1, 8'h0 },
+				{ "rpc_tx_ready\0", 8'd1, 8'h0},
+				{ "rpc_tx_data\0", 8'd32, 8'h0}
 			}
 		)
 	) analyzer (
 		.clk(clk_bufg),
 		.capture_clk(clk_bufg),
-		.din(),
+		.din({
+				rpc_rx_en,
+				rpc_rx_ready,
+				rpc_rx_data,
+				rpc_tx_en,
+				rpc_tx_ready,
+				rpc_tx_data,
+				28'h0			//Unused low-order bits (pad to multiple of 32)
+			}),
 		.uart_rx(pmod_e[3]),
 		.uart_tx(pmod_e[2])
 	);

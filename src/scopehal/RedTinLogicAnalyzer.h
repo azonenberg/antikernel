@@ -36,10 +36,12 @@
 #ifndef RedTinLogicAnalyzer_h
 #define RedTinLogicAnalyzer_h
 
+#include "../xptools/UART.h"
+
 class RedTinLogicAnalyzer : public Oscilloscope
 {
 public:
-	RedTinLogicAnalyzer(const std::string& tty, unsigned int baud);
+	RedTinLogicAnalyzer(const std::string& tty, int baud);
 
 	/*
 	RedTinLogicAnalyzer(const std::string& host, unsigned short port, const std::string& nochost);
@@ -59,8 +61,6 @@ public:
 	virtual void StartSingleTrigger();
 	virtual void Stop();
 
-	//NOCSwitchInterface m_iface;
-
 	virtual void ResetTriggerConditions();
 	virtual void SetTriggerForChannel(OscilloscopeChannel* channel, std::vector<TriggerType> triggerbits);
 
@@ -75,7 +75,7 @@ protected:
 
 	//std::string ReadString(const unsigned char* data, int& pos);
 
-	//std::string m_nochost;
+	std::string m_laname;
 	//uint16_t m_scopeaddr;
 
 	std::vector<int> m_triggers;
@@ -84,6 +84,8 @@ protected:
 	uint32_t m_depth;
 	uint32_t m_width;
 
+	UART* m_uart;
+	//NOCSwitchInterface m_iface;
 	//NameServer* m_nameserver;
 };
 
