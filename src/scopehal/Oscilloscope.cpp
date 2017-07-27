@@ -98,7 +98,7 @@ int Oscilloscope::GetDeviceCount()
 
 	@param ndev		Device index (zero based)
  */
-Oscilloscope* Oscilloscope::CreateDevice(int ndev)
+Oscilloscope* Oscilloscope::CreateDevice(int /*ndev*/)
 {
 	/*
 	//Open the file
