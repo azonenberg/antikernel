@@ -35,6 +35,7 @@
 
 #include "scopehal.h"
 #include "RedTinLogicAnalyzer.h"
+#include "RedTin_opcodes_enum.h"
 /*
 #include "ProtocolDecoder.h"
 #include "StateDecoder.h"
@@ -56,6 +57,14 @@ int MakeTruthTable(int state_0, int state_1);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
+
+/**
+	@brief Connects to a UART and reads the stuff off it
+ */
+RedTinLogicAnalyzer::RedTinLogicAnalyzer(const string& tty, unsigned int baud)
+{
+
+}
 
 /**
 	@brief Connects to nocswitch and then establishes a connection to the LA core

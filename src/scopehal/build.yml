@@ -31,6 +31,10 @@ scopehal:
     toolchain:      c++/generic
     type:           shlib
 
+    constants:
+        ../../antikernel-ipcores/la/RedTin_opcodes.yml:
+            - c/enum
+
     sources:
         - Oscilloscope.cpp
         - OscilloscopeChannel.cpp
@@ -41,5 +45,6 @@ scopehal:
         - output/reloc
         - library/target/jtaghal
         - library/target/log
+        - library/target/xptools
         - library/required/sigc-2.0
         - library/incpkg/sigc++-2.0

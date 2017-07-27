@@ -39,6 +39,7 @@
 class RedTinLogicAnalyzer : public Oscilloscope
 {
 public:
+	RedTinLogicAnalyzer(const std::string& tty, unsigned int baud);
 
 	/*
 	RedTinLogicAnalyzer(const std::string& host, unsigned short port, const std::string& nochost);
@@ -64,6 +65,12 @@ public:
 	virtual void SetTriggerForChannel(OscilloscopeChannel* channel, std::vector<TriggerType> triggerbits);
 
 protected:
+	enum Transport
+	{
+		TRANSPORT_UART,
+		TRANSPORT_NOC
+	} m_transport;
+
 	void LoadChannels();
 
 	//std::string ReadString(const unsigned char* data, int& pos);
