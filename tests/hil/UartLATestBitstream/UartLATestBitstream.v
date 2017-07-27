@@ -92,7 +92,7 @@ module UartLATestBitstream(
 		.rpc_rx_ready(rpc_rx_ready),
 
 		//Debug indicators
-		.led(led)
+		.led()
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -117,11 +117,11 @@ module UartLATestBitstream(
     // The LA
 
     assign pmod_e[7:4] = 4'h0;
-    assign pmod_e[1:0] = 1'h0;
     assign pmod_e[3] = 1'bz;
+    assign pmod_e[1:0] = 2'h0;
 
     RedTinUartWrapper #(
-		.WIDTH(96),
+		.WIDTH(128),
 		.DEPTH(512),
 		.UART_CLKDIV(16'd1085),	//115200 @ 125 MHz
 		.SYMBOL_ROM(
@@ -130,7 +130,7 @@ module UartLATestBitstream(
 				"DEBUGROM",
 				32'd8000,		//8000 ps = 8 ns = 125 MHz
 				32'd512,		//Capture depth (TODO auto-patch this?)
-				32'd96,			//Capture width (TODO auto-patch this?)
+				32'd128,		//Capture width (TODO auto-patch this?)
 				{ "rpc_rx_en\0", 8'd1, 8'h0 },
 				{ "rpc_rx_ready\0", 8'd1, 8'h0},
 				{ "rpc_rx_data\0", 8'd32, 8'h0},
@@ -143,16 +143,18 @@ module UartLATestBitstream(
 		.clk(clk_bufg),
 		.capture_clk(clk_bufg),
 		.din({
+				60'h0,			//Unused high-order bits (pad to multiple of 64... or is 32 OK?)
 				rpc_rx_en,
 				rpc_rx_ready,
 				rpc_rx_data,
 				rpc_tx_en,
 				rpc_tx_ready,
-				rpc_tx_data,
-				28'h0			//Unused low-order bits (pad to multiple of 32)
+				rpc_tx_data
 			}),
 		.uart_rx(pmod_e[3]),
-		.uart_tx(pmod_e[2])
+		.uart_tx(pmod_e[2]),
+
+		.led(led)
 	);
 
 endmodule

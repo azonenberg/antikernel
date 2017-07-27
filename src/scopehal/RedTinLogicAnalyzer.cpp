@@ -436,30 +436,46 @@ string RedTinLogicAnalyzer::ReadString(const unsigned char* data, int& pos)
 
 Oscilloscope::TriggerMode RedTinLogicAnalyzer::PollTrigger()
 {
-	/*
-	//Wait for trigger notification
-	RPCMessage rxm;
-	//printf("[%.3f] Trigger poll\n", GetTime());
-	if(m_iface.RecvRPCMessage(rxm))
+	if(m_uart)
 	{
-		if(rxm.from != m_scopeaddr)
+		uint8_t opcode;
+		m_uart->Read(&opcode, 1);
+		if(opcode != REDTIN_TRIGGER_NOTIF)
 		{
-			printf("Got message from unexpected source, ignoring\n");
+			LogWarning("Got bad trigger opcode, ignoring\n");
 			return TRIGGER_MODE_RUN;
 		}
-		if((rxm.type == RPC_TYPE_INTERRUPT) && (rxm.callnum == 0) )
-		{
-			printf("Triggered\n");
-			return TRIGGER_MODE_TRIGGERED;
-		}
-		else
-		{
-			printf("Unknown opcode, ignoring\n");
-			return TRIGGER_MODE_RUN;
-		}
+
+		return TRIGGER_MODE_TRIGGERED;
 	}
-	*/
-	return TRIGGER_MODE_RUN;
+
+	else
+	{
+		/*
+		//Wait for trigger notification
+		RPCMessage rxm;
+		//printf("[%.3f] Trigger poll\n", GetTime());
+		if(m_iface.RecvRPCMessage(rxm))
+		{
+			if(rxm.from != m_scopeaddr)
+			{
+				printf("Got message from unexpected source, ignoring\n");
+				return TRIGGER_MODE_RUN;
+			}
+			if((rxm.type == RPC_TYPE_INTERRUPT) && (rxm.callnum == 0) )
+			{
+				printf("Triggered\n");
+				return TRIGGER_MODE_TRIGGERED;
+			}
+			else
+			{
+				printf("Unknown opcode, ignoring\n");
+				return TRIGGER_MODE_RUN;
+			}
+		}
+		*/
+		return TRIGGER_MODE_RUN;
+	}
 }
 
 void RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
@@ -678,11 +694,11 @@ void RedTinLogicAnalyzer::StartSingleTrigger()
 	for(uint32_t i=0; i<m_width; i+=2)
 		truth_tables.push_back(MakeTruthTable(m_triggers[i], m_triggers[i+1]));
 
-	/*
 	//Debug
-	printf("Truth tables\n");
+	/*
+	LogDebug("Truth tables\n");
 	for(uint32_t i=0; i<truth_tables.size(); i++)
-		printf("    %08x\n", truth_tables[i]);
+		LogDebug("    %08x\n", truth_tables[i]);
 	*/
 
 	/*
@@ -694,6 +710,9 @@ void RedTinLogicAnalyzer::StartSingleTrigger()
 	trigmsg.opcode = DMA_OP_WRITE_REQUEST;
 	trigmsg.len = 0;
 	trigmsg.address = 0x20000000;
+	*/
+
+	vector<uint32_t> trigger_bitstream;
 
 	//Generate the configuration bitstream.
 	//Each bitplane configures one LUT, each word corresponds to one entry in all 32 LUTs.
@@ -718,22 +737,37 @@ void RedTinLogicAnalyzer::StartSingleTrigger()
 			}
 
 			//and save it
-			trigmsg.data[trigmsg.len ++] = current_word;
+			trigger_bitstream.push_back(current_word);
 		}
 	}
 
 	//Flip endianness
-	FlipEndian32Array((unsigned char*)&trigmsg.data[0], trigmsg.len * 4);
-	*/
-	/*
+	FlipEndian32Array((unsigned char*)&trigger_bitstream[0], trigger_bitstream.size() * 4);
+
 	//Debug print
-	printf("Trigger message\n");
-	for(int i=0; i<trigmsg.len; i++)
-		printf("    %08x\n", trigmsg.data[i]);
+	/*
+	LogDebug("Trigger message\n");
+	for(size_t i=0; i<trigger_bitstream.size(); i++)
+		LogDebug("    %08x\n", trigger_bitstream[i]);
 	*/
 
-	//Done, send it
-	//m_iface.SendDMAMessage(trigmsg);
+	if(m_uart)
+	{
+		//Send the header
+		uint8_t op = REDTIN_LOAD_TRIGGER;
+		m_uart->Write(&op, 1);
+
+		//Send the trigger bitstream after endian correction
+		if(!m_uart->Write((unsigned char*)&trigger_bitstream[0], trigger_bitstream.size() * 4))
+			LogError("Failed to send bitstream to DUT\n");
+		LogDebug("Bitstream size: %zu\n", trigger_bitstream.size() * 4);
+	}
+
+	else
+	{
+		LogError("non-uart not implemented\n");
+		//m_iface.SendDMAMessage(trigmsg);
+	}
 }
 
 void RedTinLogicAnalyzer::Start()

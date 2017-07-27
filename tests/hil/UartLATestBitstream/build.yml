@@ -62,6 +62,7 @@ UartLATestBitstream:
         - ../../../antikernel-ipcores/debug/JtagUserIdentifier.v
         - ../../../antikernel-ipcores/device_abstraction/ClockBuffer.v
         - ../../../antikernel-ipcores/device_abstraction/JtagTAP.v
+        - ../../../antikernel-ipcores/device_abstraction/MemoryMacro.v
         - ../../../antikernel-ipcores/interface/uart/UART.v
         - ../../../antikernel-ipcores/la/RedTinLogicAnalyzer.v
         - ../../../antikernel-ipcores/la/RedTinLogicAnalyzer_trigger.v
