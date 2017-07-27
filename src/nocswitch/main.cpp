@@ -288,6 +288,8 @@ int main(int argc, char* argv[])
 			try
 			{
 				Socket client = g_socket.Accept();
+				if(!client.IsValid())		//disconnecting or something? Shut down cleanly
+					break;
 				threads.push_back(new thread(ConnectionThread, client.Detach(), &nface));
 
 				/*
