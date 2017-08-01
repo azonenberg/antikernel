@@ -664,7 +664,7 @@ bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 		int hi = nstart;
 		int lo = nstart - width + 1;
 		nstart -= width;
-		LogDebug("    Channel %s is %d bits wide, from %d to %d\n", chan->m_displayname.c_str(), width, hi, lo);
+		LogDebug("Channel %s is %d bits wide, from %d to %d\n", chan->m_displayname.c_str(), width, hi, lo);
 
 		//Set channel info
 		if(width == 1)
