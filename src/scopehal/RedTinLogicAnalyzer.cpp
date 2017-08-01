@@ -486,11 +486,8 @@ bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 	//Number of columns to read
 	const uint32_t read_cols = m_width / 32;
 
-	//Number of words in a single column
-	//Columns are always 32 bits wide
-	//const uint32_t colsize = 4 * m_depth;
-
-	uint32_t* rx_buf = new uint32_t[m_depth * read_cols];
+	bool* rx_buf = new bool[m_depth * m_width];
+	uint32_t* rx_buf_packed = new uint32_t[m_depth * read_cols];
 	uint32_t* timestamp = new uint32_t[m_depth];
 
 	//Read out the data
@@ -506,22 +503,30 @@ bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 			if(!m_uart->Write(&op, 1))
 				return false;
 
-			LogDebug("Row %u\n", row);
-			LogIndenter li;
+			//LogDebug("Row %u\n", row);
+			//LogIndenter li;
 
 			//Read timestamp
 			if(!m_uart->Read((unsigned char*)(timestamp + row), 4))
 				return false;
 
 			//Read data
-			if(!m_uart->Read((unsigned char*)(rx_buf + (row*read_cols)), 4*read_cols))
+			if(!m_uart->Read((unsigned char*)(rx_buf_packed + (row*read_cols)), 4*read_cols))
 				return false;
+
+			//Unpack the row into a bool[]
+			for(uint32_t col=0; col<m_width; col++)
+			{
+				uint32_t wordoff = col / 32;
+				uint32_t bitoff = col % 32;
+				rx_buf[row*m_width + col] = (rx_buf_packed[row*read_cols + wordoff] >> bitoff) & 1;
+			}
 
 			/*
 			LogDebug("Time: %u\n", timestamp[row]);
-			LogDebug("        Blocks: ");
-			for(int i=(int)read_cols-1; i>=0; i--)
-				LogDebug("%08x ", rx_buf[read_cols*row + i]);
+			LogDebug("        Data: ");
+			for(int i=(int)m_width-1; i>=0; i--)
+				LogDebug("%d", rx_buf[m_width*row + i]);
 			LogDebug("\n");
 			*/
 		}
@@ -530,6 +535,10 @@ bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 	else
 	{
 		/*
+		//Number of words in a single column
+		//Columns are always 32 bits wide
+		//const uint32_t colsize = 4 * m_depth;
+
 		//Read the data
 		//Blocks 0...read_cols-1 are data, read_cols is timestamp
 		for(uint32_t col=0; col<=read_cols; col++)
@@ -602,7 +611,6 @@ bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 		*/
 	}
 
-	/*
 	//Pre-process the buffer
 	//If two samples in a row are identical (incomplete compression, etc) combine them
 	//Do not merge the first two samples. This ensures that we always have a line to draw.
@@ -640,7 +648,7 @@ bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 	}
 
 	int sample_count = write_ptr - 1;
-	printf("Final sample count: %d\n", sample_count);
+	LogDebug("Final sample count: %d\n", sample_count);
 
 	//Get channel info
 	int nstart = m_width-1;
@@ -656,7 +664,7 @@ bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 		int hi = nstart;
 		int lo = nstart - width + 1;
 		nstart -= width;
-		//printf("    Channel %s is %d bits wide, from %d to %d\n", chan->m_displayname.c_str(), width, hi, lo);
+		LogDebug("    Channel %s is %d bits wide, from %d to %d\n", chan->m_displayname.c_str(), width, hi, lo);
 
 		//Set channel info
 		if(width == 1)
@@ -706,6 +714,9 @@ bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 	{
 		if(m_channels[i]->IsProcedural())
 		{
+			//TODO: just do the dynamic_cast and eliminate IsProcedural() since RTTI can do that for us?
+			LogError("Procedural channels (protocol decoders) not implemented\n");
+			/*
 			ProtocolDecoder* decoder = dynamic_cast<ProtocolDecoder*>(m_channels[i]);
 			if(decoder == NULL)
 			{
@@ -714,16 +725,16 @@ bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 
 				throw JtagExceptionWrapper(
 					"Something claimed to be a procedural channel but isn't a protocol decoder",
-					"",
-					JtagException::EXCEPTION_TYPE_GIGO);
+					"");
 			}
 			decoder->Refresh();
+			*/
 		}
 	}
-	*/
 
 	delete[] timestamp;
 	delete[] rx_buf;
+	delete[] rx_buf_packed;
 	return true;
 }
 
@@ -789,10 +800,11 @@ void RedTinLogicAnalyzer::StartSingleTrigger()
 	}
 
 	//Flip endianness after printing
-	LogDebug("Endian flip\n");
+	//LogDebug("Endian flip\n");
 	FlipEndian32Array((unsigned char*)&trigger_bitstream[0], trigger_bitstream.size() * 4);
 
-	//Debug print in wire endianness
+	//Debug print (in wire endianness)
+	/*
 	LogDebug("Trigger message\n");
 	const unsigned char* p = (const unsigned char*)&trigger_bitstream[0];
 	for(size_t i=0; i<trigger_bitstream.size()*4; i++)
@@ -801,6 +813,7 @@ void RedTinLogicAnalyzer::StartSingleTrigger()
 		if( (i & 3) == 3)
 			LogDebug("\n");
 	}
+	*/
 
 	if(m_uart)
 	{
