@@ -478,91 +478,131 @@ Oscilloscope::TriggerMode RedTinLogicAnalyzer::PollTrigger()
 	}
 }
 
-void RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
+bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 {
-	/*
-	printf("Acquiring data...\n");
-
-	bool* rx_buf = new bool[m_depth * m_width];
-	int64_t* timestamp = new int64_t[m_depth];
+	LogDebug("Acquiring data...\n");
+	LogIndenter li;
 
 	//Number of columns to read
 	const uint32_t read_cols = m_width / 32;
 
 	//Number of words in a single column
 	//Columns are always 32 bits wide
-	const uint32_t colsize = 4 * m_depth;
+	//const uint32_t colsize = 4 * m_depth;
 
-	//Read the data
-	//Blocks 0...read_cols-1 are data, read_cols is timestamp
-	for(uint32_t col=0; col<=read_cols; col++)
+	uint32_t* rx_buf = new uint32_t[m_depth * read_cols];
+	uint32_t* timestamp = new uint32_t[m_depth];
+
+	//Read out the data
+	if(m_uart)
 	{
-		progress_callback(static_cast<float>(col) / (read_cols+1));
-
-		//Read in blocks of 512 words x 32 samples
-		for(uint32_t start=0; start<m_depth; start += 512)
+		//Read the data back
+		for(uint32_t row=0; row<m_depth; row++)
 		{
-			//Request read
-			DMAMessage rmsg;
-			rmsg.from = 0x0000;
-			rmsg.to = m_scopeaddr;
-			rmsg.opcode = DMA_OP_READ_REQUEST;
-			rmsg.len = 512;
-			rmsg.address = 0x00000000 + colsize*col + start*4;	//start is in words, not bytes, so need to multiply
-			m_iface.SendDMAMessage(rmsg);
+			progress_callback(static_cast<float>(row) / (m_depth));
 
-			//Get data back
-			DMAMessage rxm;
-			if(!m_iface.RecvDMAMessageBlockingWithTimeout(rxm, 5))
-			{
-				delete[] rx_buf;
-				delete[] timestamp;
+			//Request readback (one read request per row, for simple lock-step flow control)
+			uint8_t op = REDTIN_READ_DATA;
+			if(!m_uart->Write(&op, 1))
+				return false;
 
-				throw JtagExceptionWrapper(
-					"Message timeout",
-					"",
-					JtagException::EXCEPTION_TYPE_FIRMWARE);
-			}
+			LogDebug("Row %u\n", row);
+			LogIndenter li;
 
-			//Sanity check origin
-			if( (rxm.from != m_scopeaddr) || (rxm.address != rmsg.address) || (rxm.len != 512) )
-			{
-				delete[] rx_buf;
-				delete[] timestamp;
+			//Read timestamp
+			if(!m_uart->Read((unsigned char*)(timestamp + row), 4))
+				return false;
 
-				throw JtagExceptionWrapper(
-					"Invalid message received",
-					"",
-					JtagException::EXCEPTION_TYPE_FIRMWARE);
-			}
+			//Read data
+			if(!m_uart->Read((unsigned char*)(rx_buf + (row*read_cols)), 4*read_cols))
+				return false;
 
-			//We don't have sample -1 so arbitrarily declare the start of sample 0 to be T=0
-			if(col == read_cols)
-				timestamp[0] = 0;
-
-			//Flip byte/bit ordering as necessary
-			if(col == read_cols)
-				FlipEndian32Array((unsigned char*)&rxm.data[0], 2048);
-			else
-				FlipBitArray((unsigned char*)&rxm.data[0], 2048);
-
-			//Crunch it
-			for(int i=0; i<512; i++)
-			{
-				//Data
-				if(col < read_cols)
-				{
-					for(int j=0; j<32; j++)
-						rx_buf[m_width*(start+i) + col*32 + (31 - j)] = (rxm.data[i] >> j) & 1;
-				}
-
-				//Timestamp
-				else
-					timestamp[start+i] = rxm.data[i];
-			}
+			/*
+			LogDebug("Time: %u\n", timestamp[row]);
+			LogDebug("        Blocks: ");
+			for(int i=(int)read_cols-1; i>=0; i--)
+				LogDebug("%08x ", rx_buf[read_cols*row + i]);
+			LogDebug("\n");
+			*/
 		}
 	}
 
+	else
+	{
+		/*
+		//Read the data
+		//Blocks 0...read_cols-1 are data, read_cols is timestamp
+		for(uint32_t col=0; col<=read_cols; col++)
+		{
+			progress_callback(static_cast<float>(col) / (read_cols+1));
+
+			//Read in blocks of 512 words x 32 samples
+			for(uint32_t start=0; start<m_depth; start += 512)
+			{
+				//Request read
+				DMAMessage rmsg;
+				rmsg.from = 0x0000;
+				rmsg.to = m_scopeaddr;
+				rmsg.opcode = DMA_OP_READ_REQUEST;
+				rmsg.len = 512;
+				rmsg.address = 0x00000000 + colsize*col + start*4;	//start is in words, not bytes, so need to multiply
+				m_iface.SendDMAMessage(rmsg);
+
+				//Get data back
+				DMAMessage rxm;
+				if(!m_iface.RecvDMAMessageBlockingWithTimeout(rxm, 5))
+				{
+					delete[] rx_buf;
+					delete[] timestamp;
+
+					throw JtagExceptionWrapper(
+						"Message timeout",
+						"",
+						JtagException::EXCEPTION_TYPE_FIRMWARE);
+				}
+
+				//Sanity check origin
+				if( (rxm.from != m_scopeaddr) || (rxm.address != rmsg.address) || (rxm.len != 512) )
+				{
+					delete[] rx_buf;
+					delete[] timestamp;
+
+					throw JtagExceptionWrapper(
+						"Invalid message received",
+						"",
+						JtagException::EXCEPTION_TYPE_FIRMWARE);
+				}
+
+				//We don't have sample -1 so arbitrarily declare the start of sample 0 to be T=0
+				if(col == read_cols)
+					timestamp[0] = 0;
+
+				//Flip byte/bit ordering as necessary
+				if(col == read_cols)
+					FlipEndian32Array((unsigned char*)&rxm.data[0], 2048);
+				else
+					FlipBitArray((unsigned char*)&rxm.data[0], 2048);
+
+				//Crunch it
+				for(int i=0; i<512; i++)
+				{
+					//Data
+					if(col < read_cols)
+					{
+						for(int j=0; j<32; j++)
+							rx_buf[m_width*(start+i) + col*32 + (31 - j)] = (rxm.data[i] >> j) & 1;
+					}
+
+					//Timestamp
+					else
+						timestamp[start+i] = rxm.data[i];
+				}
+			}
+		}
+		*/
+	}
+
+	/*
 	//Pre-process the buffer
 	//If two samples in a row are identical (incomplete compression, etc) combine them
 	//Do not merge the first two samples. This ensures that we always have a line to draw.
@@ -680,10 +720,11 @@ void RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 			decoder->Refresh();
 		}
 	}
+	*/
 
 	delete[] timestamp;
 	delete[] rx_buf;
-	*/
+	return true;
 }
 
 void RedTinLogicAnalyzer::StartSingleTrigger()
@@ -726,6 +767,13 @@ void RedTinLogicAnalyzer::StartSingleTrigger()
 		//The last bit is selected by A[4:0] = 5'b00000.
 		for(int row=31; row>=0; row--)
 		{
+			//Zero out unused high order bits
+			if(row >= 16)
+			{
+				trigger_bitstream.push_back(0);
+				continue;
+			}
+
 			//Extract one bit from each bitplane and shove it into this word.
 			//Trigger LUT uses inputs 64*nrow + ncol*2 +: 1
 			//Dividing by two, we get LUT number 32*nrow + ncol.
@@ -736,20 +784,23 @@ void RedTinLogicAnalyzer::StartSingleTrigger()
 				current_word |= (entry << col);
 			}
 
-			//and save it
 			trigger_bitstream.push_back(current_word);
 		}
 	}
 
-	//Flip endianness
+	//Flip endianness after printing
+	LogDebug("Endian flip\n");
 	FlipEndian32Array((unsigned char*)&trigger_bitstream[0], trigger_bitstream.size() * 4);
 
-	//Debug print
-	/*
+	//Debug print in wire endianness
 	LogDebug("Trigger message\n");
-	for(size_t i=0; i<trigger_bitstream.size(); i++)
-		LogDebug("    %08x\n", trigger_bitstream[i]);
-	*/
+	const unsigned char* p = (const unsigned char*)&trigger_bitstream[0];
+	for(size_t i=0; i<trigger_bitstream.size()*4; i++)
+	{
+		LogDebug("%02x ", p[i]);
+		if( (i & 3) == 3)
+			LogDebug("\n");
+	}
 
 	if(m_uart)
 	{
@@ -761,6 +812,11 @@ void RedTinLogicAnalyzer::StartSingleTrigger()
 		if(!m_uart->Write((unsigned char*)&trigger_bitstream[0], trigger_bitstream.size() * 4))
 			LogError("Failed to send bitstream to DUT\n");
 		LogDebug("Bitstream size: %zu\n", trigger_bitstream.size() * 4);
+
+		//Wait for OK result
+		m_uart->Read(&op, 1);
+		if(op != REDTIN_LOAD_TRIGGER)
+			LogError("Bad response from LA\n");
 	}
 
 	else
@@ -799,7 +855,7 @@ void RedTinLogicAnalyzer::SetTriggerForChannel(OscilloscopeChannel* channel, std
 
 		int width = chan->GetWidth();
 		int hi = nstart;
-		//int lo = nstart - width + 1;
+		int lo = nstart - width + 1;
 		nstart -= width;
 
 		//Check if we've hit the target channel, if not keep moving
@@ -814,7 +870,7 @@ void RedTinLogicAnalyzer::SetTriggerForChannel(OscilloscopeChannel* channel, std
 				"");
 		}
 
-		//printf("Signal %s = bits %d to %d\n", chan->m_displayname.c_str(), hi, lo);
+		LogDebug("Signal %s = bits %d to %d\n", chan->m_displayname.c_str(), hi, lo);
 
 		//Copy the array
 		for(size_t j=0; j<triggerbits.size(); j++)

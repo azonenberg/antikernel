@@ -110,7 +110,7 @@ public:
 	 */
 	virtual void SetTriggerForChannel(OscilloscopeChannel* channel, std::vector<TriggerType> triggerbits)=0;
 
-	virtual void AcquireData(sigc::slot1<int, float> progress_callback) =0;
+	virtual bool AcquireData(sigc::slot1<int, float> progress_callback) =0;
 
 	virtual void Start() =0;
 	virtual void StartSingleTrigger() =0;

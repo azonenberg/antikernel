@@ -178,7 +178,6 @@ int main(int argc, char* argv[])
 		}
 
 		//Pull the data
-		LogNotice("Acquiring data...\n");
 		sigc::slot1<int, float> null_callback;
 		la.AcquireData(null_callback);
 

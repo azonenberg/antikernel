@@ -56,7 +56,7 @@ public:
 
 	//Triggering
 	virtual Oscilloscope::TriggerMode PollTrigger();
-	virtual void AcquireData(sigc::slot1<int, float> progress_callback);
+	virtual bool AcquireData(sigc::slot1<int, float> progress_callback);
 	virtual void Start();
 	virtual void StartSingleTrigger();
 	virtual void Stop();
