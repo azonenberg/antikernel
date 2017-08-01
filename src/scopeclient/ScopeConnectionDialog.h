@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -44,10 +44,10 @@ class ScopeConnectionDialog : public Gtk::Dialog
 public:
 	ScopeConnectionDialog(std::string hostname, unsigned short port);
 	virtual ~ScopeConnectionDialog();
-	
-	Oscilloscope* DetachScope();	
+
+	Oscilloscope* DetachScope();
 	NameServer* DetachNameServer();
-	
+
 protected:
 
 	Gtk::HBox m_hostbox;
@@ -59,7 +59,7 @@ protected:
 		Gtk::Button m_connectButton;
 	Gtk::ProgressBar m_nameprogress;
 	Gtk::ListViewText m_hostlist;
-		
+
 	void OnConnect();
 
 	RedTinLogicAnalyzer* m_scope;

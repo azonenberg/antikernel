@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -49,28 +49,28 @@ class OscilloscopeView : public Gtk::Layout
 public:
 	OscilloscopeView(Oscilloscope* scope, MainWindow* parent);
 	virtual ~OscilloscopeView();
-	
+
 	typedef std::map<OscilloscopeChannel*, ChannelRenderer*> ChannelMap;
 	ChannelMap m_renderers;
-	
+
 	int m_width;
 	int m_height;
 	void Resize();
-	
+
 	void Refresh();
 	void SetSizeDirty();
-	
+
 protected:
 	virtual bool on_draw(const Cairo::RefPtr<Cairo::Context>& cr);
 	virtual bool on_button_press_event(GdkEventButton* event);
-	
+
 	bool m_sizeDirty;
-	
+
 	Oscilloscope* m_scope;
 	MainWindow* m_parent;
-	
+
 	void MakeTimeRanges(std::vector<time_range>& ranges);
-	
+
 	int64_t m_cursorpos;
 };
 

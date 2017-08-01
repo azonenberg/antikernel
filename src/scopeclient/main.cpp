@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -28,7 +28,7 @@
 ***********************************************************************************************************************/
 
 /**
-	@file 
+	@file
 	@author Andrew D. Zonenberg
 	@brief Program entry point
  */
@@ -46,21 +46,21 @@ int main(int argc, char* argv[])
 {
 	int exit_code = 0;
 	try
-	{	
+	{
 		Gtk::Main kit(argc, argv);
-		
+
 		//Global settings
 		unsigned short port = 0;
 		string server = "";
 		string api = "redtin";
 		bool scripted = false;
 		string scopename = "";
-		
+
 		//Parse command-line arguments
 		for(int i=1; i<argc; i++)
 		{
 			string s(argv[i]);
-			
+
 			if(s == "--help")
 			{
 				//not implemented
@@ -93,10 +93,10 @@ int main(int argc, char* argv[])
 				return 1;
 			}
 		}
-		
+
 		//Initialize the protocol decoder library
 		ScopeProtocolStaticInit();
-		
+
 		//Connect to the server
 		Oscilloscope* scope = NULL;
 		NameServer* namesrvr = NULL;
@@ -106,11 +106,11 @@ int main(int argc, char* argv[])
 		{
 			//Not scripting? Normal dialog process
 			if(!scripted)
-			{			
+			{
 				ScopeConnectionDialog dlg(server, port);
 				if(Gtk::RESPONSE_OK != dlg.run())
 					return 0;
-					
+
 				namesrvr = dlg.DetachNameServer();
 				scope = dlg.DetachScope();
 			}
@@ -127,7 +127,7 @@ int main(int argc, char* argv[])
 			printf("Unrecognized API \"%s\", use --help\n", api.c_str());
 			return 1;
 		}
-		
+
 		//and run the app
 		MainWindow wnd(scope, server, port, namesrvr);
 		kit.run(wnd);
@@ -140,6 +140,6 @@ int main(int argc, char* argv[])
 		printf("%s\n", ex.GetDescription().c_str());
 		exit_code = 1;
 	}
-	
+
 	return exit_code;
 }

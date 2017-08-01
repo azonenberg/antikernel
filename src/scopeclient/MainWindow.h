@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -28,7 +28,7 @@
 ***********************************************************************************************************************/
 
 /**
-	@file 
+	@file
 	@author Andrew D. Zonenberg
 	@brief Main application window class
  */
@@ -48,18 +48,18 @@ class MainWindow	: public Gtk::Window
 public:
 	MainWindow(Oscilloscope* scope, std::string host, int port, NameServer* namesrvr);
 	~MainWindow();
-	
+
 	Oscilloscope* GetScope()
 	{ return m_scope; }
-		
+
 	OscilloscopeView& GetScopeView()
 	{ return m_view; }
-	
+
 protected:
 
 	//Initialization
 	void CreateWidgets();
-		
+
 	//Widgets
 	Gtk::VBox m_vbox;
 		Gtk::Toolbar m_toolbar;
@@ -77,30 +77,30 @@ protected:
 					OscilloscopeView m_view;
 		Gtk::Statusbar m_statusbar;
 			Gtk::ProgressBar m_statprogress;
-	
+
 	//Our oscilloscope connection
 	Oscilloscope* m_scope;
-	
+
 	//Status polling
 	bool OnTimer(int timer);
-	
+
 	NameServer* m_namesrvr;
-	
+
 	//Message handlers
 	void OnZoomOut();
 	void OnZoomIn();
 	void OnZoomFit();
 	void OnDecode();
 	void OnStart();
-	
+
 	void OnScopeScroll();
-	
+
 	int OnCaptureProgressUpdate(float progress);
-	
+
 	float m_timescale;
-	
+
 	void OnZoomChanged();
-	
+
 	bool m_waiting;
 };
 

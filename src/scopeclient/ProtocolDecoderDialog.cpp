@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -31,7 +31,7 @@
 	@file
 	@author Andrew D. Zonenberg
 	@brief Implementation of ProtocolDecoderDialog
- */ 
+ */
 #include "scopeclient.h"
 #include "ProtocolDecoderDialog.h"
 #include "../scopeprotocols/RPCDecoder.h"
@@ -50,10 +50,10 @@ ProtocolDecoderDialog::ProtocolDecoderDialog(MainWindow* /*parent*/, Oscilloscop
 {
 	set_size_request(480, 240);
 	set_title("Protocol decode");
-	
+
 	add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
 	add_button(Gtk::Stock::OK, Gtk::RESPONSE_OK);
-	
+
 	get_vbox()->pack_start(m_decoderbox, Gtk::PACK_SHRINK);
 		m_decoderbox.pack_start(m_decoderlabel, Gtk::PACK_SHRINK);
 			m_decoderlabel.set_text("Protocol");
@@ -76,18 +76,18 @@ ProtocolDecoderDialog::ProtocolDecoderDialog(MainWindow* /*parent*/, Oscilloscop
 	get_vbox()->pack_start(m_body);
 	get_vbox()->pack_start(m_hsep2, Gtk::PACK_SHRINK);
 	get_vbox()->pack_start(m_parambody);
-	
+
 	m_decoderlist.signal_changed().connect(sigc::mem_fun(*this, &ProtocolDecoderDialog::OnDecoderSelected));
-	
+
 	show_all();
-	
+
 	m_decoder = NULL;
 }
 
 ProtocolDecoderDialog::~ProtocolDecoderDialog()
 {
 	ClearBodyRows();
-	
+
 	if(m_decoder)
 	{
 		delete m_decoder;
@@ -106,7 +106,7 @@ void ProtocolDecoderDialog::ClearBodyRows()
 		delete m_bodyrows[i];
 	}
 	m_bodyrows.clear();
-	
+
 	for(size_t i=0; i<m_paramrows.size(); i++)
 	{
 		m_parambody.remove(m_paramrows[i]->m_box);
@@ -124,11 +124,11 @@ void ProtocolDecoderDialog::ClearBodyRows()
 ProtocolDecoder* ProtocolDecoderDialog::Detach()
 {
 	FillSignals();
-	
+
 	ProtocolDecoder* ret = m_decoder;
 	ret->m_displayname = m_nameentry.get_text();
 	m_decoder = NULL;
-	
+
 	ClearBodyRows();
 	return ret;
 }
@@ -145,16 +145,16 @@ void ProtocolDecoderDialog::OnDecoderSelected()
 		m_decoder = NULL;
 	}
 	ClearBodyRows();
-	
+
 	//TODO: Serial number or something for unique naming?
-	
+
 	//Create the new decoder
 	m_decoder = ProtocolDecoder::CreateDecoder(
 		m_decoderlist.get_active_text(),
 		"ProtocolDecoder", //TODO: hardware name?
 		"#a0ffff",
 		m_namesrvr);
-	
+
 	//Enumerate the list of signals it expects
 	if(m_decoder != NULL)
 	{
@@ -163,10 +163,10 @@ void ProtocolDecoderDialog::OnDecoderSelected()
 			//Create the GUI row
 			ProtocolDecoderGuiRow* row = new ProtocolDecoderGuiRow;
 			row->m_label.set_text(m_decoder->GetInputName(i));
-			
+
 			//TODO: Add callback for dropdown selects
 			//TODO: need a way to enumerate signals by name
-			
+
 			//Enumerate all signals and add those passing the filter
 			for(size_t j=0; j<m_scope->GetChannelCount(); j++)
 			{
@@ -175,30 +175,30 @@ void ProtocolDecoderDialog::OnDecoderSelected()
 					row->m_cbox.append(chan->m_displayname);
 			}
 			row->m_cbox.signal_changed().connect(sigc::mem_fun(*this, &ProtocolDecoderDialog::OnInputSelected));
-			
+
 			//Add to list
 			m_bodyrows.push_back(row);
 			m_body.pack_start(row->m_box, Gtk::PACK_SHRINK);
 		}
-		
+
 		for(ProtocolDecoder::ParameterMapType::iterator it=m_decoder->GetParamBegin(); it != m_decoder->GetParamEnd(); ++it)
 		{
 			std::string name = it->first;
 			ProtocolDecoderParameter& param = it->second;
-			
+
 			//Create the GUI row
 			ProtocolDecoderGuiRowEntry* row = new ProtocolDecoderGuiRowEntry;
 			row->m_label.set_markup(name);
 			row->m_label.set_use_markup();
-			row->m_entry.set_text(param.ToString());			
+			row->m_entry.set_text(param.ToString());
 			row->m_entry.signal_changed().connect(sigc::mem_fun(*this, &ProtocolDecoderDialog::OnInputSelected));
-			
+
 			//Add to list
 			m_paramrows.push_back(row);
 			m_parambody.pack_start(row->m_box, Gtk::PACK_SHRINK);
 		}
 	}
-	
+
 	show_all();
 }
 
@@ -218,15 +218,15 @@ void ProtocolDecoderDialog::FillSignals()
 		for(size_t i=0; i<m_scope->GetChannelCount(); i++)
 		{
 			OscilloscopeChannel* chan = m_scope->GetChannel(i);
-			
+
 			//If it's a state decoder, pull its first input instead
 			StateDecoder* dec = dynamic_cast<StateDecoder*>(chan);
 			if(dec != NULL)
-				chan = dec->GetInput(0);				
-			
+				chan = dec->GetInput(0);
+
 			sigmap[chan->m_displayname] = chan;
 		}
-		
+
 		//Hook up the inputs by name
 		for(size_t i=0; i<m_bodyrows.size(); i++)
 		{
@@ -239,7 +239,7 @@ void ProtocolDecoderDialog::FillSignals()
 				m_decoder->m_timescale = sigmap[sig]->m_timescale;
 			}
 		}
-		
+
 		//Hook up to parameters
 		for(size_t i=0; i<m_paramrows.size(); i++)
 		{

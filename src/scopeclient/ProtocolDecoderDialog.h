@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -80,12 +80,12 @@ class ProtocolDecoderDialog : public Gtk::Dialog
 public:
 	ProtocolDecoderDialog(MainWindow* parent, Oscilloscope* scope, NameServer& namesrvr);
 	virtual ~ProtocolDecoderDialog();
-	
+
 	ProtocolDecoder* Detach();
-	
+
 protected:
 	Oscilloscope* m_scope;
-	
+
 	//Static content that doesn't change
 	Gtk::HBox m_decoderbox;
 		Gtk::Label m_decoderlabel;
@@ -94,22 +94,22 @@ protected:
 		Gtk::Label m_namelabel;
 		Gtk::Entry m_nameentry;
 	Gtk::HSeparator m_hsep;
-		
+
 	//Stuff here depends on the specific decoder we selected
 	Gtk::VBox m_body;
 	Gtk::HSeparator m_hsep2;
 	Gtk::VBox m_parambody;
-	
+
 	void OnDecoderSelected();
 	void OnInputSelected();
 	void FillSignals();
-	
+
 	void ClearBodyRows();
-	
+
 	ProtocolDecoder* m_decoder;
-	
+
 	NameServer& m_namesrvr;
-	
+
 	std::vector<ProtocolDecoderGuiRow*> m_bodyrows;
 	std::vector<ProtocolDecoderGuiRowEntry*> m_paramrows;
 };

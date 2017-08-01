@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -50,17 +50,17 @@ ChannelListView::ChannelListView(MainWindow* parent)
 	//append_column_editable("Enabled", m_columns.enabled);
 	append_column_editable("Name", m_columns.name);
 	append_column_editable("Trigger on", m_columns.value);
-	
+
 	//Set background color
 	Gtk::CellRenderer* render = get_column_cell_renderer(0);
 	get_column(0)->add_attribute(*render, "background-gdk", m_columns.color);
 	get_column(0)->add_attribute(*render, "height", m_columns.height);
 	get_column(0)->add_attribute(*render, "ypad", m_columns.padding);
-	
+
 	//Set up message handlers
 	/*static_cast<Gtk::CellRendererToggle*>(get_column_cell_renderer(0))->signal_toggled().connect(
 		sigc::mem_fun(*this, &ChannelListView::OnEnabledToggled));*/
-		
+
 	set_headers_visible(true);
 }
 
@@ -71,22 +71,22 @@ void ChannelListView::Refresh()
 {
 	//Get the oscilloscope
 	Oscilloscope* pScope = m_parent->GetScope();
-	
+
 	//TODO: figure out how to do protocol decoding as a tree
-		
+
 	//Clean out old stuff
 	m_model->clear();
 
 	//Generate channel list
 	for(size_t i=0; i<pScope->GetChannelCount(); i++)
-	{	
+	{
 		OscilloscopeChannel* chan = pScope->GetChannel(i);
 		if(!chan->m_visible)
 			continue;
 		ChannelRenderer* render = m_parent->GetScopeView().m_renderers[chan];
 		if(render == NULL)
 			continue;
-			
+
 		Gtk::TreeStore::iterator it = m_model->append();
 		it->set_value(0, Gdk::Color(chan->m_displaycolor));
 		it->set_value(1, true);		//TODO: is channel enabled?
@@ -124,7 +124,7 @@ void ChannelListView::OnEnabledToggled(const Glib::ustring& path)
 	OscilloscopeChannel* chan;
 	m_model->get_iter(path)->get_value(3, chan);
 	chan->m_visible = !chan->m_visible;
-	
+
 	//Refresh the scope viewy
 	m_parent->GetScopeView().Refresh();
 }
@@ -133,7 +133,7 @@ void ChannelListView::UpdateTriggers()
 {
 	//Clear out old triggers
 	m_parent->GetScope()->ResetTriggerConditions();
-	
+
 	//Loop over our child nodes
 	Gtk::TreeNodeChildren children = m_model->children();
 	for(Gtk::TreeNodeChildren::iterator it=children.begin(); it != children.end(); ++it)
@@ -141,16 +141,16 @@ void ChannelListView::UpdateTriggers()
 		//std::string name = it->get_value(m_columns.name);
 		OscilloscopeChannel* chan = it->get_value(m_columns.chan);
 		std::string val = it->get_value(m_columns.value);
-		
+
 		//Protocol decoders don't trigger - skip them
 		if(dynamic_cast<ProtocolDecoder*>(chan) != NULL)
 			continue;
-			
+
 		//Should be a digital channel (analog stuff not supported yet)
 		if(chan->GetType() == OscilloscopeChannel::CHANNEL_TYPE_DIGITAL)
 		{
 			//Initialize trigger vector
-			
+
 			//If string is empty, mark as don't care
 			std::vector<Oscilloscope::TriggerType> triggerbits;
 			if(val == "")
@@ -158,41 +158,41 @@ void ChannelListView::UpdateTriggers()
 				for(int i=0; i<chan->GetWidth(); i++)
 					triggerbits.push_back(Oscilloscope::TRIGGER_TYPE_DONTCARE);
 			}
-			
+
 			//otherwise parse Verilog-format values
 			else
 			{
 				//Default high bits to low
 				for(int i=0; i<chan->GetWidth(); i++)
 					triggerbits.push_back(Oscilloscope::TRIGGER_TYPE_LOW);
-				
+
 				const char* vstr = val.c_str();
 				const char* quote = strstr(vstr, "'");
 				char valbuf[64] = {0};
-				
+
 				int base = 10;
-				
+
 				//Ignore the length, just use the base
 				if(quote != NULL)
 				{
-					//Parse it					
+					//Parse it
 					char cbase;
 					sscanf(quote, "'%c%63s", &cbase, valbuf);
 					vstr = valbuf;
-					
+
 					if(cbase == 'h')
 						base = 16;
 					else if(cbase == 'b')
 						base = 2;
 					//default to decimal
 				}
-				
+
 				//Parse it
 				switch(base)
 				{
 					//decimal
 					case 10:
-					{	
+					{
 						if(chan->GetWidth() > 32)
 						{
 							throw JtagExceptionWrapper(
@@ -210,7 +210,7 @@ void ChannelListView::UpdateTriggers()
 						}
 					}
 					break;
-					
+
 					//hex
 					case 16:
 					{
@@ -221,7 +221,7 @@ void ChannelListView::UpdateTriggers()
 						{
 							if(nbit <= 0)
 								break;
-							
+
 							//Is it an X? Don't care
 							if(tolower(vstr[i]) == 'x')
 							{
@@ -233,13 +233,13 @@ void ChannelListView::UpdateTriggers()
 									triggerbits[nbit-1] = Oscilloscope::TRIGGER_TYPE_DONTCARE;
 								triggerbits[nbit] = Oscilloscope::TRIGGER_TYPE_DONTCARE;
 							}
-							
+
 							//No, hex - convert this character to binary
 							else
 							{
 								int x;
 								char cbuf[2] = {vstr[i], 0};
-								sscanf(cbuf, "%1x", &x);								
+								sscanf(cbuf, "%1x", &x);
 								if(nbit > 2)
 									triggerbits[nbit - 3] = (x & 8) ? Oscilloscope::TRIGGER_TYPE_HIGH : Oscilloscope::TRIGGER_TYPE_LOW;
 								if(nbit > 1)
@@ -251,8 +251,8 @@ void ChannelListView::UpdateTriggers()
 						}
 					}
 					break;
-					
-					//binary					
+
+					//binary
 					case 2:
 					{
 						//Right to left, one bit at a time
@@ -262,7 +262,7 @@ void ChannelListView::UpdateTriggers()
 						{
 							if(nbit <= 0)
 								break;
-								
+
 							if(tolower(vstr[i]) == 'x')
 								triggerbits[nbit] = Oscilloscope::TRIGGER_TYPE_DONTCARE;
 							else if(vstr[i] == '1')
@@ -278,11 +278,11 @@ void ChannelListView::UpdateTriggers()
 			//Feed to the scope
 			m_parent->GetScope()->SetTriggerForChannel(chan, triggerbits);
 		}
-		
+
 		//Unknown channel type
 		else
 		{
 			printf("Unknown channel type - maybe analog? Not supported\n");
 		}
-	}	
+	}
 }

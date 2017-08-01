@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -49,7 +49,7 @@ public:
 	Gtk::TreeModelColumn<int> height;
 	Gtk::TreeModelColumn<int> padding;
 	Gtk::TreeModelColumn<Glib::ustring> value;
-	
+
 	ChannelListColumns()
 	{
 		add(color);
@@ -73,13 +73,13 @@ public:
 	void Refresh();
 	void UpdateTriggers();
 	void AddChannel(OscilloscopeChannel* chan);
-	
+
 protected:
 	MainWindow* m_parent;
-	
+
 	Glib::RefPtr<Gtk::TreeStore> m_model;
 	ChannelListColumns m_columns;
-	
+
 	void OnEnabledToggled(const Glib::ustring& path);
 };
 
