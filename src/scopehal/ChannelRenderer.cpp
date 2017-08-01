@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -53,7 +53,7 @@ ChannelRenderer::ChannelRenderer(OscilloscopeChannel* channel)
 
 ChannelRenderer::~ChannelRenderer()
 {
-	
+
 }
 
 void ChannelRenderer::MakePathSignalBody(
@@ -63,7 +63,7 @@ void ChannelRenderer::MakePathSignalBody(
 	//If the signal is really tiny, shrink the offset so we dont make Xs
 	if( (xstart + xoff)  > xend)
 		xoff = (xend - xstart) / 2;
-	
+
 	cr->move_to(xstart + xoff, ybot);
 	cr->line_to(xstart,        ymid);
 	cr->line_to(xstart + xoff, ytop);
@@ -74,7 +74,7 @@ void ChannelRenderer::MakePathSignalBody(
 }
 
 void ChannelRenderer::RenderComplexSignal(
-		const Cairo::RefPtr<Cairo::Context>& cr, 
+		const Cairo::RefPtr<Cairo::Context>& cr,
 		int visleft, int visright,
 		float xstart, float xend, float xoff,
 		float ybot, float ymid, float ytop,
@@ -82,16 +82,16 @@ void ChannelRenderer::RenderComplexSignal(
 		Gdk::Color color)
 {
 	cr->set_source_rgb(color.get_red_p(), color.get_green_p(), color.get_blue_p());
-	
+
 	int width = 0, sheight = 0;
 	GetStringWidth(cr, str, true, width, sheight);
-	
+
 	//First-order guess of position: center of the value
 	float xp = xstart + (xend-xstart)/2;
-	
+
 	//Width within this signal outline
 	float available_width = xend - xstart - 2*xoff;
-	
+
 	//Minimum width (if outline ends up being smaller than this, just fill)
 	float min_width = 40;
 	if(width < min_width)
@@ -103,8 +103,8 @@ void ChannelRenderer::RenderComplexSignal(
 	else
 	{
 		//Center the text by moving it left half a width
-		xp -= width/2;				
-	
+		xp -= width/2;
+
 		//Off the left end? Push it right
 		int padding = 5;
 		if(xp < (visleft + padding))
@@ -112,25 +112,25 @@ void ChannelRenderer::RenderComplexSignal(
 			xp = visleft + padding;
 			available_width = xend - xp - xoff;
 		}
-		
+
 		//Off the right end? Push it left
 		else if( (xp + width + padding) > visright)
 		{
 			xp = visright - (width + padding + xoff);
 			if(xp < xstart)
 				xp = xstart + xoff;
-			
+
 			if(xend < visright)
 				available_width = xend - xp - xoff;
 			else
 				available_width = visright - xp - xoff;
 		}
-		
+
 		//If we don't fit under the new constraints, give up
 		if(available_width < min_width)
 			str = "";
 	}
-	
+
 	//Draw the text
 	if(str != "")
 	{
@@ -146,7 +146,7 @@ void ChannelRenderer::RenderComplexSignal(
 		}
 		if(is_all_upper && (str.find("_") != string::npos))
 			trim_from_right = false;
-		
+
 		//Some text fits, but maybe not all of it
 		//We know there's enough room for "some" text
 		//Try shortening the string a bit at a time until it fits
@@ -161,7 +161,7 @@ void ChannelRenderer::RenderComplexSignal(
 					str_render = str.substr(0, len) + "...";
 				else
 					str_render = "..." + str.substr(str.length() - len - 1);
-					
+
 				int twidth = 0, theight = 0;
 				GetStringWidth(cr, str_render, true, twidth, theight);
 				if(twidth < available_width)
@@ -175,7 +175,7 @@ void ChannelRenderer::RenderComplexSignal(
 				}
 			}
 		}
-		
+
 		cr->save();
 			Glib::RefPtr<Pango::Layout> tlayout = Pango::Layout::create (cr);
 			cr->move_to(xp, ymid - sheight/2);
@@ -187,7 +187,7 @@ void ChannelRenderer::RenderComplexSignal(
 			tlayout->show_in_cairo_context(cr);
 		cr->restore();
 	}
-	
+
 	//If no text fit, draw filler instead
 	else
 	{
@@ -195,7 +195,7 @@ void ChannelRenderer::RenderComplexSignal(
 		MakePathSignalBody(cr, xstart, xoff, xend, ybot, ymid, ytop);
 		cr->fill();
 	}
-	
+
 	//Draw the body outline after any filler so it shows up on top
 	cr->set_source_rgb(color.get_red_p(), color.get_green_p(), color.get_blue_p());
 	MakePathSignalBody(cr, xstart, xoff, xend, ybot, ymid, ytop);
@@ -210,10 +210,10 @@ void ChannelRenderer::RenderStartCallback(
 	std::vector<time_range>& /*ranges*/)
 {
 	cr->save();
-	
+
 	float ytop = m_ypos + m_padding;
 	float ybot = m_ypos + m_height - 2*m_padding;
-		
+
 	//Draw background
 	Gdk::Color color(m_channel->m_displaycolor);
 	Cairo::RefPtr<Cairo::LinearGradient> background_gradient = Cairo::LinearGradient::create(0, ytop, 0, ybot);
@@ -222,7 +222,7 @@ void ChannelRenderer::RenderStartCallback(
 	cr->set_source(background_gradient);
 	cr->rectangle(visleft, m_ypos, visright-visleft, m_height);
 	cr->fill();
-	
+
 	m_width = 0;
 }
 
@@ -245,46 +245,46 @@ void ChannelRenderer::Render(
 	int visleft,
 	int visright,
 	std::vector<time_range>& ranges)
-{	
+{
 	RenderStartCallback(cr, width, visleft, visright, ranges);
-	
+
 	CaptureChannelBase* capture = m_channel->GetData();
 	if(capture != NULL)
 	{
 		//Save time scales
 		float tscale = m_channel->m_timescale * capture->m_timescale;
-		
+
 		size_t nrange = 0;
-		
+
 		//Render the actual data
 		bool extend = false;
 		float xstart = 0;
 		for(size_t i=0; i<capture->GetDepth(); i++)
-		{			
+		{
 			//If the current sample starts in the next range, bump the range counter
 			int64_t tstart = capture->GetSampleStart(i);
 			int64_t tend = tstart + capture->GetSampleLen(i);
 			while( (tstart > ranges[nrange].tend) && (nrange+1 < ranges.size()) /*&& ()*/ )
 				nrange ++;
 			time_range* range = &ranges[nrange];
-						
+
 			//Get start X-position of sample (if not extending the previous one)
 			if(!extend && (i != 0))
 			{
 				xstart = range->xstart + tscale * (tstart - range->tstart);
-				
+
 				//Clamp at beginning of range if it ends before this one
 				if(tstart < range->tstart)
 					xstart = range->xstart;
 			}
-			
+
 			//If this sample has the same value as the next one, treat it as an extension of the next
 			if( (i+1) < capture->GetDepth() && (capture->EqualityTest(i, i+1)) )
 			{
 				extend = true;
 				continue;
 			}
-			
+
 			if(range->tstart > tstart)
 			{
 				/*printf( "WARNING: range starts after us! last_range = (%llu, %llu), range = (%llu, %llu), "
@@ -293,15 +293,15 @@ void ChannelRenderer::Render(
 					range->tstart, range->tend,
 					tstart, tend, nrange, xstart);*/
 			}
-			
+
 			//Not extending anymore if we get here
 			extend = false;
-			
+
 			//Check if the sample ends in a new range
 			while( (nrange+1 < ranges.size()) && (tend >= ranges[nrange+1].tstart) )
 				nrange ++;
 			range = &ranges[nrange];
-			
+
 			//Render and update width
 			float xend = range->xstart + tscale * (tend - range->tstart);
 			//if(fabs(xstart > 100000) || fabs(xend > 100000) )

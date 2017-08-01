@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -60,10 +60,10 @@ public:
 
 	int m_height;
 	int m_ypos;
-	
+
 	int m_padding;
 	int m_width;
-	
+
 	virtual void RenderStartCallback(
 		const Cairo::RefPtr<Cairo::Context>& cr,
 		int width,
@@ -89,22 +89,22 @@ public:
 		int visleft,
 		int visright,
 		std::vector<time_range>& ranges);
-	
+
 	void RenderComplexSignal(
-		const Cairo::RefPtr<Cairo::Context>& cr, 
+		const Cairo::RefPtr<Cairo::Context>& cr,
 		int visleft, int visright,
 		float xstart, float xend, float xoff,
 		float ystart, float ymid, float ytop,
 		std::string str,
 		Gdk::Color color);
-	
+
 	void MakePathSignalBody(
-		const Cairo::RefPtr<Cairo::Context>& cr, 
+		const Cairo::RefPtr<Cairo::Context>& cr,
 		float xstart, float xoff, float xend, float ybot, float ymid, float ytop);
-		
+
 	//Maximum width, in pixels, of one sample
 	float m_maxsamplewidth;
-	
+
 protected:
 	OscilloscopeChannel* m_channel;
 };
