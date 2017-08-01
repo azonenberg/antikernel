@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -50,9 +50,9 @@ TimescaleRenderer::TimescaleRenderer(OscilloscopeChannel* pChannel)
 // Rendering
 
 void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int /*width*/, int visleft, int visright, std::vector<time_range>& ranges)
-{	
+{
 	cr->save();
-	
+
 	//Cache some coordinates
 	float ytop = m_ypos + m_padding;
 	float ybot = m_ypos + m_height - m_padding;
@@ -63,7 +63,7 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int /*wi
 	//Set the color
 	Gdk::Color color("white");
 	cr->set_source_rgb(color.get_red_p(), color.get_green_p(), color.get_blue_p());
-	
+
 	CaptureChannelBase* capture = m_channel->GetData();
 	if(capture != NULL)
 	{
@@ -71,21 +71,21 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int /*wi
 		cr->move_to(visleft, m_ypos);
 		cr->line_to(visright, m_ypos);
 		cr->stroke();
-	
+
 		//Save time scales
 		float tscale = m_channel->m_timescale * capture->m_timescale;
-		
+
 		//Figure out about how much time per graduation to use
 		const int min_label_grad_width = 60;		//Minimum distance between text labels, in pixels
 		int64_t ps_per_grad = min_label_grad_width / m_channel->m_timescale;
-				
+
 		//Round up to the nearest multiple of 5
 		float grad_log_ps = log(ps_per_grad) / log(10);
 		float grad_log_ps_rounded = ceil(grad_log_ps);
 		int64_t grad_ps_rounded = pow(10, grad_log_ps_rounded);
 		if( (grad_ps_rounded/2) > ps_per_grad )
 			grad_ps_rounded /= 2;
-		
+
 		//Figure out what units to use, based on the length of the capture
 		int64_t tend = capture->m_timescale * capture->GetEndTime();
 		const char* units = "ps";
@@ -114,7 +114,7 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int /*wi
 			units = "s";
 			unit_divisor = 1E12;
 		}
-		
+
 		//If the last range ends before the end of the window, make the scale go all the way out
 		if( !ranges.empty() && (ranges[ranges.size() - 1].xend < visright) )
 		{
@@ -123,26 +123,26 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int /*wi
 			float dx = (visright - r.xstart) / tscale;
 			tend = (dx + r.tstart) * capture->m_timescale;
 		}
-		
+
 		//Render ranges
 		for(size_t i=0; i<ranges.size(); i++)
-		{				
+		{
 			time_range r = ranges[i];
-			
+
 			//Skip the range if it's totally offscreen
 			if( (r.xend < visleft) || (r.xstart > visright) )
 				continue;
-			
+
 			//Round start time up to nearest multiple of samples_per_div
 			float samples_per_div = static_cast<float>(grad_ps_rounded) / capture->m_timescale;
 			int64_t tstart_rounded =
 				ceil(static_cast<float>(r.tstart) / samples_per_div) * samples_per_div;
-						
+
 			float tend_adj = r.tend;
 			if(i == (ranges.size() - 1) )
 				tend_adj = tend / capture->m_timescale;	//go to end of screen on last one
 			float xend_adj = (static_cast<float>(tend_adj - r.tstart) * tscale) + r.xstart;
-			
+
 			//Clamp end to start of next range
 			if( (i+1) < ranges.size() )
 			{
@@ -150,7 +150,7 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int /*wi
 				if(xend_adj > nstart)
 					xend_adj = nstart;
 			}
-			
+
 			//Draw initial tickmarks
 			int nsubticks = 1;
 			if( (grad_ps_rounded / 2) >= capture->m_timescale)
@@ -173,7 +173,7 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int /*wi
 				cr->line_to(subx, ymid);
 				cr->stroke();
 			}
-				
+
 			//Print tick marks and labels
 			for(float t = tstart_rounded; t < tend_adj; t += samples_per_div)
 			{
@@ -184,14 +184,14 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int /*wi
 					break;
 				if(x > xend_adj)
 					continue;
-					
+
 				float tscaled = t * capture->m_timescale;
-				
+
 				//Tick mark
 				cr->move_to(x, ytop);
 				cr->line_to(x, ybot);
 				cr->stroke();
-				
+
 				//Format the string
 				float scaled_time = static_cast<float>(tscaled) / unit_divisor;
 				char namebuf[256];
@@ -201,13 +201,13 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int /*wi
 					snprintf(namebuf, sizeof(namebuf), "%.4f %s", scaled_time, units);
 				else
 					snprintf(namebuf, sizeof(namebuf), "%.2f %s", scaled_time, units);
-				
+
 				//Render it
 				int swidth = 0, sheight = 0;
 				GetStringWidth(cr, namebuf, true, swidth, sheight);
 				if( (x + 2 + swidth) < xend_adj)
 					DrawString(x + 2, ymid + sheight/2, cr, namebuf, false);
-				
+
 				//Draw fine ticks
 				for(int tick=1; tick < nsubticks; tick++)
 				{
