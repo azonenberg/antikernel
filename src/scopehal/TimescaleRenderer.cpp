@@ -49,7 +49,7 @@ TimescaleRenderer::TimescaleRenderer(OscilloscopeChannel* pChannel)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Rendering
 
-void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int /*width*/, int visleft, int visright, std::vector<time_range>& ranges)
+void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int width, int visleft, int visright, std::vector<time_range>& ranges)
 {
 	cr->save();
 
@@ -68,15 +68,15 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int /*wi
 	if(capture != NULL)
 	{
 		//Draw top line
-		cr->move_to(visleft, m_ypos);
-		cr->line_to(visright, m_ypos);
+		cr->move_to(0, m_ypos);
+		cr->line_to(width, m_ypos);
 		cr->stroke();
 
 		//Save time scales
 		float tscale = m_channel->m_timescale * capture->m_timescale;
 
 		//Figure out about how much time per graduation to use
-		const int min_label_grad_width = 60;		//Minimum distance between text labels, in pixels
+		const int min_label_grad_width = 100;		//Minimum distance between text labels, in pixels
 		int64_t ps_per_grad = min_label_grad_width / m_channel->m_timescale;
 
 		//Round up to the nearest multiple of 5

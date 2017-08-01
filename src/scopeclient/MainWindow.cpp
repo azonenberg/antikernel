@@ -284,7 +284,7 @@ void MainWindow::OnDecode()
 	}
 	catch(const JtagException& ex)
 	{
-		printf("%s\n", ex.GetDescription().c_str());
+		LogError("%s\n", ex.GetDescription().c_str());
 		//exit(1);
 	}
 	*/
@@ -293,7 +293,7 @@ void MainWindow::OnDecode()
 void MainWindow::OnScopeScroll()
 {
 	//TODO
-	//printf("Scroll: Position = %.2lf\n", m_viewscroller.get_hadjustment()->get_value());
+	//LogDebug("Scroll: Position = %.2lf\n", m_viewscroller.get_hadjustment()->get_value());
 }
 
 int MainWindow::OnCaptureProgressUpdate(float progress)
@@ -319,11 +319,11 @@ void MainWindow::OnStart()
 		m_waiting = true;
 
 		//Print to stdout so scripts know we're ready
-		printf("Ready\n");
+		LogDebug("Ready\n");
 		fflush(stdout);
 	}
 	catch(const JtagException& ex)
 	{
-		printf("%s\n", ex.GetDescription().c_str());
+		LogError("%s\n", ex.GetDescription().c_str());
 	}
 }

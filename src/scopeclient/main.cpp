@@ -52,14 +52,20 @@ int main(int argc, char* argv[])
 		//Global settings
 		unsigned short port = 0;
 		string server = "";
-		string api = "redtin";
+		string api = "redtin_uart";
 		//bool scripted = false;
 		string scopename = "";
+
+		Severity console_verbosity = Severity::NOTICE;
 
 		//Parse command-line arguments
 		for(int i=1; i<argc; i++)
 		{
 			string s(argv[i]);
+
+			//Let the logger eat its args first
+			if(ParseLoggerArguments(i, argc, argv, console_verbosity))
+				continue;
 
 			if(s == "--help")
 			{
@@ -89,10 +95,13 @@ int main(int argc, char* argv[])
 			}
 			else
 			{
-				printf("Unrecognized command-line argument \"%s\", use --help\n", s.c_str());
+				fprintf(stderr, "Unrecognized command-line argument \"%s\", use --help\n", s.c_str());
 				return 1;
 			}
 		}
+
+		//Set up logging
+		g_log_sinks.emplace(g_log_sinks.begin(), new ColoredSTDLogSink(console_verbosity));
 
 		//Initialize the protocol decoder library
 		//ScopeProtocolStaticInit();
@@ -125,10 +134,11 @@ int main(int argc, char* argv[])
 		if(api == "redtin_uart")
 		{
 			//TODO
+			scope = new RedTinLogicAnalyzer("/dev/ttyUSB0", 115200);
 		}
 		else
 		{
-			printf("Unrecognized API \"%s\", use --help\n", api.c_str());
+			LogError("Unrecognized API \"%s\", use --help\n", api.c_str());
 			return 1;
 		}
 
@@ -142,7 +152,7 @@ int main(int argc, char* argv[])
 	}
 	catch(const JtagException& ex)
 	{
-		printf("%s\n", ex.GetDescription().c_str());
+		LogError("%s\n", ex.GetDescription().c_str());
 		exit_code = 1;
 	}
 

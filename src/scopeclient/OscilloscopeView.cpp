@@ -96,15 +96,15 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 			int pwidth = get_width();
 			//int pheight = get_height();
 			int xoff = get_hadjustment()->get_value();
-			//int yoff = get_vadjustment()->get_value();
+			int yoff = get_vadjustment()->get_value();
 
 			//Set up drawing context
 			cr->save();
-			cr->set_identity_matrix();
+			cr->translate(-xoff, -yoff);
 
 			//Fill background
 			cr->set_source_rgb(0, 0, 0);
-			cr->rectangle(xoff, 0, pwidth, height);
+			cr->rectangle(0, 0, width, height);
 			cr->fill();
 
 			//We do crazy stuff in which stuff moves around every time we render. As a result, partial redraws will fail
@@ -156,7 +156,7 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 
 			//All good, draw individual channels
 			for(ChannelMap::iterator it=m_renderers.begin(); it != m_renderers.end(); ++it)
-				it->second->Render(cr, width, xoff, xoff+pwidth, ranges);
+				it->second->Render(cr, width, 0 + xoff, width + xoff, ranges);
 
 			//Figure out time scale for cursor
 			float tscale = 0;
@@ -266,12 +266,15 @@ void OscilloscopeView::Refresh()
 	size_t count = m_scope->GetChannelCount();
 
 	//Create timescale renderer
+	LogTrace("Refreshing oscilloscope view\n");
+	LogIndenter li;
 	if(m_scope->GetChannelCount() != 0)
 	{
 		TimescaleRenderer* pTimescale = new TimescaleRenderer(m_scope->GetChannel(0));
 		pTimescale->m_ypos = y;
 		y += pTimescale->m_height + spacing;
 		m_renderers[NULL] = pTimescale;
+		LogTrace("%30s: y = %d - %d\n", "timescale", pTimescale->m_ypos, pTimescale->m_ypos + pTimescale->m_height);
 	}
 
 	//Create renderers for each channel
@@ -286,6 +289,8 @@ void OscilloscopeView::Refresh()
 		pRender->m_ypos = y;
 		y += pRender->m_height + spacing;
 		m_renderers[chan] = pRender;
+
+		LogTrace("%30s: y = %d - %d\n", chan->m_displayname.c_str(), pRender->m_ypos, pRender->m_ypos + pRender->m_height);
 	}
 
 	SetSizeDirty();

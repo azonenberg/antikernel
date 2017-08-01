@@ -204,9 +204,9 @@ void ChannelRenderer::RenderComplexSignal(
 
 void ChannelRenderer::RenderStartCallback(
 	const Cairo::RefPtr<Cairo::Context>& cr,
-	int /*width*/,
-	int visleft,
-	int visright,
+	int width,
+	int /*visleft*/,
+	int /*visright*/,
 	std::vector<time_range>& /*ranges*/)
 {
 	cr->save();
@@ -220,7 +220,7 @@ void ChannelRenderer::RenderStartCallback(
 	background_gradient->add_color_stop_rgb(0, color.get_red_p() * 0.3, color.get_green_p() * 0.3, color.get_blue_p() * 0.3);
 	background_gradient->add_color_stop_rgb(1, color.get_red_p() * 0.1, color.get_green_p() * 0.1, color.get_blue_p() * 0.1);
 	cr->set_source(background_gradient);
-	cr->rectangle(visleft, m_ypos, visright-visleft, m_height);
+	cr->rectangle(0, m_ypos, width, m_height);
 	cr->fill();
 
 	m_width = 0;
