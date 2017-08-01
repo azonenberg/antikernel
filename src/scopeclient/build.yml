@@ -40,5 +40,7 @@ scopeclient:
         - library/target/scopehal
         - library/target/log
         - library/target/xptools
-    # scopeprotocols TODO
-    # gtkmm-3.0
+        - library/required/sigc-2.0
+        - library/incpkg/sigc++-2.0
+        - library/required/gtkmm-3.0
+        - library/incpkg/gtkmm-3.0

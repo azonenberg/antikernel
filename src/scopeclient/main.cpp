@@ -36,9 +36,9 @@
 #include "scopeclient.h"
 #include "MainWindow.h"
 #include "ScopeConnectionDialog.h"
-#include "../scopehal/NetworkedOscilloscope.h"
+//#include "../scopehal/NetworkedOscilloscope.h"
 #include "../scopehal/RedTinLogicAnalyzer.h"
-#include "../scopeprotocols/scopeprotocols.h"
+//#include "../scopeprotocols/scopeprotocols.h"
 
 using namespace std;
 
@@ -95,12 +95,12 @@ int main(int argc, char* argv[])
 		}
 
 		//Initialize the protocol decoder library
-		ScopeProtocolStaticInit();
+		//ScopeProtocolStaticInit();
 
 		//Connect to the server
 		Oscilloscope* scope = NULL;
-		NameServer* namesrvr = NULL;
-		if(api == "scoped")
+		//NameServer* namesrvr = NULL;
+		/*if(api == "scoped")
 			scope = new NetworkedOscilloscope(server, port);
 		else if(api == "redtin")
 		{
@@ -121,6 +121,10 @@ int main(int argc, char* argv[])
 				la->Connect(scopename);
 				scope = la;
 			}
+		}*/
+		if(api == "redtin_uart")
+		{
+			//TODO
 		}
 		else
 		{
