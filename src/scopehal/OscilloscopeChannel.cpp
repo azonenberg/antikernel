@@ -35,10 +35,8 @@
 
 #include "scopehal.h"
 #include "OscilloscopeChannel.h"
-/*
-#include "AnalogRenderer.h"
+//#include "AnalogRenderer.h"
 #include "DigitalRenderer.h"
-*/
 
 using namespace std;
 
@@ -105,24 +103,24 @@ int OscilloscopeChannel::GetWidth()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Factory methods
 
-/*
 ChannelRenderer* OscilloscopeChannel::CreateRenderer()
 {
 	if(!m_procedural)
 	{
 		switch(m_type)
 		{
-		case CHANNEL_TYPE_ANALOG:
-			return new AnalogRenderer(this);
 		case CHANNEL_TYPE_DIGITAL:
 			return new DigitalRenderer(this);
+
+		//not currently implemented
+		case CHANNEL_TYPE_ANALOG:
+		//	return new AnalogRenderer(this);
 
 		//complex channels must be procedural
 		case CHANNEL_TYPE_COMPLEX:
 			throw JtagExceptionWrapper(
 				"Invalid channel type",
-				"",
-				JtagException::EXCEPTION_TYPE_GIGO);
+				"");
 			break;
 		}
 	}
@@ -130,7 +128,5 @@ ChannelRenderer* OscilloscopeChannel::CreateRenderer()
 	//procedural channels must override this
 	throw JtagExceptionWrapper(
 		"Invalid channel type",
-		"",
-		JtagException::EXCEPTION_TYPE_GIGO);
+		"");
 }
-*/

@@ -36,9 +36,13 @@ scopehal:
             - c/enum
 
     sources:
+        - scopehal.cpp
+        - ChannelRenderer.cpp
+        - DigitalRenderer.cpp
         - Oscilloscope.cpp
         - OscilloscopeChannel.cpp
         - RedTinLogicAnalyzer.cpp
+        - TimescaleRenderer.cpp
 
     flags:
         - global
@@ -46,5 +50,30 @@ scopehal:
         - library/target/jtaghal
         - library/target/log
         - library/target/xptools
+        - library/required/atk-1.0
+        - library/required/atkmm-1.6
+        - library/required/cairo
+        - library/required/cairomm-1.0
+        - library/required/gdkmm-3.0
+        - library/required/giomm-2.4
+        - library/required/glib-2.0
+        - library/required/glibmm-2.4
+        - library/required/gtkmm-3.0
+        - library/required/pango-1.0
+        - library/required/pangomm-1.4
         - library/required/sigc-2.0
+        - library/incpkg/atk-1.0
+        - library/incpkg/atkmm-1.6
+        - library/incpkg/cairo
+        - library/incpkg/cairomm-1.0
+        - library/incpkg/freetype2
+        - library/incpkg/gdk-pixbuf-2.0
+        - library/incpkg/gdkmm-3.0
+        - library/incpkg/giomm-2.4
+        - library/incpkg/glib-2.0
+        - library/incpkg/glibmm-2.4
+        - library/incpkg/gtk-3.0
+        - library/incpkg/gtkmm-3.0
+        - library/incpkg/pango-1.0
+        - library/incpkg/pangomm-1.4
         - library/incpkg/sigc++-2.0

@@ -34,19 +34,22 @@
  */
 #include "scopeclient.h"
 #include "ProtocolDecoderDialog.h"
+
+/*
 #include "../scopeprotocols/RPCDecoder.h"
 #include "../scopeprotocols/RPCNameserverDecoder.h"
 #include "../scopeprotocols/SchmittTriggerDecoder.h"
 #include "../scopeprotocols/UARTDecoder.h"
 #include "../scopehal/StateDecoder.h"
+*/
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-ProtocolDecoderDialog::ProtocolDecoderDialog(MainWindow* /*parent*/, Oscilloscope* scope, NameServer& namesrvr)
+ProtocolDecoderDialog::ProtocolDecoderDialog(MainWindow* /*parent*/, Oscilloscope* scope/*, NameServer& namesrvr*/)
 	: Gtk::Dialog(Glib::ustring("Protocol decode"), true)
 	, m_scope(scope)
-	, m_namesrvr(namesrvr)
+	//, m_namesrvr(namesrvr)
 {
 	set_size_request(480, 240);
 	set_title("Protocol decode");
@@ -60,11 +63,13 @@ ProtocolDecoderDialog::ProtocolDecoderDialog(MainWindow* /*parent*/, Oscilloscop
 			m_decoderlabel.set_width_chars(16);
 			m_decoderlabel.set_alignment(Gtk::ALIGN_START, Gtk::ALIGN_CENTER);
 		m_decoderbox.pack_start(m_decoderlist);
+			/*
 			std::vector<std::string> protocols;
 			ProtocolDecoder::EnumProtocols(protocols);
 			for(size_t i=0; i<protocols.size(); i++)
 				m_decoderlist.append(protocols[i]);
 			m_decoderlist.set_active(-1);
+			*/
 	get_vbox()->pack_start(m_namebox, Gtk::PACK_SHRINK);
 		m_namebox.pack_start(m_namelabel, Gtk::PACK_SHRINK);
 			m_namelabel.set_text("Label");
@@ -81,18 +86,19 @@ ProtocolDecoderDialog::ProtocolDecoderDialog(MainWindow* /*parent*/, Oscilloscop
 
 	show_all();
 
-	m_decoder = NULL;
+	//m_decoder = NULL;
 }
 
 ProtocolDecoderDialog::~ProtocolDecoderDialog()
 {
 	ClearBodyRows();
-
+	/*
 	if(m_decoder)
 	{
 		delete m_decoder;
 		m_decoder = NULL;
 	}
+	*/
 }
 
 /**
@@ -121,6 +127,7 @@ void ProtocolDecoderDialog::ClearBodyRows()
 /**
 	@brief Detaches the current decoder (if any) from this instance and returns a pointer to it
  */
+/*
 ProtocolDecoder* ProtocolDecoderDialog::Detach()
 {
 	FillSignals();
@@ -132,12 +139,13 @@ ProtocolDecoder* ProtocolDecoderDialog::Detach()
 	ClearBodyRows();
 	return ret;
 }
-
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Message handlers
 
 void ProtocolDecoderDialog::OnDecoderSelected()
 {
+	/*
 	//Clear out the old decoder
 	if(m_decoder)
 	{
@@ -198,7 +206,7 @@ void ProtocolDecoderDialog::OnDecoderSelected()
 			m_parambody.pack_start(row->m_box, Gtk::PACK_SHRINK);
 		}
 	}
-
+	*/
 	show_all();
 }
 
@@ -211,6 +219,7 @@ void ProtocolDecoderDialog::OnInputSelected()
 
 void ProtocolDecoderDialog::FillSignals()
 {
+	/*
 	try
 	{
 		//Make a map of signal names
@@ -254,4 +263,5 @@ void ProtocolDecoderDialog::FillSignals()
 		printf("%s\n", ex.GetDescription().c_str());
 		//exit(1);
 	}
+	*/
 }

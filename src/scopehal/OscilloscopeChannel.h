@@ -37,7 +37,7 @@
 #define OscilloscopeChannel_h
 
 #include "CaptureChannel.h"
-//#include "ChannelRenderer.h"
+#include "ChannelRenderer.h"
 
 /**
 	@brief A single channel on the oscilloscope.
@@ -77,7 +77,7 @@ public:
 
 	bool IsProcedural();
 
-	//virtual ChannelRenderer* CreateRenderer();
+	virtual ChannelRenderer* CreateRenderer();
 
 	///If not displayed OR used for trigger, may be disabled in the instrument if supported
 	bool m_visible;

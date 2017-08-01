@@ -37,7 +37,7 @@
 #define ProtocolDecoderDialog_h
 
 #include "../scopehal/Oscilloscope.h"
-#include "../scopehal/ProtocolDecoder.h"
+//#include "../scopehal/ProtocolDecoder.h"
 
 #include <glibmm/main.h>
 
@@ -78,10 +78,10 @@ public:
 class ProtocolDecoderDialog : public Gtk::Dialog
 {
 public:
-	ProtocolDecoderDialog(MainWindow* parent, Oscilloscope* scope, NameServer& namesrvr);
+	ProtocolDecoderDialog(MainWindow* parent, Oscilloscope* scope/*, NameServer& namesrvr*/);
 	virtual ~ProtocolDecoderDialog();
 
-	ProtocolDecoder* Detach();
+	//ProtocolDecoder* Detach();
 
 protected:
 	Oscilloscope* m_scope;
@@ -106,9 +106,9 @@ protected:
 
 	void ClearBodyRows();
 
-	ProtocolDecoder* m_decoder;
+	//ProtocolDecoder* m_decoder;
 
-	NameServer& m_namesrvr;
+	//NameServer& m_namesrvr;
 
 	std::vector<ProtocolDecoderGuiRow*> m_bodyrows;
 	std::vector<ProtocolDecoderGuiRowEntry*> m_paramrows;

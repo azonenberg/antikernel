@@ -35,7 +35,7 @@
 
 #include "scopeclient.h"
 #include "MainWindow.h"
-#include "../scopehal/AnalogRenderer.h"
+//#include "../scopehal/AnalogRenderer.h"
 #include "ProtocolDecoderDialog.h"
 
 using namespace std;
@@ -46,7 +46,7 @@ using namespace std;
 /**
 	@brief Initializes the main window
  */
-MainWindow::MainWindow(Oscilloscope* scope, std::string host, int port, NameServer* namesrvr)
+MainWindow::MainWindow(Oscilloscope* scope, std::string host, int port/*, NameServer* namesrvr*/)
 	: m_btnZoomOut(Gtk::Stock::ZOOM_OUT)
 	, m_btnZoomIn(Gtk::Stock::ZOOM_IN)
 	, m_btnZoomFit(Gtk::Stock::ZOOM_FIT)
@@ -55,7 +55,7 @@ MainWindow::MainWindow(Oscilloscope* scope, std::string host, int port, NameServ
 	, m_channelview(this)
 	, m_view(scope, this)
 	, m_scope(scope)
-	, m_namesrvr(namesrvr)
+	//, m_namesrvr(namesrvr)
 {
 	//Set title
 	char title[256];
@@ -264,6 +264,7 @@ void MainWindow::OnZoomChanged()
 
 void MainWindow::OnDecode()
 {
+	/*
 	try
 	{
 		ProtocolDecoderDialog dlg(this, m_scope, *m_namesrvr);
@@ -286,6 +287,7 @@ void MainWindow::OnDecode()
 		printf("%s\n", ex.GetDescription().c_str());
 		//exit(1);
 	}
+	*/
 }
 
 void MainWindow::OnScopeScroll()

@@ -36,7 +36,7 @@
 #include "scopeclient.h"
 #include "ChannelListView.h"
 #include "MainWindow.h"
-#include "../scopehal/ProtocolDecoder.h"
+//#include "../scopehal/ProtocolDecoder.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
@@ -143,8 +143,8 @@ void ChannelListView::UpdateTriggers()
 		std::string val = it->get_value(m_columns.value);
 
 		//Protocol decoders don't trigger - skip them
-		if(dynamic_cast<ProtocolDecoder*>(chan) != NULL)
-			continue;
+		//if(dynamic_cast<ProtocolDecoder*>(chan) != NULL)
+		//	continue;
 
 		//Should be a digital channel (analog stuff not supported yet)
 		if(chan->GetType() == OscilloscopeChannel::CHANNEL_TYPE_DIGITAL)
@@ -197,8 +197,7 @@ void ChannelListView::UpdateTriggers()
 						{
 							throw JtagExceptionWrapper(
 								"Decimal values for channels >32 bits not supported",
-								"",
-								JtagException::EXCEPTION_TYPE_UNIMPLEMENTED);
+								"");
 						}
 
 						unsigned int val = atoi(vstr);
@@ -282,7 +281,7 @@ void ChannelListView::UpdateTriggers()
 		//Unknown channel type
 		else
 		{
-			printf("Unknown channel type - maybe analog? Not supported\n");
+			LogError("Unknown channel type - maybe analog? Not supported\n");
 		}
 	}
 }

@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 		unsigned short port = 0;
 		string server = "";
 		string api = "redtin";
-		bool scripted = false;
+		//bool scripted = false;
 		string scopename = "";
 
 		//Parse command-line arguments
@@ -72,8 +72,8 @@ int main(int argc, char* argv[])
 				server = argv[++i];
 			else if(s == "--api")
 				api = argv[++i];
-			else if(s == "--scripted")
-				scripted = true;
+			//else if(s == "--scripted")
+			//	scripted = true;
 			else if(s == "--scopename")
 				scopename = argv[++i];
 			else if(s == "--tty")
@@ -133,10 +133,11 @@ int main(int argc, char* argv[])
 		}
 
 		//and run the app
-		MainWindow wnd(scope, server, port, namesrvr);
+		MainWindow wnd(scope, server, port/*, namesrvr*/);
 		kit.run(wnd);
-		if(namesrvr)
-			delete namesrvr;
+
+		//if(namesrvr)
+		//	delete namesrvr;
 		delete scope;
 	}
 	catch(const JtagException& ex)

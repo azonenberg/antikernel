@@ -71,12 +71,13 @@ ScopeConnectionDialog::ScopeConnectionDialog(std::string hostname, unsigned shor
 
 	show_all();
 
-	m_scope = NULL;
-	m_namesrvr = NULL;
+	//m_scope = NULL;
+	//m_namesrvr = NULL;
 }
 
 ScopeConnectionDialog::~ScopeConnectionDialog()
 {
+	/*
 	if(m_namesrvr)
 	{
 		delete m_namesrvr;
@@ -88,10 +89,12 @@ ScopeConnectionDialog::~ScopeConnectionDialog()
 		delete m_scope;
 		m_scope = NULL;
 	}
+	*/
 }
 
 void ScopeConnectionDialog::OnConnect()
 {
+	/*
 	//Try to connect
 	try
 	{
@@ -165,19 +168,25 @@ void ScopeConnectionDialog::OnConnect()
 		Gtk::MessageDialog dlg("Failed to connect to server", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
 		dlg.run();
 	}
+	*/
 }
 
 Oscilloscope* ScopeConnectionDialog::DetachScope()
 {
+	/*
 	m_scope->Connect(m_hostlist.get_text(m_hostlist.get_selected()[0]));
 	Oscilloscope* r = m_scope;
 	m_scope = NULL;
 	return r;
+	*/
+	return NULL;
 }
 
+/*
 NameServer* ScopeConnectionDialog::DetachNameServer()
 {
 	NameServer* n = m_namesrvr;
 	m_namesrvr = NULL;
 	return n;
 }
+*/

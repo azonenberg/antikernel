@@ -36,6 +36,7 @@
 #ifndef ScopeConnectionDialog_h
 #define ScopeConnectionDialog_h
 
+#include "../scopehal/ChannelRenderer.h"
 #include "../scopehal/Oscilloscope.h"
 #include "../scopehal/RedTinLogicAnalyzer.h"
 
@@ -46,7 +47,7 @@ public:
 	virtual ~ScopeConnectionDialog();
 
 	Oscilloscope* DetachScope();
-	NameServer* DetachNameServer();
+	//NameServer* DetachNameServer();
 
 protected:
 
@@ -62,8 +63,8 @@ protected:
 
 	void OnConnect();
 
-	RedTinLogicAnalyzer* m_scope;
-	NameServer* m_namesrvr;
+	//RedTinLogicAnalyzer* m_scope;
+	//NameServer* m_namesrvr;
 };
 
 #endif

@@ -46,7 +46,7 @@
 class MainWindow	: public Gtk::Window
 {
 public:
-	MainWindow(Oscilloscope* scope, std::string host, int port, NameServer* namesrvr);
+	MainWindow(Oscilloscope* scope, std::string host, int port/*, NameServer* namesrvr*/);
 	~MainWindow();
 
 	Oscilloscope* GetScope()
@@ -84,7 +84,7 @@ protected:
 	//Status polling
 	bool OnTimer(int timer);
 
-	NameServer* m_namesrvr;
+	//NameServer* m_namesrvr;
 
 	//Message handlers
 	void OnZoomOut();

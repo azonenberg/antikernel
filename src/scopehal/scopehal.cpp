@@ -33,7 +33,7 @@
 	@brief Implementation of global functions
  */
 #include "scopehal.h"
-//#include <gtkmm/drawingarea.h>
+#include <gtkmm/drawingarea.h>
 
 using namespace std;
 
@@ -46,7 +46,6 @@ using namespace std;
 	@param str String to draw
 	@param bBig Font size selector (small or large)
  */
-/*
 void DrawString(float x, float y, const Cairo::RefPtr<Cairo::Context>& cr, string str, bool bBig)
 {
 	cr->save();
@@ -79,7 +78,6 @@ void GetStringWidth(const Cairo::RefPtr<Cairo::Context>& cr, std::string str, bo
 
 	tlayout->get_pixel_size(width, height);
 }
-*/
 
 /**
 	@brief Converts a vector bus signal into a scalar (up to 64 bits wide)
