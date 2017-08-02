@@ -184,10 +184,13 @@ void RedTinLogicAnalyzer::LoadChannels()
 			return;
 		}
 
+		//Flip the array around
+		FlipByteArray(rxbuf, 2048);
+
 		//Skip the leading zeroes
 		uint8_t* end = rxbuf + 2048;
 		uint8_t* ptr = rxbuf;
-		for(; ptr < (end-8) && (*ptr == 0); ptr ++)
+		for(; ptr < (end-11) && (*ptr == 0); ptr ++)
 		{}
 
 		//First nonzero bytes should be "DEBUGROM"
@@ -198,19 +201,49 @@ void RedTinLogicAnalyzer::LoadChannels()
 		}
 		ptr += 8;
 
+		//Should have a 0-1-0 sync pattern.
+		//If we see 1-0-0, Vivado synthesis is being derpy and scrambling our ROM.
+		uint8_t good_sync[3] = {0, 1, 0};
+		uint8_t bad_sync[3] = {1, 0, 0};
+		bool vivado_rom_workaround = false;
+		if(0 == memcmp(ptr, good_sync, 3))
+			LogDebug("good sync\n");
+		else if(0 == memcmp(ptr, bad_sync, 3))
+		{
+			LogDebug("Symbol table was built with buggy Vivado, activating workaround for ROM scrambling\n");
+			vivado_rom_workaround = true;
+		}
+		else
+		{
+			LogDebug("Bad sync pattern (not correct or known Vivado bug)\n");
+			return;
+		}
+		ptr += 3;
+
 		//Verify we have room in the buffer, then read metadata about the capture
 		if(ptr >= (end - 12) )
 		{
 			LogError("Not enough room for full header\n");
 			return;
 		}
-		m_timescale = (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3];
-		m_depth = (ptr[4] << 24) | (ptr[5] << 16) | (ptr[6] << 8) | ptr[7];
-		m_width = (ptr[8] << 24) | (ptr[9] << 16) | (ptr[10] << 8) | ptr[11];
+
+		//Vivado corrupts our header too, work around that...
+		if(vivado_rom_workaround)
+		{
+			m_timescale = (ptr[11] << 24) | (ptr[0] << 16) | (ptr[1] << 8) | ptr[2];
+			m_depth = (ptr[3] << 24) | (ptr[4] << 16) | (ptr[5] << 8) | ptr[6];
+			m_width = (ptr[7] << 24) | (ptr[8] << 16) | (ptr[9] << 8) | ptr[10];
+		}
+		else
+		{
+			m_timescale = (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3];
+			m_depth = (ptr[4] << 24) | (ptr[5] << 16) | (ptr[6] << 8) | ptr[7];
+			m_width = (ptr[8] << 24) | (ptr[9] << 16) | (ptr[10] << 8) | ptr[11];
+		}
 		ptr += 12;
 
-		//LogDebug("Timescale: %u ps\n", m_timescale);
-		//LogDebug("Buffer: %u words of %u samples\n", m_depth, m_width);
+		LogDebug("Timescale: %u ps\n", m_timescale);
+		LogDebug("Buffer: %u words of %u samples\n", m_depth, m_width);
 
 		//From here on, we have a series of packets that should end at the end of the buffer:
 		//Signal name (null terminated)
@@ -218,22 +251,58 @@ void RedTinLogicAnalyzer::LoadChannels()
 		//Reserved for protocol decodes etc (1 byte)
 		while(ptr < end)
 		{
+			unsigned int width = 0;
+			unsigned int type = 0;
+
 			//Read signal name, then skip trailing null
 			string name;
-			for(; ptr<end && (*ptr != 0); ptr ++)
+			for(; ptr+1<end && (*ptr != 0); ptr ++)
+			{
+				//Vivado ROM corruption workaround: if NEXT byte is null, stop now!
+				//*ptr is now our length field
+				if(vivado_rom_workaround && (ptr[1] == 0) )
+				{
+					width = ptr[0];
+					ptr ++;
+					break;
+				}
+
+				//LogDebug("    Reading %c (%02x)\n", *ptr, (int)*ptr);
 				name += *ptr;
+			}
+			//LogDebug("    Skipping null (%02x)\n", (int)*ptr);
 			ptr ++;
 
-			//Signal width, then skip reserved field
-			if(ptr + 2 > end)
+			//Next byte is type (Vivado sometimes cuts this off!)
+			if(vivado_rom_workaround)
 			{
-				LogError("Last signal is truncated\n");
-				return;
+				if(ptr + 1 > end)
+				{
+					LogWarning("Last signal is truncated, assuming type zero\n");
+					type = 0;
+				}
+				else
+				{
+					type = ptr[0];
+					ptr ++;
+				}
 			}
 
-			unsigned int width = ptr[0];
-			unsigned int type = ptr[1];
-			ptr += 2;
+			//We now have the signal width, then reserved type field
+			else
+			{
+				if(ptr + 2 > end)
+				{
+					LogError("Last signal is truncated\n");
+					return;
+				}
+
+				width = ptr[0];
+				type = ptr[1];
+				ptr += 2;
+			}
+
+			LogDebug("Signal %s has width %u, type %u\n", name.c_str(), width, type);
 
 			//Allocate a color for it
 			string color = g_colorTable[color_num];

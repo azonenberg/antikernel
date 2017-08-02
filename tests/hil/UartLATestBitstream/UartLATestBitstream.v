@@ -127,7 +127,7 @@ module UartLATestBitstream(
 		.SYMBOL_ROM(
 			{
 				16384'h0,
-				"DEBUGROM",
+				"DEBUGROM\0", 8'h01, 8'h00,
 				32'd8000,		//8000 ps = 8 ns = 125 MHz
 				32'd512,		//Capture depth (TODO auto-patch this?)
 				32'd128,		//Capture width (TODO auto-patch this?)
@@ -154,8 +154,9 @@ module UartLATestBitstream(
 			}),
 		.uart_rx(pmod_e[3]),
 		.uart_tx(pmod_e[2]),
-
-		.led(led)
+		.la_ready()
 	);
+
+	assign led = 4'h0;
 
 endmodule
