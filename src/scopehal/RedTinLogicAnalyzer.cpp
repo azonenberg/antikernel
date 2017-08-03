@@ -205,13 +205,13 @@ void RedTinLogicAnalyzer::LoadChannels()
 		//If we see 1-0-0, Vivado synthesis is being derpy and scrambling our ROM.
 		uint8_t good_sync[3] = {0, 1, 0};
 		uint8_t bad_sync[3] = {1, 0, 0};
-		bool vivado_rom_workaround = false;
 		if(0 == memcmp(ptr, good_sync, 3))
-			LogDebug("good sync\n");
+			LogDebug("Good sync\n");
 		else if(0 == memcmp(ptr, bad_sync, 3))
 		{
-			LogDebug("Symbol table was built with buggy Vivado, activating workaround for ROM scrambling\n");
-			vivado_rom_workaround = true;
+			LogWarning("Symbol table was built with buggy Vivado!\n");
+			LogWarning("WORKAROUND: Use {\"foo\", 8'h0} instead of \"foo\\0\"\n");
+			return;
 		}
 		else
 		{
@@ -227,19 +227,9 @@ void RedTinLogicAnalyzer::LoadChannels()
 			return;
 		}
 
-		//Vivado corrupts our header too, work around that...
-		if(vivado_rom_workaround)
-		{
-			m_timescale = (ptr[11] << 24) | (ptr[0] << 16) | (ptr[1] << 8) | ptr[2];
-			m_depth = (ptr[3] << 24) | (ptr[4] << 16) | (ptr[5] << 8) | ptr[6];
-			m_width = (ptr[7] << 24) | (ptr[8] << 16) | (ptr[9] << 8) | ptr[10];
-		}
-		else
-		{
-			m_timescale = (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3];
-			m_depth = (ptr[4] << 24) | (ptr[5] << 16) | (ptr[6] << 8) | ptr[7];
-			m_width = (ptr[8] << 24) | (ptr[9] << 16) | (ptr[10] << 8) | ptr[11];
-		}
+		m_timescale = (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3];
+		m_depth = (ptr[4] << 24) | (ptr[5] << 16) | (ptr[6] << 8) | ptr[7];
+		m_width = (ptr[8] << 24) | (ptr[9] << 16) | (ptr[10] << 8) | ptr[11];
 		ptr += 12;
 
 		LogDebug("Timescale: %u ps\n", m_timescale);
@@ -258,49 +248,22 @@ void RedTinLogicAnalyzer::LoadChannels()
 			string name;
 			for(; ptr+1<end && (*ptr != 0); ptr ++)
 			{
-				//Vivado ROM corruption workaround: if NEXT byte is null, stop now!
-				//*ptr is now our length field
-				if(vivado_rom_workaround && (ptr[1] == 0) )
-				{
-					width = ptr[0];
-					ptr ++;
-					break;
-				}
-
 				//LogDebug("    Reading %c (%02x)\n", *ptr, (int)*ptr);
 				name += *ptr;
 			}
 			//LogDebug("    Skipping null (%02x)\n", (int)*ptr);
 			ptr ++;
 
-			//Next byte is type (Vivado sometimes cuts this off!)
-			if(vivado_rom_workaround)
-			{
-				if(ptr + 1 > end)
-				{
-					LogWarning("Last signal is truncated, assuming type zero\n");
-					type = 0;
-				}
-				else
-				{
-					type = ptr[0];
-					ptr ++;
-				}
-			}
-
 			//We now have the signal width, then reserved type field
-			else
+			if(ptr + 2 > end)
 			{
-				if(ptr + 2 > end)
-				{
-					LogError("Last signal is truncated\n");
-					return;
-				}
-
-				width = ptr[0];
-				type = ptr[1];
-				ptr += 2;
+				LogError("Last signal is truncated\n");
+				return;
 			}
+
+			width = ptr[0];
+			type = ptr[1];
+			ptr += 2;
 
 			LogDebug("Signal %s has width %u, type %u\n", name.c_str(), width, type);
 
