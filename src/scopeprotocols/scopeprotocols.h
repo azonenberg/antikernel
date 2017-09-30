@@ -37,10 +37,11 @@
 #define scopeprotocols_h
 
 #include "../scopehal/scopehal.h"
-/*
 #include "../scopehal/ProtocolDecoder.h"
-#include "../scopehal/StateDecoder.h"
+//#include "../scopehal/StateDecoder.h"
 
+#include "NRZDecoder.h"
+/*
 #include "DigitalToAnalogDecoder.h"
 #include "DMADecoder.h"
 #include "RPCDecoder.h"

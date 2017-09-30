@@ -65,6 +65,7 @@ protected:
 	virtual bool on_button_press_event(GdkEventButton* event);
 
 	void OnAutoFitVertical();
+	void OnProtocolDecode(std::string protocol);
 
 	bool m_sizeDirty;
 

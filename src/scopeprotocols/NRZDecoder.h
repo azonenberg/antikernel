@@ -30,85 +30,30 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Declaration of ChannelRenderer
+	@brief Declaration of NRZDecoder
  */
+#ifndef NRZDecoder_h
+#define NRZDecoder_h
 
-#ifndef ChannelRenderer_h
-#define ChannelRenderer_h
+#include "../scopehal/ProtocolDecoder.h"
 
-#include <cairomm/context.h>
-#include <gtkmm/drawingarea.h>
-
-class OscilloscopeChannel;
-
-struct time_range
-{
-	float xstart;
-	float xend;
-	int64_t tstart;
-	int64_t tend;
-};
-
-/**
-	@brief Renders a single channel
- */
-class ChannelRenderer
+class NRZDecoder : public ProtocolDecoder
 {
 public:
-	ChannelRenderer(OscilloscopeChannel* channel);
-	virtual ~ChannelRenderer();
+	NRZDecoder(std::string hwname, std::string color);
+	
+	virtual void Refresh();
+	virtual ChannelRenderer* CreateRenderer();
 
-	int m_height;
-	int m_ypos;
+	virtual bool NeedsConfig();
 
-	int m_padding;
-	int m_width;
-
-	bool m_overlay;
-
-	virtual void RenderStartCallback(
-		const Cairo::RefPtr<Cairo::Context>& cr,
-		int width,
-		int visleft,
-		int visright,
-		std::vector<time_range>& ranges);
-	virtual void RenderSampleCallback(
-		const Cairo::RefPtr<Cairo::Context>& cr,
-		size_t i,
-		float xstart,
-		float xend,
-		int visleft,
-		int visright);
-	virtual void RenderEndCallback(
-		const Cairo::RefPtr<Cairo::Context>& cr,
-		int width,
-		int visleft,
-		int visright,
-		std::vector<time_range>& ranges);
-	virtual void Render(
-		const Cairo::RefPtr<Cairo::Context>& cr,
-		int width,
-		int visleft,
-		int visright,
-		std::vector<time_range>& ranges);
-
-	void RenderComplexSignal(
-		const Cairo::RefPtr<Cairo::Context>& cr,
-		int visleft, int visright,
-		float xstart, float xend, float xoff,
-		float ystart, float ymid, float ytop,
-		std::string str,
-		Gdk::Color color);
-
-	void MakePathSignalBody(
-		const Cairo::RefPtr<Cairo::Context>& cr,
-		float xstart, float xoff, float xend, float ybot, float ymid, float ytop);
-
-	//Maximum width, in pixels, of one sample
-	float m_maxsamplewidth;
-
+	static std::string GetProtocolName();
+	
+	virtual bool ValidateChannel(size_t i, OscilloscopeChannel* channel);
+	
+	PROTOCOL_DECODER_INITPROC(NRZDecoder)
+	
 protected:
-	OscilloscopeChannel* m_channel;
 };
 
 #endif

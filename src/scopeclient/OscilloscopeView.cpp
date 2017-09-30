@@ -36,9 +36,12 @@
 #include "scopeclient.h"
 #include "MainWindow.h"
 #include "../scopehal/Oscilloscope.h"
+#include "../scopehal/ProtocolDecoder.h"
 #include "../scopehal/TimescaleRenderer.h"
 #include "../scopehal/AnalogRenderer.h"
 #include "OscilloscopeView.h"
+
+using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
@@ -70,6 +73,15 @@ OscilloscopeView::OscilloscopeView(Oscilloscope* scope, MainWindow* parent)
 	m_channelContextMenu.append(*item);
 
 	//Fill the protocol decoder context menu
+	vector<string> names;
+	ProtocolDecoder::EnumProtocols(names);
+	for(auto p : names)
+	{
+		item = Gtk::manage(new Gtk::MenuItem(p, false));
+		item->signal_activate().connect(
+			sigc::bind<string>(sigc::mem_fun(*this, &OscilloscopeView::OnProtocolDecode), p));
+		m_protocolDecodeMenu.append(*item);
+	}
 	
 	m_protocolDecodeMenu.show_all();
 	m_channelContextMenu.show_all();
@@ -133,7 +145,7 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 				queue_draw();
 
 			//Re-calculate mappings
-			std::vector<time_range> ranges;
+			vector<time_range> ranges;
 			MakeTimeRanges(ranges);
 
 			//Draw zigzag lines
@@ -238,7 +250,7 @@ bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
 	if(event->button == 1)
 	{
 		//Re-calculate mappings
-		std::vector<time_range> ranges;
+		vector<time_range> ranges;
 		MakeTimeRanges(ranges);
 
 		//Figure out time scale
@@ -296,6 +308,8 @@ bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
 
 /**
 	@brief Channel list and/or visibility states have changed, refresh
+
+	TODO: fix protocol decoder support here
  */
 void OscilloscopeView::Refresh()
 {
@@ -362,7 +376,7 @@ void OscilloscopeView::Resize()
 	set_size(m_width, m_height);
 }
 
-void OscilloscopeView::MakeTimeRanges(std::vector<time_range>& ranges)
+void OscilloscopeView::MakeTimeRanges(vector<time_range>& ranges)
 {
 	ranges.clear();
 	if(m_scope->GetChannelCount() == 0)
@@ -460,5 +474,47 @@ void OscilloscopeView::OnAutoFitVertical()
 	render->m_yoffset = -midpoint;
 
 	//Done, refresh display
+	queue_draw();
+}
+
+void OscilloscopeView::OnProtocolDecode(string protocol)
+{
+	//Decoding w/o a channel selected (and full of data) is nonsensical
+	if(m_selectedChannel == NULL)
+		return;
+	auto data = m_selectedChannel->GetData();
+	if(data == NULL)
+		return;
+
+	//Create the decoder
+	LogDebug("Decoding current channel as %s\n", protocol.c_str());
+	auto decoder = ProtocolDecoder::CreateDecoder(
+		protocol,
+		m_selectedChannel->GetHwname(),
+		GetDefaultChannelColor(m_scope->GetChannelCount() + 1)
+		);
+	m_scope->AddChannel(decoder);
+
+	//TODO: dialog for configuring stuff
+	if(decoder->NeedsConfig())
+	{
+	}
+
+	//Just hook up the first input and run with it
+	else
+		decoder->SetInput(0, m_selectedChannel);
+
+	//Create a renderer for it
+	auto render = decoder->CreateRenderer();
+	m_renderers[decoder] = render;
+
+	//Configure the renderer
+	//For now, always do decoders as overlays
+	auto original_render = m_renderers[m_selectedChannel];
+	render->m_ypos = original_render->m_ypos;
+	render->m_overlay = true;
+
+	//Done, update things
+	decoder->Refresh();
 	queue_draw();
 }

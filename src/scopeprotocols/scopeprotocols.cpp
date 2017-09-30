@@ -35,13 +35,15 @@
 
 #include "scopeprotocols.h"
 
-//#define AddDecoderClass(T) ProtocolDecoder::AddDecoderClass(T::GetProtocolName(), T::CreateInstance)
+#define AddDecoderClass(T) ProtocolDecoder::AddDecoderClass(T::GetProtocolName(), T::CreateInstance)
 
 /**
 	@brief Static initialization for protocol list
  */
 void ScopeProtocolStaticInit()
 {
+	AddDecoderClass(NRZDecoder);
+	
 	/*
 	AddDecoderClass(DigitalToAnalogDecoder);
 	AddDecoderClass(DMADecoder);

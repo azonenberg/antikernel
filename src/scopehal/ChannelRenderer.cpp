@@ -49,6 +49,7 @@ ChannelRenderer::ChannelRenderer(OscilloscopeChannel* channel)
 	m_height = 24;
 	m_width = 32;
 	m_ypos = 0;
+	m_overlay = false;
 }
 
 ChannelRenderer::~ChannelRenderer()
@@ -214,14 +215,25 @@ void ChannelRenderer::RenderStartCallback(
 	float ytop = m_ypos + m_padding;
 	float ybot = m_ypos + m_height - 2*m_padding;
 
-	//Draw background
-	Gdk::Color color(m_channel->m_displaycolor);
-	Cairo::RefPtr<Cairo::LinearGradient> background_gradient = Cairo::LinearGradient::create(0, ytop, 0, ybot);
-	background_gradient->add_color_stop_rgb(0, color.get_red_p() * 0.3, color.get_green_p() * 0.3, color.get_blue_p() * 0.3);
-	background_gradient->add_color_stop_rgb(1, color.get_red_p() * 0.1, color.get_green_p() * 0.1, color.get_blue_p() * 0.1);
-	cr->set_source(background_gradient);
-	cr->rectangle(0, m_ypos, width, m_height);
-	cr->fill();
+	//Draw background unless we're an overlay (protocol decoder on top of original channel, etc)
+	if(!m_overlay)
+	{
+		Gdk::Color color(m_channel->m_displaycolor);
+		Cairo::RefPtr<Cairo::LinearGradient> background_gradient = Cairo::LinearGradient::create(0, ytop, 0, ybot);
+		background_gradient->add_color_stop_rgb(0, color.get_red_p() * 0.3, color.get_green_p() * 0.3, color.get_blue_p() * 0.3);
+		background_gradient->add_color_stop_rgb(1, color.get_red_p() * 0.1, color.get_green_p() * 0.1, color.get_blue_p() * 0.1);
+		cr->set_source(background_gradient);
+		cr->rectangle(0, m_ypos, width, m_height);
+		cr->fill();
+	}
+
+	//If we're an overlay, do a simple dark layer on top
+	else
+	{
+		cr->set_source_rgba(0, 0, 0, 0.5);
+		cr->rectangle(0, m_ypos, width, m_height);
+		cr->fill();
+	}
 
 	m_width = 0;
 }

@@ -33,6 +33,7 @@ scopeprotocols:
 
     sources:
         - scopeprotocols.cpp
+        - NRZDecoder.cpp
 
     flags:
         - global

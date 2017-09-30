@@ -84,8 +84,6 @@ public:
 
 	virtual void Refresh() =0;
 
-	//TODO: parameters
-
 	//Channels
 	size_t GetInputCount();
 	std::string GetInputName(size_t i);
@@ -102,6 +100,8 @@ public:
 	{ return m_parameters.begin(); }
 	ParameterMapType::iterator GetParamEnd()
 	{ return m_parameters.end(); }
+
+	virtual bool NeedsConfig() =0;	//false if we can automatically do the decode from the signal w/ no configuration
 
 protected:
 
@@ -128,9 +128,9 @@ protected:
 };
 
 #define PROTOCOL_DECODER_INITPROC(T) \
-	static ProtocolDecoder* CreateInstance(std::string hwname, std::string color, NameServer& namesrvr) \
+	static ProtocolDecoder* CreateInstance(std::string hwname, std::string color) \
 	{ \
-		return new T(hwname, color, namesrvr); \
+		return new T(hwname, color); \
 	}
 
 #endif

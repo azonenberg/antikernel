@@ -27,88 +27,102 @@
 *                                                                                                                      *
 ***********************************************************************************************************************/
 
-/**
-	@file
-	@author Andrew D. Zonenberg
-	@brief Declaration of ChannelRenderer
- */
+#include "../scopehal/scopehal.h"
+#include "NRZDecoder.h"
+#include "../scopehal/DigitalRenderer.h"
 
-#ifndef ChannelRenderer_h
-#define ChannelRenderer_h
+using namespace std;
 
-#include <cairomm/context.h>
-#include <gtkmm/drawingarea.h>
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Construction / destruction
 
-class OscilloscopeChannel;
-
-struct time_range
+NRZDecoder::NRZDecoder(
+	std::string hwname, std::string color)
+	: ProtocolDecoder(hwname, OscilloscopeChannel::CHANNEL_TYPE_DIGITAL, color)
 {
-	float xstart;
-	float xend;
-	int64_t tstart;
-	int64_t tend;
-};
+	//Set up channels
+	m_signalNames.push_back("din");
+	m_channels.push_back(NULL);	
+}
 
-/**
-	@brief Renders a single channel
- */
-class ChannelRenderer
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Factory methods
+
+ChannelRenderer* NRZDecoder::CreateRenderer()
 {
-public:
-	ChannelRenderer(OscilloscopeChannel* channel);
-	virtual ~ChannelRenderer();
+	return new DigitalRenderer(this);
+}
 
-	int m_height;
-	int m_ypos;
+bool NRZDecoder::ValidateChannel(size_t i, OscilloscopeChannel* channel)
+{
+	if( (i == 0) && (channel->GetType() == OscilloscopeChannel::CHANNEL_TYPE_ANALOG) )
+		return true;
+	return false;
+}
 
-	int m_padding;
-	int m_width;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Accessors
 
-	bool m_overlay;
+string NRZDecoder::GetProtocolName()
+{
+	return "NRZ";
+}
 
-	virtual void RenderStartCallback(
-		const Cairo::RefPtr<Cairo::Context>& cr,
-		int width,
-		int visleft,
-		int visright,
-		std::vector<time_range>& ranges);
-	virtual void RenderSampleCallback(
-		const Cairo::RefPtr<Cairo::Context>& cr,
-		size_t i,
-		float xstart,
-		float xend,
-		int visleft,
-		int visright);
-	virtual void RenderEndCallback(
-		const Cairo::RefPtr<Cairo::Context>& cr,
-		int width,
-		int visleft,
-		int visright,
-		std::vector<time_range>& ranges);
-	virtual void Render(
-		const Cairo::RefPtr<Cairo::Context>& cr,
-		int width,
-		int visleft,
-		int visright,
-		std::vector<time_range>& ranges);
+bool NRZDecoder::NeedsConfig()
+{
+	//we auto-select the midpoint as our threshold
+	return false;
+}
 
-	void RenderComplexSignal(
-		const Cairo::RefPtr<Cairo::Context>& cr,
-		int visleft, int visright,
-		float xstart, float xend, float xoff,
-		float ystart, float ymid, float ytop,
-		std::string str,
-		Gdk::Color color);
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Actual decoder logic
 
-	void MakePathSignalBody(
-		const Cairo::RefPtr<Cairo::Context>& cr,
-		float xstart, float xoff, float xend, float ybot, float ymid, float ytop);
+void NRZDecoder::Refresh()
+{
+	m_timescale = m_channels[0]->m_timescale;
+	
+	//Get the input data
+	if(m_channels[0] == NULL)
+	{
+		SetData(NULL);
+		return;
+	}
+	AnalogCapture* din = dynamic_cast<AnalogCapture*>(m_channels[0]->GetData());
+	if(din == NULL)
+	{
+		SetData(NULL);
+		return;
+	}
+	
+	//Can't do scaling if we have no samples to work with
+	if(din->GetDepth() == 0)
+	{
+		SetData(NULL);
+		return;
+	}
 
-	//Maximum width, in pixels, of one sample
-	float m_maxsamplewidth;
+	//Find the min/max values of the samples
+	//TODO: pick saner threshold, like median or something? Better glitch resistance
+	float min = 999;
+	float max = -999;
+	for(auto sample : *din)
+	{
+		if((float)sample > max)
+			max = sample;
+		if((float)sample < min)
+			min = sample;
+	}
+	float range = max - min;
+	float midpoint = range/2 + min;
 
-protected:
-	OscilloscopeChannel* m_channel;
-};
-
-#endif
+	//Threshold all of our samples
+	DigitalCapture* cap = new DigitalCapture;
+	cap->m_timescale = din->m_timescale;
+	for(size_t i=0; i<din->m_samples.size(); i++)
+	{
+		AnalogSample sin = din->m_samples[i];
+		bool b = (float)sin > midpoint;
+		cap->m_samples.push_back(DigitalSample(sin.m_offset, sin.m_duration, b));
+	}
+	SetData(cap);
+}

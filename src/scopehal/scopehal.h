@@ -54,4 +54,6 @@ void GetStringWidth(const Cairo::RefPtr<Cairo::Context>& cr, std::string str, bo
 
 uint64_t ConvertVectorSignalToScalar(std::vector<bool> bits);
 
+std::string GetDefaultChannelColor(int i);
+
 #endif

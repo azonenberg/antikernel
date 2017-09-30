@@ -56,23 +56,6 @@ int bit_test_pair(int state_0, int state_1, int current_1, int old_1, int curren
 int bit_test(int state, int current, int old);
 int MakeTruthTable(int state_0, int state_1);
 
-#define NUM_COLORS 12
-const char* g_colorTable[NUM_COLORS]=
-{
-	"#ffa0a0",
-	"#a0ffff",
-	"#ffd0a0",
-	"#a0d0ff",
-	"#ffffa0",
-	"#a0a0ff",
-	"#ffa0d0",
-	"#d0ffa0",
-	"#d0a0ff",
-	"#a0ffa0",
-	"#ffa0ff",
-	"#a0ffd0",
-};
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
@@ -171,8 +154,6 @@ void RedTinLogicAnalyzer::LoadChannels()
 	LogDebug("Logic analyzer: loading channel metadata\n");
 	LogIndenter li;
 
-	int color_num = 0;
-
 	if(m_uart)
 	{
 		//Read the symbol table ROM
@@ -269,8 +250,7 @@ void RedTinLogicAnalyzer::LoadChannels()
 			LogDebug("Signal %s has width %u, type %u\n", name.c_str(), width, type);
 
 			//Allocate a color for it
-			string color = g_colorTable[color_num];
-			color_num = (color_num + 1) % NUM_COLORS;
+			string color = GetDefaultChannelColor(m_channels.size());
 
 			//Normal channel (no protocol decoders)
 			if(type == 0)

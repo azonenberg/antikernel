@@ -105,27 +105,20 @@ int OscilloscopeChannel::GetWidth()
 
 ChannelRenderer* OscilloscopeChannel::CreateRenderer()
 {
-	if(!m_procedural)
+	switch(m_type)
 	{
-		switch(m_type)
-		{
-		case CHANNEL_TYPE_DIGITAL:
-			return new DigitalRenderer(this);
+	case CHANNEL_TYPE_DIGITAL:
+		return new DigitalRenderer(this);
 
-		case CHANNEL_TYPE_ANALOG:
-			return new AnalogRenderer(this);
+	case CHANNEL_TYPE_ANALOG:
+		return new AnalogRenderer(this);
 
-		//complex channels must be procedural
-		case CHANNEL_TYPE_COMPLEX:
-			throw JtagExceptionWrapper(
-				"Invalid channel type",
-				"");
-			break;
-		}
+	//complex channels must be procedural (and override this)
+	default:
+	case CHANNEL_TYPE_COMPLEX:
+		throw JtagExceptionWrapper(
+			"Invalid channel type",
+			"");
+		break;
 	}
-
-	//procedural channels must override this
-	throw JtagExceptionWrapper(
-		"Invalid channel type",
-		"");
 }
