@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -35,13 +35,14 @@
 
 #include "scopeprotocols.h"
 
-#define AddDecoderClass(T) ProtocolDecoder::AddDecoderClass(T::GetProtocolName(), T::CreateInstance)
+//#define AddDecoderClass(T) ProtocolDecoder::AddDecoderClass(T::GetProtocolName(), T::CreateInstance)
 
 /**
 	@brief Static initialization for protocol list
  */
 void ScopeProtocolStaticInit()
 {
+	/*
 	AddDecoderClass(DigitalToAnalogDecoder);
 	AddDecoderClass(DMADecoder);
 	AddDecoderClass(RPCDecoder);
@@ -50,4 +51,5 @@ void ScopeProtocolStaticInit()
 	AddDecoderClass(SPIDecoder);
 	AddDecoderClass(StateDecoder);
 	AddDecoderClass(UARTDecoder);
+	*/
 }

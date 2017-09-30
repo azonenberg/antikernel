@@ -60,6 +60,9 @@ public:
 		int visleft,
 		int visright,
 		std::vector<time_range>& ranges);
+
+	float m_yscale;
+	float m_yoffset;
 };
 
 #endif

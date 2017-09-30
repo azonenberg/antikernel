@@ -27,30 +27,18 @@
 #                                                                                                                      #
 ########################################################################################################################
 
-scopehal:
+scopeprotocols:
     toolchain:      c++/generic
     type:           shlib
 
-    constants:
-        ../../antikernel-ipcores/la/RedTin_opcodes.yml:
-            - c/enum
-
     sources:
-        - scopehal.cpp
-        - AnalogRenderer.cpp
-        - ChannelRenderer.cpp
-        - DigitalRenderer.cpp
-        - LeCroyVICPOscilloscope.cpp
-        - Oscilloscope.cpp
-        - OscilloscopeChannel.cpp
-        - ProtocolDecoder.cpp
-        - RedTinLogicAnalyzer.cpp
-        - TimescaleRenderer.cpp
+        - scopeprotocols.cpp
 
     flags:
         - global
         - output/reloc
         - library/target/jtaghal
+        - library/target/scopehal
         - library/target/log
         - library/target/xptools
         - library/required/atk-1.0

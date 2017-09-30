@@ -64,6 +64,8 @@ protected:
 	virtual bool on_draw(const Cairo::RefPtr<Cairo::Context>& cr);
 	virtual bool on_button_press_event(GdkEventButton* event);
 
+	void OnAutoFitVertical();
+
 	bool m_sizeDirty;
 
 	Oscilloscope* m_scope;
@@ -72,6 +74,10 @@ protected:
 	void MakeTimeRanges(std::vector<time_range>& ranges);
 
 	int64_t m_cursorpos;
+
+	Gtk::Menu m_channelContextMenu;
+	OscilloscopeChannel* m_selectedChannel;
+	Gtk::Menu m_protocolDecodeMenu;
 };
 
 #endif

@@ -276,7 +276,7 @@ void LeCroyVICPOscilloscope::ResetTriggerConditions()
 
 Oscilloscope::TriggerMode LeCroyVICPOscilloscope::PollTrigger()
 {
-	LogDebug("Polling trigger\n");
+	//LogDebug("Polling trigger\n");
 
 	//Read the Internal State Change Register
 	SendCommand("INR?");
@@ -295,7 +295,7 @@ Oscilloscope::TriggerMode LeCroyVICPOscilloscope::PollTrigger()
 
 	//Stopped, no data available
 	//TODO: how to handle auto / normal trigger mode?
-	return TRIGGER_MODE_TRIGGERED;
+	return TRIGGER_MODE_RUN;
 }
 
 bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callback)
@@ -311,6 +311,14 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 		progress_callback(i * 1.0f / m_analogChannelCount);
 
 		//TODO: read the full WaveDesc block and parse other fields?
+		//WAVE_ARRAY_COUNT   : 10002 
+
+		//See how many samples to expect (for progress display when downloading a large capture)
+		/*string cmd = "C1:INSPECT? 'WAVEDESC'";
+		cmd[1] += i;
+		SendCommand(cmd);
+		string wavedesc = ReadMultiBlockString();
+		LogDebug("wavedesc = %s\n", wavedesc.c_str());*/
 
 		//Read the acquisition settings
 		string cmd = "C1:INSPECT? 'HORIZ_INTERVAL'";

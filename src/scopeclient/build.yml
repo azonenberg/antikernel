@@ -43,6 +43,7 @@ scopeclient:
         - global
         - library/target/jtaghal
         - library/target/scopehal
+        - library/target/scopeprotocols
         - library/target/log
         - library/target/xptools
         - library/required/atk-1.0

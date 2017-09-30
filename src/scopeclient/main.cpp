@@ -39,7 +39,7 @@
 //#include "../scopehal/NetworkedOscilloscope.h"
 #include "../scopehal/RedTinLogicAnalyzer.h"
 #include "../scopehal/LeCroyVICPOscilloscope.h"
-//#include "../scopeprotocols/scopeprotocols.h"
+#include "../scopeprotocols/scopeprotocols.h"
 
 using namespace std;
 
@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
 		g_log_sinks.emplace(g_log_sinks.begin(), new ColoredSTDLogSink(console_verbosity));
 
 		//Initialize the protocol decoder library
-		//ScopeProtocolStaticInit();
+		ScopeProtocolStaticInit();
 
 		//Connect to the server
 		Oscilloscope* scope = NULL;

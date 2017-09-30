@@ -42,6 +42,8 @@ AnalogRenderer::AnalogRenderer(OscilloscopeChannel* channel)
 : ChannelRenderer(channel)
 {
 	m_height = 125;
+	m_yscale = 1;
+	m_yoffset = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -69,7 +71,7 @@ void AnalogRenderer::RenderSampleCallback(
 
 	//Calculate position. If the sample would go off the edge of our render, crop it
 	//0 volts is by default the center of our display area
-	float y = ymid - (sample.m_sample * yd);
+	float y = ymid - ( (sample.m_sample + m_yoffset) * yd * m_yscale);
 	if(y < ytop)
 		y = ytop;
 	if(y > ybot)

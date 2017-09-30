@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -83,7 +83,7 @@ string ProtocolDecoderParameter::ToString()
 		case TYPE_INT:
 			snprintf(str_out, sizeof(str_out), "%d", m_intval);
 			break;
-		case TYPE_FILENAME: 
+		case TYPE_FILENAME:
 			return m_filename;
 			break;
 	}
@@ -132,16 +132,14 @@ void ProtocolDecoderParameter::SetFileName(string f)
 ProtocolDecoder::ProtocolDecoder(
 	string hwname,
 	OscilloscopeChannel::ChannelType type,
-	string color,
-	NameServer& namesrvr)
+	string color)
 	: OscilloscopeChannel(hwname, type, color, true)
-	, m_namesrvr(namesrvr)
 {
 }
 
 ProtocolDecoder::~ProtocolDecoder()
 {
-	
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -153,10 +151,9 @@ ProtocolDecoderParameter& ProtocolDecoder::GetParameter(string s)
 	{
 		throw JtagExceptionWrapper(
 			"Invalid parameter name",
-			"",
-			JtagException::EXCEPTION_TYPE_GIGO);
+			"");
 	}
-	
+
 	return m_parameters[s];
 }
 
@@ -173,8 +170,7 @@ string ProtocolDecoder::GetInputName(size_t i)
 	{
 		throw JtagExceptionWrapper(
 			"Invalid channel index",
-			"",
-			JtagException::EXCEPTION_TYPE_GIGO);
+			"");
 	}
 }
 
@@ -191,8 +187,7 @@ void ProtocolDecoder::SetInput(size_t i, OscilloscopeChannel* channel)
 		{
 			throw JtagExceptionWrapper(
 				"Invalid channel format",
-				"",
-				JtagException::EXCEPTION_TYPE_GIGO);
+				"");
 		}
 		m_channels[i] = channel;
 	}
@@ -200,8 +195,7 @@ void ProtocolDecoder::SetInput(size_t i, OscilloscopeChannel* channel)
 	{
 		throw JtagExceptionWrapper(
 			"Invalid channel index",
-			"",
-			JtagException::EXCEPTION_TYPE_GIGO);
+			"");
 	}
 }
 
@@ -216,12 +210,11 @@ void ProtocolDecoder::SetInput(string name, OscilloscopeChannel* channel)
 			return;
 		}
 	}
-	
+
 	//Not found
 	throw JtagExceptionWrapper(
 		"Invalid channel name",
-		"",
-		JtagException::EXCEPTION_TYPE_GIGO);
+		"");
 }
 
 OscilloscopeChannel* ProtocolDecoder::GetInput(size_t i)
@@ -232,8 +225,7 @@ OscilloscopeChannel* ProtocolDecoder::GetInput(size_t i)
 	{
 		throw JtagExceptionWrapper(
 			"Invalid channel index",
-			"",
-			JtagException::EXCEPTION_TYPE_GIGO);
+			"");
 	}
 }
 
@@ -251,32 +243,12 @@ void ProtocolDecoder::EnumProtocols(vector<string>& names)
 		names.push_back(it->first);
 }
 
-ProtocolDecoder* ProtocolDecoder::CreateDecoder(string protocol, string hwname, string color, NameServer& namesrvr)
+ProtocolDecoder* ProtocolDecoder::CreateDecoder(string protocol, string hwname, string color)
 {
 	if(m_createprocs.find(protocol) != m_createprocs.end())
-		return m_createprocs[protocol](hwname, color, namesrvr);
+		return m_createprocs[protocol](hwname, color);
 
 	throw JtagExceptionWrapper(
 		"Invalid decoder name",
-		"",
-		JtagException::EXCEPTION_TYPE_GIGO);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Rendering helpers
-
-string ProtocolDecoder::GetNameOfAddress(uint16_t addr)
-{
-	string name;
-	try
-	{
-		name = m_namesrvr.ReverseLookup(addr);
-	}
-	catch(JtagException& ex)
-	{
-		char sname[8];
-		snprintf(sname, 8, "0x%04x", addr);
-		name = sname;
-	}
-	return name;
+		"");
 }

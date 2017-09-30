@@ -82,10 +82,12 @@ class CaptureChannel : public CaptureChannelBase
 {
 public:
 
+	typedef std::vector< OscilloscopeSample<S> > vtype;
+
 	/**
 		@brief The actual samples
 	 */
-	std::vector< OscilloscopeSample<S> > m_samples;
+	vtype m_samples;
 
 	virtual size_t GetDepth()
 	{
@@ -120,6 +122,12 @@ public:
 
 	S& operator[](size_t i)
 	{ return m_samples[i]; }
+
+	typename vtype::iterator begin()
+	{ return m_samples.begin(); }
+
+	typename vtype::iterator end()
+	{ return m_samples.end(); }
 
 };
 

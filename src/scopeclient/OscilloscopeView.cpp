@@ -37,13 +37,16 @@
 #include "MainWindow.h"
 #include "../scopehal/Oscilloscope.h"
 #include "../scopehal/TimescaleRenderer.h"
+#include "../scopehal/AnalogRenderer.h"
 #include "OscilloscopeView.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
+
 OscilloscopeView::OscilloscopeView(Oscilloscope* scope, MainWindow* parent)
 	: m_scope(scope)
 	, m_parent(parent)
+	, m_selectedChannel(NULL)
 {
 	m_height = 64;
 	m_width = 64;
@@ -56,6 +59,20 @@ OscilloscopeView::OscilloscopeView(Oscilloscope* scope, MainWindow* parent)
 		Gdk::BUTTON_RELEASE_MASK);
 
 	m_cursorpos = 0;
+
+	//Create the context menu for right-clicking on a channel
+	auto item = Gtk::manage(new Gtk::MenuItem("Autofit vertical", false));
+	item->signal_activate().connect(
+		sigc::mem_fun(*this, &OscilloscopeView::OnAutoFitVertical));
+	m_channelContextMenu.append(*item);
+	item = Gtk::manage(new Gtk::MenuItem("Decode", false));
+	item->set_submenu(m_protocolDecodeMenu);
+	m_channelContextMenu.append(*item);
+
+	//Fill the protocol decoder context menu
+	
+	m_protocolDecodeMenu.show_all();
+	m_channelContextMenu.show_all();
 }
 
 OscilloscopeView::~OscilloscopeView()
@@ -155,8 +172,15 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 			}
 
 			//All good, draw individual channels
-			for(ChannelMap::iterator it=m_renderers.begin(); it != m_renderers.end(); ++it)
-				it->second->Render(cr, width, 0 + xoff, width + xoff, ranges);
+			//Draw channels in numerical order.
+			//This allows painters-algorithm handling of protocol decoders that wish to be drawn
+			//on top of the original channel.
+			for(size_t i=0; i<m_scope->GetChannelCount(); i++)
+			{
+				auto r = m_renderers[m_scope->GetChannel(i)];
+				//TODO: do we always have one for each channel?
+				r->Render(cr, width, 0 + xoff, width + xoff, ranges);
+			}
 
 			//Figure out time scale for cursor
 			float tscale = 0;
@@ -245,6 +269,26 @@ bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
 				queue_draw();
 			}
 		}
+	}
+
+	//Right button
+	else if(event->button == 3)
+	{
+		//Figure out which channel the cursor position is in
+		for(size_t i=0; i<m_scope->GetChannelCount(); i++)
+		{
+			auto chan = m_scope->GetChannel(i);
+			auto render = m_renderers[chan];
+
+			if( (event->y >= render->m_ypos) && (event->y <= (render->m_ypos + render->m_height)) )
+			{
+				m_selectedChannel = chan;
+				break;
+			}
+		}
+
+		//Show the context menu
+		m_channelContextMenu.popup(event->button, event->time);
 	}
 
 	return true;
@@ -371,4 +415,50 @@ void OscilloscopeView::MakeTimeRanges(std::vector<time_range>& ranges)
 			ranges.push_back(current_range);
 		}
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// View event handlers
+
+void OscilloscopeView::OnAutoFitVertical()
+{
+	//Cannot autofit without capture data
+	if(m_selectedChannel == NULL)
+		return;
+	auto data = m_selectedChannel->GetData();
+	if(data == NULL)
+		return;
+
+	//We have data
+	//If it's not an analog channel, skip (makes no sense to autofit a digital channel)
+	auto adata = dynamic_cast<AnalogCapture*>(data);
+	if(adata == NULL)
+		return;
+
+	//Find the min/max values of the samples
+	float min = 999;
+	float max = -999;
+	for(auto sample : *adata)
+	{
+		if((float)sample > max)
+			max = sample;
+		if((float)sample < min)
+			min = sample;
+	}
+	float range = max - min;
+
+	//Calculate the display scale to make it fit the available space in the renderer
+	//Renderer uses normalized units of +/- 0.5, we just need a scaling factor
+	//Should be an analog renderer, we're very confused otherwise
+	auto render = dynamic_cast<AnalogRenderer*>(m_renderers[m_selectedChannel]);
+	if(!render)
+		return;
+	render->m_yscale = 1.0f / range;
+
+	//Calculate the offset to center our waveform in the display area
+	float midpoint = range/2 + min;
+	render->m_yoffset = -midpoint;
+
+	//Done, refresh display
+	queue_draw();
 }
