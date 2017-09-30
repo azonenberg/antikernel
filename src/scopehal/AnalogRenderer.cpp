@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -55,26 +55,26 @@ void AnalogRenderer::RenderSampleCallback(
 	int /*visleft*/,
 	int /*visright*/
 	)
-{	
+{
 	float ytop = m_ypos + m_padding;
 	float ybot = m_ypos + m_height - 2*m_padding;
 	float yd = ybot-ytop;
 	//float ymid = yd/2 + ytop;
-	
+
 	AnalogCapture* capture = dynamic_cast<AnalogCapture*>(m_channel->GetData());
 	if(capture == NULL)
 		return;
-		
+
 	const AnalogSample& sample = capture->m_samples[i];
 
 	//Move to initial position if first sample
 	float y = ybot - (sample.m_sample * yd);
 	if(i == 0)
 		cr->move_to(xstart, y);
-		
+
 	//Draw at the middle
 	float xmid = (xend-xstart)/2 + xstart;
-	
+
 	//Render
 	cr->line_to(xmid, y);
 }
@@ -89,6 +89,6 @@ void AnalogRenderer::RenderEndCallback(
 	Gdk::Color color(m_channel->m_displaycolor);
 	cr->set_source_rgb(color.get_red_p(), color.get_green_p(), color.get_blue_p());
 	cr->stroke();
-		
+
 	cr->restore();
 }
