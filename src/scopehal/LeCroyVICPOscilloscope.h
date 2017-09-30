@@ -27,140 +27,71 @@
 *                                                                                                                      *
 ***********************************************************************************************************************/
 
+#ifndef LeCroyVICPOscilloscope_h
+#define LeCroyVICPOscilloscope_h
+
+#include "../xptools/Socket.h"
+
 /**
-	@file
-	@author Andrew D. Zonenberg
-	@brief Program entry point
+	@brief A LeCroy VICP oscilloscope
+
+	Protocol layer is based on LeCroy's released VICPClient.h, but rewritten and modernized heavily
  */
-
-#include "scopeclient.h"
-#include "MainWindow.h"
-#include "ScopeConnectionDialog.h"
-//#include "../scopehal/NetworkedOscilloscope.h"
-#include "../scopehal/RedTinLogicAnalyzer.h"
-#include "../scopehal/LeCroyVICPOscilloscope.h"
-//#include "../scopeprotocols/scopeprotocols.h"
-
-using namespace std;
-
-int main(int argc, char* argv[])
+class LeCroyVICPOscilloscope : public Oscilloscope
 {
-	int exit_code = 0;
-	try
+public:
+	LeCroyVICPOscilloscope(std::string hostname, unsigned short port);
+	virtual ~LeCroyVICPOscilloscope();
+
+	//Device information
+	virtual std::string GetName();
+	virtual std::string GetVendor();
+	virtual std::string GetSerial();
+
+	//Triggering
+	virtual void ResetTriggerConditions();
+	virtual Oscilloscope::TriggerMode PollTrigger();
+	virtual bool AcquireData(sigc::slot1<int, float> progress_callback);
+	virtual void Start();
+	virtual void StartSingleTrigger();
+	virtual void Stop();
+	virtual void SetTriggerForChannel(OscilloscopeChannel* channel, std::vector<TriggerType> triggerbits);
+
+	//VICP constant helpers
+	enum HEADER_OPS
 	{
-		Gtk::Main kit(argc, argv);
+		OP_DATA		= 0x80,
+		OP_REMOTE	= 0x40,
+		OP_LOCKOUT	= 0x20,
+		OP_CLEAR	= 0x10,
+		OP_SRQ		= 0x8,
+		OP_REQ		= 0x4,
+		OP_EOI		= 0x1
+	};
 
-		//Global settings
-		unsigned short port = 0;
-		string server = "";
-		string api = "redtin_uart";
-		//bool scripted = false;
-		string scopename = "";
-		string tty = "/dev/ttyUSB0";
+protected:
+	Socket m_socket;
 
-		Severity console_verbosity = Severity::NOTICE;
+	bool SendCommand(std::string cmd, bool eoi=true);
+	std::string ReadData();
+	std::string ReadMultiBlockString();
+	std::string ReadSingleBlockString();
 
-		//Parse command-line arguments
-		for(int i=1; i<argc; i++)
-		{
-			string s(argv[i]);
+	uint8_t GetNextSequenceNumber(bool eoi);
 
-			//Let the logger eat its args first
-			if(ParseLoggerArguments(i, argc, argv, console_verbosity))
-				continue;
+	std::string m_hostname;
+	unsigned short m_port;
 
-			if(s == "--help")
-			{
-				//not implemented
-				return 0;
-			}
-			else if(s == "--port")
-				port = atoi(argv[++i]);
-			else if(s == "--server")
-				server = argv[++i];
-			else if(s == "--api")
-				api = argv[++i];
-			//else if(s == "--scripted")
-			//	scripted = true;
-			else if(s == "--scopename")
-				scopename = argv[++i];
-			else if(s == "--tty")
-				tty = argv[++i];
-			else if(s == "--version")
-			{
-				//not implemented
-				//ShowVersion();
-				return 0;
-			}
-			else
-			{
-				fprintf(stderr, "Unrecognized command-line argument \"%s\", use --help\n", s.c_str());
-				return 1;
-			}
-		}
+	uint8_t m_nextSequence;
+	uint8_t m_lastSequence;
 
-		//Set up logging
-		g_log_sinks.emplace(g_log_sinks.begin(), new ColoredSTDLogSink(console_verbosity));
+	//hardware analog channel count, independent of LA option or protocol decodes
+	unsigned int m_analogChannelCount;
 
-		//Initialize the protocol decoder library
-		//ScopeProtocolStaticInit();
+	std::string m_vendor;
+	std::string m_model;
+	std::string m_serial;
+	std::string m_fwVersion;
+};
 
-		//Connect to the server
-		Oscilloscope* scope = NULL;
-		//NameServer* namesrvr = NULL;
-		/*if(api == "scoped")
-			scope = new NetworkedOscilloscope(server, port);
-		else if(api == "redtin")
-		{
-			//Not scripting? Normal dialog process
-			if(!scripted)
-			{
-				ScopeConnectionDialog dlg(server, port);
-				if(Gtk::RESPONSE_OK != dlg.run())
-					return 0;
-
-				namesrvr = dlg.DetachNameServer();
-				scope = dlg.DetachScope();
-			}
-			else
-			{
-				RedTinLogicAnalyzer* la = new RedTinLogicAnalyzer(server, port);
-				namesrvr = new NameServer(&la->m_iface);
-				la->Connect(scopename);
-				scope = la;
-			}
-		}*/
-		if(api == "redtin_uart")
-		{
-			//TODO
-			scope = new RedTinLogicAnalyzer(tty, 115200);
-		}
-		else if(api == "lecroy_vicp")
-		{
-			//default port if not specified
-			if(port == 0)
-				port = 1861;
-			scope = new LeCroyVICPOscilloscope(server, port);
-		}
-		else
-		{
-			LogError("Unrecognized API \"%s\", use --help\n", api.c_str());
-			return 1;
-		}
-
-		//and run the app
-		MainWindow wnd(scope, server, port/*, namesrvr*/);
-		kit.run(wnd);
-
-		//if(namesrvr)
-		//	delete namesrvr;
-		delete scope;
-	}
-	catch(const JtagException& ex)
-	{
-		LogError("%s\n", ex.GetDescription().c_str());
-		exit_code = 1;
-	}
-
-	return exit_code;
-}
+#endif

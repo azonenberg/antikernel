@@ -36,7 +36,7 @@
 #ifndef Oscilloscope_h
 #define Oscilloscope_h
 
-#include "OscilloscopeChannel.h"
+class OscilloscopeChannel;
 
 /**
 	@brief Generic representation of an oscilloscope or logic analyzer.

@@ -55,7 +55,7 @@ ChannelListView::ChannelListView(MainWindow* parent)
 	Gtk::CellRenderer* render = get_column_cell_renderer(0);
 	get_column(0)->add_attribute(*render, "background-gdk", m_columns.color);
 	get_column(0)->add_attribute(*render, "height", m_columns.height);
-	get_column(0)->add_attribute(*render, "ypad", m_columns.padding);
+	//get_column(0)->add_attribute(*render, "ypad", m_columns.padding);
 
 	//Set up message handlers
 	/*static_cast<Gtk::CellRendererToggle*>(get_column_cell_renderer(0))->signal_toggled().connect(
@@ -92,12 +92,11 @@ void ChannelListView::Refresh()
 		it->set_value(1, true);		//TODO: is channel enabled?
 		it->set_value(2, chan->m_displayname);
 		it->set_value(3, chan);
-		it->set_value(4, render->m_height + 4);
-		it->set_value(5, 6);
+		it->set_value(4, render->m_height + 2);
+		//it->set_value(5, 6);
 		if(i == 0)					//leave extra space for (timescale height - header height)
 		{
-			it->set_value(4, 37);
-			it->set_value(5, 18);
+			it->set_value(4, render->m_height + 14);
 		}
 		it->set_value(6, std::string(""));
 	}
@@ -111,7 +110,7 @@ void ChannelListView::AddChannel(OscilloscopeChannel* chan)
 	it->set_value(2, chan->m_displayname);
 	it->set_value(3, chan);
 	it->set_value(4, 33);		//TODO: get height + padding
-	it->set_value(5, 6);
+	//it->set_value(5, 6);
 	it->set_value(6, std::string(""));
 }
 
@@ -142,7 +141,7 @@ void ChannelListView::UpdateTriggers()
 		OscilloscopeChannel* chan = it->get_value(m_columns.chan);
 		std::string val = it->get_value(m_columns.value);
 
-		//Protocol decoders don't trigger - skip them
+		//Protocol decoders are evaluated host side and can't be used for triggering - skip them
 		//if(dynamic_cast<ProtocolDecoder*>(chan) != NULL)
 		//	continue;
 

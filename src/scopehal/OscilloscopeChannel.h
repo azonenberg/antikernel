@@ -98,7 +98,7 @@ protected:
 	///Hardware name as labeled on the scope
 	std::string m_hwname;
 
-	///Bus width (1 to N)
+	///Bus width (1 to N, only meaningful for digital channels)
 	int m_width;
 
 	///Set to true if we're the output of a protocol decoder

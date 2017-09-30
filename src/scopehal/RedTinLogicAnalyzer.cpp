@@ -34,6 +34,7 @@
  */
 
 #include "scopehal.h"
+#include "OscilloscopeChannel.h"
 #include "RedTinLogicAnalyzer.h"
 #include "RedTin_opcodes_enum.h"
 /*

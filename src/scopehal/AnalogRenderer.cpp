@@ -59,7 +59,7 @@ void AnalogRenderer::RenderSampleCallback(
 	float ytop = m_ypos + m_padding;
 	float ybot = m_ypos + m_height - 2*m_padding;
 	float yd = ybot-ytop;
-	//float ymid = yd/2 + ytop;
+	float ymid = yd/2 + ytop;
 
 	AnalogCapture* capture = dynamic_cast<AnalogCapture*>(m_channel->GetData());
 	if(capture == NULL)
@@ -67,8 +67,15 @@ void AnalogRenderer::RenderSampleCallback(
 
 	const AnalogSample& sample = capture->m_samples[i];
 
+	//Calculate position. If the sample would go off the edge of our render, crop it
+	//0 volts is by default the center of our display area
+	float y = ymid - (sample.m_sample * yd);
+	if(y < ytop)
+		y = ytop;
+	if(y > ybot)
+		y = ybot;
+
 	//Move to initial position if first sample
-	float y = ybot - (sample.m_sample * yd);
 	if(i == 0)
 		cr->move_to(xstart, y);
 

@@ -45,6 +45,7 @@
 #include <stdint.h>
 
 #include "Oscilloscope.h"
+#include "OscilloscopeChannel.h"
 
 #include <cairomm/context.h>
 

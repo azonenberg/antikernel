@@ -37,8 +37,10 @@ scopehal:
 
     sources:
         - scopehal.cpp
+        - AnalogRenderer.cpp
         - ChannelRenderer.cpp
         - DigitalRenderer.cpp
+        - LeCroyVICPOscilloscope.cpp
         - Oscilloscope.cpp
         - OscilloscopeChannel.cpp
         - RedTinLogicAnalyzer.cpp

@@ -34,10 +34,10 @@
  */
 
 #include "scopeclient.h"
+#include "MainWindow.h"
 #include "../scopehal/Oscilloscope.h"
 #include "../scopehal/TimescaleRenderer.h"
 #include "OscilloscopeView.h"
-#include "MainWindow.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction

@@ -34,6 +34,7 @@
  */
 
 #include "scopehal.h"
+#include "OscilloscopeChannel.h"
 
 #include <stdio.h>
 #include <unistd.h>

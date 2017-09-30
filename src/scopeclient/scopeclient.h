@@ -35,7 +35,8 @@
 #ifndef scopeclient_h
 #define scopeclient_h
 
-#include "../jtaghal/jtaghal.h"
+#include "../scopehal/scopehal.h"
+#include "../scopehal/OscilloscopeChannel.h"
 
 #include <gtkmm/box.h>
 #include <gtkmm/comboboxtext.h>
