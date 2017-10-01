@@ -43,7 +43,7 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 	, m_lastSequence(1)
 {
 	LogDebug("Connecting to VICP oscilloscope at %s:%d\n", hostname.c_str(), port);
-	
+
 	if(!m_socket.Connect(hostname, port))
 	{
 		LogError("Couldn't connect to socket");
@@ -100,7 +100,7 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 				color = "#80ff80";
 				break;
 		}
-		
+
 		m_channels.push_back(new OscilloscopeChannel(
 			chname,
 			OscilloscopeChannel::CHANNEL_TYPE_ANALOG,
@@ -157,7 +157,7 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 
 LeCroyVICPOscilloscope::~LeCroyVICPOscilloscope()
 {
-	
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -189,7 +189,7 @@ bool LeCroyVICPOscilloscope::SendCommand(string cmd, bool eoi)
 	//Actually send it
 	if(!m_socket.SendLooped((const unsigned char*)payload.c_str(), payload.size()))
 		return false;
-	
+
 	return true;
 }
 
@@ -301,48 +301,89 @@ Oscilloscope::TriggerMode LeCroyVICPOscilloscope::PollTrigger()
 bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callback)
 {
 	LogDebug("Acquire data\n");
-	
+
 	//Read data for everything waveform
 	SendCommand("WAVEFORM_SETUP SP,0,NP,0,FP,0,SN,0");
 
 	for(unsigned int i=0; i<m_analogChannelCount; i++)
-	{	
-		//Update the UI as we acquire
-		progress_callback(i * 1.0f / m_analogChannelCount);
-
-		//TODO: read the full WaveDesc block and parse other fields?
-		//WAVE_ARRAY_COUNT   : 10002 
-
+	{
 		//See how many samples to expect (for progress display when downloading a large capture)
-		/*string cmd = "C1:INSPECT? 'WAVEDESC'";
-		cmd[1] += i;
-		SendCommand(cmd);
-		string wavedesc = ReadMultiBlockString();
-		LogDebug("wavedesc = %s\n", wavedesc.c_str());*/
-
-		//Read the acquisition settings
-		string cmd = "C1:INSPECT? 'HORIZ_INTERVAL'";
+		double start = GetTime();
+		string cmd = "C1:INSPECT? 'WAVE_ARRAY_COUNT'";
 		cmd[1] += i;
 		SendCommand(cmd);
 		string wavedesc = ReadSingleBlockString();
-		string format = "C1:INSP \"HORIZ_INTERVAL : %f \"";
+		string format = "C1:INSP \"WAVE_ARRAY_COUNT : %d \"";
+		format[1] += i;
+		int num_samples;
+		sscanf(wavedesc.c_str(), format.c_str(), &num_samples);
+		//LogDebug("Expecting %d samples\n", num_samples);
+
+		//Read the acquisition settings
+		cmd = "C1:INSPECT? 'HORIZ_INTERVAL'";
+		cmd[1] += i;
+		SendCommand(cmd);
+		wavedesc = ReadSingleBlockString();
+		format = "C1:INSP \"HORIZ_INTERVAL : %f \"";
 		format[1] += i;
 		float interval;
 		sscanf(wavedesc.c_str(), format.c_str(), &interval);
-		LogDebug("Sample interval: %.2f ps\n", interval * 1e12f);
+		//LogDebug("Sample interval: %.2f ps\n", interval * 1e12f);
 
 		//Create and format the capture
 		AnalogCapture* cap = new AnalogCapture;
 		cap->m_timescale = interval * 1e12f;
 
-		//Read the actual data (in ASCII floating-point volts, five values per line)
+		//Ask for the actual data (in ASCII floating-point volts, five values per line)
 		cmd = "C1:INSPECT? DATA_ARRAY_1,FLOAT";
 		cmd[1] += i;
 		SendCommand(cmd);
+		double dt = GetTime() - start;
+		//LogDebug("Headers took %.3f ms\n", dt * 1000);
 
-		//Read data, split it up into whitespace-delimited floats
-		string data = ReadMultiBlockString();
+		//Headers typically take ~400 ms
+		//Data typically takes ~90 ms per 1K samples
+		float base_progress = i*1.0f / m_analogChannelCount;
+		float expected_header_time = 0.4;
+		float expected_data_time = 0.09f * num_samples / 1000;
+		float expected_total_time = expected_header_time + expected_data_time;
+		float header_fraction = expected_header_time / expected_total_time;
+		base_progress += header_fraction / m_analogChannelCount;
+		progress_callback(base_progress);
+
+		//Read the data
+		//We expect approximately 5 samples per line
+		//Count the number of newlines in the packet to estimate our progress
+		string data;
+		bool first  = true;
+		int lines_expected = num_samples / 5;
+		int lines = 0;
+		start = GetTime();
+		while(true)
+		{
+			string payload = ReadSingleBlockString();
+			data += payload;
+			if(!first && payload.find("\"") != string::npos)
+				break;
+			first = false;
+
+			//Subtract a line for headers at start of packet
+			for(auto c : payload)
+			{
+				if(c == '\n')
+					lines ++;
+			}
+			lines --;
+
+			float local_progress = lines * 1.0f / lines_expected;
+			progress_callback(base_progress + local_progress / m_analogChannelCount);
+		}
+		dt = GetTime() - start;
+		//LogDebug("RX took %.3f ms\n", dt * 1000);
+
+		//Parse it
 		string tmp;
+		start = GetTime();
 		for(size_t j=data.find("\"") + 1; j<data.length() && data[j] != '\"'; j++)
 		{
 			if(isspace(data[j]))
@@ -354,10 +395,12 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 			else
 				tmp += data[j];
 		}
+		dt = GetTime() - start;
+		//LogDebug("Parsing took %.3f ms\n", dt * 1000);
 
 		m_channels[i]->SetData(cap);
 	}
-	
+
 	return false;
 }
 
@@ -392,7 +435,6 @@ void LeCroyVICPOscilloscope::Start()
 void LeCroyVICPOscilloscope::StartSingleTrigger()
 {
 	LogDebug("Start single trigger\n");
-	
 	SendCommand("TRIG_MODE SINGLE");
 }
 
