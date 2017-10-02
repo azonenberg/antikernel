@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -34,6 +34,7 @@
  */
 
 #include "scopehal.h"
+#include "ChannelRenderer.h"
 #include "TextRenderer.h"
 
 using namespace std;
@@ -57,7 +58,7 @@ void TextRenderer::RenderSampleCallback(
 	int visleft,
 	int visright
 	)
-{	
+{
 	float ytop = m_ypos + m_padding;
 	float ybot = m_ypos + m_height - 2*m_padding;
 	float ymid = (ybot-ytop)/2 + ytop;
@@ -78,6 +79,6 @@ void TextRenderer::RenderEndCallback(
 	int /*visleft*/,
 	int /*visright*/,
 	std::vector<time_range>& /*ranges*/)
-{	
+{
 	cr->restore();
 }

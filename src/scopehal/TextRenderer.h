@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -36,7 +36,7 @@
 #ifndef TextRenderer_h
 #define TextRenderer_h
 
-#include "ChannelRenderer.h"
+class ChannelRenderer;
 
 /**
 	@brief Renderer for any channel that renders as text
@@ -53,14 +53,14 @@ public:
 		float xend,
 		int visleft,
 		int visright);
-		
+
 	virtual void RenderEndCallback(
 		const Cairo::RefPtr<Cairo::Context>& cr,
 		int width,
 		int visleft,
 		int visright,
 		std::vector<time_range>& ranges);
-	
+
 protected:
 	virtual std::string GetText(int i) =0;
 };

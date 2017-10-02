@@ -45,6 +45,7 @@ scopehal:
         - OscilloscopeChannel.cpp
         - ProtocolDecoder.cpp
         - RedTinLogicAnalyzer.cpp
+        - TextRenderer.cpp
         - TimescaleRenderer.cpp
 
     flags:
