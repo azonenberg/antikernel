@@ -52,6 +52,48 @@ EthernetRenderer::EthernetRenderer(OscilloscopeChannel* channel)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Rendering
 
+Gdk::Color EthernetRenderer::GetColor(int i)
+{
+	EthernetCapture* data = dynamic_cast<EthernetCapture*>(m_channel->GetData());
+	if(data == NULL)
+		return Gdk::Color("#000000");
+	if(i >= (int)data->m_samples.size())
+		return Gdk::Color("#000000");
+
+	//TODO: have a set of standard colors we use everywhere?
+
+	auto sample = data->m_samples[i];
+	switch(sample.m_sample.m_type)
+	{
+		//Preamble: gray (not interesting)
+		case EthernetFrameSegment::TYPE_PREAMBLE:
+			return Gdk::Color("#808080");
+
+		//SFD: yellow
+		case EthernetFrameSegment::TYPE_SFD:
+			return Gdk::Color("#ffff80");
+
+		//MAC addresses (src or dest): cyan
+		case EthernetFrameSegment::TYPE_DST_MAC:
+		case EthernetFrameSegment::TYPE_SRC_MAC:
+			return Gdk::Color("#80ffff");
+
+		//Ethertype: Pink
+		case EthernetFrameSegment::TYPE_ETHERTYPE:
+		case EthernetFrameSegment::TYPE_VLAN_TAG:
+			return Gdk::Color("#ffcccc");
+
+		//Checksum: Green or red depending on if it's correct or not
+		//For now, always green b/c we don't implement the FCS :D
+		case EthernetFrameSegment::TYPE_FCS:
+			return Gdk::Color("#00ff00");
+
+		//Payload: dark blue
+		default:
+			return Gdk::Color("#336699");
+	}
+}
+
 string EthernetRenderer::GetText(int i)
 {
 	EthernetCapture* data = dynamic_cast<EthernetCapture*>(m_channel->GetData());

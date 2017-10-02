@@ -51,6 +51,12 @@ TextRenderer::TextRenderer(OscilloscopeChannel* channel)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Rendering
 
+Gdk::Color TextRenderer::GetColor(int /*i*/)
+{
+	//default to using our display color for everything
+	return Gdk::Color(m_channel->m_displaycolor);
+}
+
 void TextRenderer::RenderSampleCallback(
 	const Cairo::RefPtr<Cairo::Context>& cr,
 	size_t i,
@@ -66,14 +72,13 @@ void TextRenderer::RenderSampleCallback(
 
 	string str = GetText(i);
 
-	Gdk::Color color(m_channel->m_displaycolor);
 	RenderComplexSignal(
 		cr,
 		visleft, visright,
 		xstart, xend, 5,
 		ybot, ymid, ytop,
 		str,
-		color);
+		GetColor(i));
 }
 
 void TextRenderer::RenderEndCallback(

@@ -60,7 +60,7 @@ ChannelRenderer::~ChannelRenderer()
 
 void ChannelRenderer::MakePathSignalBody(
 	const Cairo::RefPtr<Cairo::Context>& cr,
-	float xstart, float /*xoff*/, float xend, float ybot, float ymid, float ytop)
+	float xstart, float /*xoff*/, float xend, float ybot, float /*ymid*/, float ytop)
 {
 	//If the signal is really tiny, shrink the rounding to avoid going out of bounds
 	float rounding = 10;

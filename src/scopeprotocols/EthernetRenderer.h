@@ -47,6 +47,7 @@ public:
 	EthernetRenderer(OscilloscopeChannel* channel);
 protected:
 	virtual std::string GetText(int i);
+	virtual Gdk::Color GetColor(int i);
 };
 
 #endif

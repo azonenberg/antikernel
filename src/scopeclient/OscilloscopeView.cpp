@@ -505,6 +505,8 @@ void OscilloscopeView::OnProtocolDecode(string protocol)
 	else
 		decoder->SetInput(0, m_selectedChannel);
 
+	//TODO: have query to see if this decoder should be an overlay or its own line
+
 	//Create a renderer for it
 	auto render = decoder->CreateRenderer();
 	m_renderers[decoder] = render;

@@ -62,6 +62,7 @@ public:
 		std::vector<time_range>& ranges);
 
 protected:
+	virtual Gdk::Color GetColor(int i);
 	virtual std::string GetText(int i) =0;
 };
 
