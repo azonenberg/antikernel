@@ -65,10 +65,10 @@ string EthernetRenderer::GetText(int i)
 	{
 		case EthernetFrameSegment::TYPE_PREAMBLE:
 			return "PREAMBLE";
-			
+
 		case EthernetFrameSegment::TYPE_SFD:
 			return "SFD";
-			
+
 		case EthernetFrameSegment::TYPE_DST_MAC:
 			{
 				if(sample.m_sample.m_data.size() != 6)
@@ -106,15 +106,45 @@ string EthernetRenderer::GetText(int i)
 				if(sample.m_sample.m_data.size() != 2)
 					return "[invalid Ethertype length]";
 
+				string type = "Type: ";
+
 				char tmp[32];
 				uint16_t ethertype = (sample.m_sample.m_data[0] << 8) | sample.m_sample.m_data[1];
-				snprintf(tmp, sizeof(tmp), "Ethertype: %04x", ethertype);
+				switch(ethertype)
+				{
+					case 0x0800:
+						type += "IPv4";
+						break;
 
-				string ret = tmp;
+					case 0x0806:
+						type += "ARP";
+						break;
+
+					case 0x8100:
+						type += "802.1q";
+						break;
+
+					case 0x86dd:
+						type += "IPv6";
+						break;
+
+					case 0x88cc:
+						type += "LLDP";
+						break;
+
+					case 0x88f7:
+						type += "PTP";
+						break;
+
+					default:
+						snprintf(tmp, sizeof(tmp), "0x%04x", ethertype);
+						type += tmp;
+						break;
+				}
 
 				//TODO: look up a table of common Ethertype values
-				
-				return ret;
+
+				return type;
 			}
 
 		case EthernetFrameSegment::TYPE_PAYLOAD:
@@ -127,6 +157,20 @@ string EthernetRenderer::GetText(int i)
 					ret += tmp;
 				}
 				return ret;
+			}
+
+		case EthernetFrameSegment::TYPE_FCS:
+			{
+				if(sample.m_sample.m_data.size() != 4)
+					return "[invalid FCS length]";
+
+				char tmp[32];
+				snprintf(tmp, sizeof(tmp), "CRC: %02x%02x%02x%02x",
+					sample.m_sample.m_data[0],
+					sample.m_sample.m_data[1],
+					sample.m_sample.m_data[2],
+					sample.m_sample.m_data[3]);
+				return tmp;
 			}
 
 		default:

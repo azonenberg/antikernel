@@ -382,7 +382,29 @@ void Ethernet10BaseTDecoder::Refresh()
 					sample.m_sample.m_data.push_back(bytes[i]);
 					cap->m_samples.push_back(sample);
 
-					//TODO: FCS
+					//If almost at end of packet, next 4 bytes are FCS
+					if(i == bytes.size() - 5)
+					{
+						sample.m_sample.m_data.clear();
+						sample.m_sample.m_type = EthernetFrameSegment::TYPE_FCS;
+					}
+					break;
+
+				case EthernetFrameSegment::TYPE_FCS:
+
+					//Start of FCS? Record start time
+					if(sample.m_sample.m_data.empty())
+						sample.m_offset = starts[i] / cap->m_timescale;
+
+					//Add the data
+					sample.m_sample.m_data.push_back(bytes[i]);
+
+					//Are we done? Add it
+					if(sample.m_sample.m_data.size() == 4)
+					{
+						sample.m_duration = (ends[i] / cap->m_timescale) - sample.m_offset;
+						cap->m_samples.push_back(sample);
+					}
 
 					break;
 
