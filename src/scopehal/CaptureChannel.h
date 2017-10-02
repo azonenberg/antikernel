@@ -56,17 +56,17 @@ public:
 	 */
 	int64_t m_timescale;
 
-	virtual size_t GetDepth() =0;
+	virtual size_t GetDepth() const =0;
 
 	/**
 		@brief Gets the time the capture ends at, in time steps
 	 */
-	virtual int64_t GetEndTime() =0;
+	virtual int64_t GetEndTime() const =0;
 
-	virtual int64_t GetSampleStart(size_t i) =0;
-	virtual int64_t GetSampleLen(size_t i) =0;
+	virtual int64_t GetSampleStart(size_t i) const =0;
+	virtual int64_t GetSampleLen(size_t i) const =0;
 
-	virtual bool EqualityTest(size_t i, size_t j) =0;
+	virtual bool EqualityTest(size_t i, size_t j) const =0;
 };
 
 /**
@@ -89,27 +89,27 @@ public:
 	 */
 	vtype m_samples;
 
-	virtual size_t GetDepth()
+	virtual size_t GetDepth() const
 	{
 		return m_samples.size();
 	}
 
-	virtual int64_t GetSampleStart(size_t i)
+	virtual int64_t GetSampleStart(size_t i) const
 	{
 		return m_samples[i].m_offset;
 	}
 
-	virtual int64_t GetSampleLen(size_t i)
+	virtual int64_t GetSampleLen(size_t i) const
 	{
 		return m_samples[i].m_duration;
 	}
 
-	virtual bool EqualityTest(size_t i, size_t j)
+	virtual bool EqualityTest(size_t i, size_t j) const
 	{
 		return (m_samples[i].m_sample == m_samples[j].m_sample);
 	}
 
-	virtual int64_t GetEndTime()
+	virtual int64_t GetEndTime() const
 	{
 		if(m_samples.empty())
 			return 0;
@@ -117,7 +117,7 @@ public:
 		return samp.m_offset + samp.m_duration;
 	}
 
-	size_t size()
+	size_t size() const
 	{ return m_samples.size(); }
 
 	S& operator[](size_t i)
