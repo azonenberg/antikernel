@@ -36,7 +36,7 @@
 #ifndef TimescaleRenderer_h
 #define TimescaleRenderer_h
 
-#include "ChannelRenderer.h"
+class ChannelRenderer;
 
 /**
 	@brief Renderer for a time-scale channel (no actual data)

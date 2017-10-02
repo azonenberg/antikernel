@@ -37,7 +37,7 @@
 #define OscilloscopeChannel_h
 
 #include "CaptureChannel.h"
-#include "ChannelRenderer.h"
+class ChannelRenderer;
 
 /**
 	@brief A single channel on the oscilloscope.
@@ -56,7 +56,7 @@ public:
 		CHANNEL_TYPE_COMPLEX
 	};
 
-	OscilloscopeChannel(std::string hwname, OscilloscopeChannel::ChannelType type, std::string color, bool procedural = false, int width = 1);
+	OscilloscopeChannel(std::string hwname, OscilloscopeChannel::ChannelType type, std::string color, int width = 1);
 	virtual ~OscilloscopeChannel();
 
 	///Display color (any valid GDK format)
@@ -74,8 +74,6 @@ public:
 
 	///Set new data, overwriting the old data as appropriate
 	void SetData(CaptureChannelBase* pNew);
-
-	bool IsProcedural();
 
 	virtual ChannelRenderer* CreateRenderer();
 

@@ -35,6 +35,7 @@
 
 #include "scopehal.h"
 #include "OscilloscopeChannel.h"
+#include "ChannelRenderer.h"
 #include "AnalogRenderer.h"
 #include "DigitalRenderer.h"
 
@@ -43,15 +44,13 @@ using namespace std;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-OscilloscopeChannel::OscilloscopeChannel(string hwname, OscilloscopeChannel::ChannelType type, string color, bool procedural, int width)
+OscilloscopeChannel::OscilloscopeChannel(string hwname, OscilloscopeChannel::ChannelType type, string color, int width)
 	: m_displaycolor(color)
 	, m_displayname(hwname)
 	, m_type(type)
 	, m_hwname(hwname)
 {
 	m_data = NULL;
-
-	m_procedural = procedural;
 
 	m_visible = true;
 
@@ -88,11 +87,6 @@ void OscilloscopeChannel::SetData(CaptureChannelBase* pNew)
 {
 	delete m_data;
 	m_data = pNew;
-}
-
-bool OscilloscopeChannel::IsProcedural()
-{
-	return m_procedural;
 }
 
 int OscilloscopeChannel::GetWidth()

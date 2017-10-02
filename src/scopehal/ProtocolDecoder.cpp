@@ -133,7 +133,7 @@ ProtocolDecoder::ProtocolDecoder(
 	string hwname,
 	OscilloscopeChannel::ChannelType type,
 	string color)
-	: OscilloscopeChannel(hwname, type, color, true)
+	: OscilloscopeChannel(hwname, type, color)
 {
 }
 

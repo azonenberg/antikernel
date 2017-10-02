@@ -40,6 +40,7 @@
 #include "../scopehal/ProtocolDecoder.h"
 //#include "../scopehal/StateDecoder.h"
 
+#include "Ethernet10BaseTDecoder.h"
 #include "NRZDecoder.h"
 /*
 #include "DigitalToAnalogDecoder.h"

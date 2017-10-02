@@ -42,6 +42,7 @@
  */
 void ScopeProtocolStaticInit()
 {
+	AddDecoderClass(Ethernet10BaseTDecoder);
 	AddDecoderClass(NRZDecoder);
 	
 	/*

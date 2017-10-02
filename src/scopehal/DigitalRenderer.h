@@ -36,7 +36,7 @@
 #ifndef DigitalRenderer_h
 #define DigitalRenderer_h
 
-#include "ChannelRenderer.h"
+class ChannelRenderer;
 
 /**
 	@brief Renderer for a digital channel

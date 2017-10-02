@@ -37,10 +37,8 @@
 #include "OscilloscopeChannel.h"
 #include "RedTinLogicAnalyzer.h"
 #include "RedTin_opcodes_enum.h"
-/*
 #include "ProtocolDecoder.h"
-#include "StateDecoder.h"
-*/
+//#include "StateDecoder.h"
 
 #include <memory.h>
 
@@ -264,7 +262,7 @@ void RedTinLogicAnalyzer::LoadChannels()
 				else
 				{
 					m_channels.push_back(chan = new OscilloscopeChannel(
-						name, OscilloscopeChannel::CHANNEL_TYPE_DIGITAL, color, false, width));
+						name, OscilloscopeChannel::CHANNEL_TYPE_DIGITAL, color, width));
 				}
 			}
 
@@ -670,7 +668,7 @@ bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 		OscilloscopeChannel* chan = m_channels[i];
 
 		//If the channel is procedural, skip it (no effect on the actual data)
-		if(m_channels[i]->IsProcedural())
+		if(dynamic_cast<ProtocolDecoder*>(m_channels[i]) != NULL)
 			continue;
 
 		int width = chan->GetWidth();
@@ -722,27 +720,12 @@ bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 		}
 	}
 
-	//Refresh procedural channels
+	//Refresh protocol decoders
 	for(size_t i=0; i<m_channels.size(); i++)
 	{
-		if(m_channels[i]->IsProcedural())
-		{
-			//TODO: just do the dynamic_cast and eliminate IsProcedural() since RTTI can do that for us?
-			LogError("Procedural channels (protocol decoders) not implemented\n");
-			/*
-			ProtocolDecoder* decoder = dynamic_cast<ProtocolDecoder*>(m_channels[i]);
-			if(decoder == NULL)
-			{
-				delete[] rx_buf;
-				delete[] timestamp;
-
-				throw JtagExceptionWrapper(
-					"Something claimed to be a procedural channel but isn't a protocol decoder",
-					"");
-			}
+		ProtocolDecoder* decoder = dynamic_cast<ProtocolDecoder*>(m_channels[i]);
+		if(decoder != NULL)
 			decoder->Refresh();
-			*/
-		}
 	}
 
 	delete[] timestamp;
@@ -876,7 +859,7 @@ void RedTinLogicAnalyzer::SetTriggerForChannel(OscilloscopeChannel* channel, std
 		OscilloscopeChannel* chan = m_channels[i];
 
 		//If the channel is procedural, skip it (no effect on the actual data)
-		if(chan->IsProcedural())
+		if(dynamic_cast<ProtocolDecoder*>(chan) != NULL)
 			continue;
 
 		int width = chan->GetWidth();

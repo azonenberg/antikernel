@@ -36,7 +36,7 @@
 #ifndef AnalogRenderer_h
 #define AnalogRenderer_h
 
-#include "ChannelRenderer.h"
+class ChannelRenderer;
 
 /**
 	@brief Renderer for an analog channel

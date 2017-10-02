@@ -30,112 +30,40 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Implementation of DigitalRenderer
+	@brief Declaration of Ethernet10BaseTDecoder
  */
+#ifndef Ethernet10BaseTDecoder_h
+#define Ethernet10BaseTDecoder_h
 
-#include "scopehal.h"
-#include "ChannelRenderer.h"
-#include "DigitalRenderer.h"
+#include "../scopehal/ProtocolDecoder.h"
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Construction / destruction
-DigitalRenderer::DigitalRenderer(OscilloscopeChannel* channel)
-: ChannelRenderer(channel)
+class Ethernet10BaseTDecoder : public ProtocolDecoder
 {
-	m_height = 22;
-}
+public:
+	Ethernet10BaseTDecoder(std::string hwname, std::string color);
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Rendering
+	virtual void Refresh();
+	virtual ChannelRenderer* CreateRenderer();
 
-void DigitalRenderer::RenderSampleCallback(
-	const Cairo::RefPtr<Cairo::Context>& cr,
-	size_t i,
-	float xstart,
-	float xend,
-	int visleft,
-	int visright
-	)
-{
-	float ytop = m_ypos + m_padding;
-	float ybot = m_ypos + m_height - 2*m_padding;
-	float ymid = (ybot-ytop)/2 + ytop;
+	virtual bool NeedsConfig();
 
-	//Scalar channels - lines
-	if(m_channel->GetWidth() == 1)
+	static std::string GetProtocolName();
+
+	virtual bool ValidateChannel(size_t i, OscilloscopeChannel* channel);
+
+	PROTOCOL_DECODER_INITPROC(Ethernet10BaseTDecoder)
+
+protected:
+	bool FindFallingEdge(size_t& i, AnalogCapture* cap);
+	bool FindRisingEdge(size_t& i, AnalogCapture* cap);
+
+	bool FindEdge(size_t& i, AnalogCapture* cap, bool polarity)
 	{
-		DigitalCapture* capture = dynamic_cast<DigitalCapture*>(m_channel->GetData());
-		if(capture == NULL)
-			return;
-
-		const DigitalSample& sample = capture->m_samples[i];
-		float tscale = m_channel->m_timescale * capture->m_timescale;
-		float rendered_uncertainty = tscale * 0.1;
-
-		//Move to initial position if first sample
-		float y = sample.m_sample ? ytop : ybot;
-		if(i == 0)
-			cr->move_to(xstart, y);
-
-		//Render
-		cr->line_to(xstart + rendered_uncertainty, y);
-		cr->line_to(xend - rendered_uncertainty, y);
+		if(polarity)
+			return FindRisingEdge(i, cap);
+		else
+			return FindFallingEdge(i, cap);
 	}
+};
 
-	//Vector channels - text
-	else
-	{
-		DigitalBusCapture* capture = dynamic_cast<DigitalBusCapture*>(m_channel->GetData());
-		if(capture == NULL)
-			return;
-
-		const DigitalBusSample& sample = capture->m_samples[i];
-		float rendered_uncertainty = 5;
-
-		//Format text - hex, 4 bits at a time
-		//TODO: support other formats
-		std::string str = "";
-		int maxbit = sample.m_sample.size() - 1;
-		for(int j=0; j<=maxbit; j+=4)
-		{
-			//Pull the rightmost 4 bits, stopping earlier if we're done
-			int val = sample.m_sample[maxbit-j];
-			for(int k=1; k<4; k++)
-			{
-				int nbit = maxbit - (j+k);
-				if(nbit >= 0)
-					val |= sample.m_sample[nbit] << k;
-			}
-			char buf[3] = {0};
-			snprintf(buf, sizeof(buf), "%01x", val);
-			str = buf + str;
-		}
-
-		//and render
-		Gdk::Color color(m_channel->m_displaycolor);
-		RenderComplexSignal(
-			cr,
-			visleft, visright,
-			xstart, xend, rendered_uncertainty,
-			ybot, ymid, ytop,
-			str,
-			color);
-	}
-}
-
-void DigitalRenderer::RenderEndCallback(
-	const Cairo::RefPtr<Cairo::Context>& cr,
-	int /*width*/,
-	int /*visleft*/,
-	int /*visright*/,
-	std::vector<time_range>& /*ranges*/)
-{
-	if(m_channel->GetWidth() == 1)
-	{
-		Gdk::Color color(m_channel->m_displaycolor);
-		cr->set_source_rgb(color.get_red_p(), color.get_green_p(), color.get_blue_p());
-		cr->stroke();
-	}
-
-	cr->restore();
-}
+#endif

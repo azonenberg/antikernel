@@ -37,7 +37,7 @@
 #define ProtocolDecoder_h
 
 #include "OscilloscopeChannel.h"
-#include "ChannelRenderer.h"
+#include "../scopehal/ChannelRenderer.h"
 
 class ProtocolDecoderParameter
 {

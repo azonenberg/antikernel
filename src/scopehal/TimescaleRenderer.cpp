@@ -34,6 +34,7 @@
  */
 
 #include "scopehal.h"
+#include "ChannelRenderer.h"
 #include "TimescaleRenderer.h"
 
 using namespace std;

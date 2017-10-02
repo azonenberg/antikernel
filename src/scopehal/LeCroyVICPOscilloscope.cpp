@@ -29,6 +29,7 @@
 
 #include "scopehal.h"
 #include "LeCroyVICPOscilloscope.h"
+#include "ProtocolDecoder.h"
 
 using namespace std;
 
@@ -105,7 +106,6 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 			chname,
 			OscilloscopeChannel::CHANNEL_TYPE_ANALOG,
 			color,
-			false,
 			1));
 	}
 	m_analogChannelCount = nchans;
@@ -389,7 +389,7 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 			if(isspace(data[j]))
 			{
 				if(tmp != "")
-					cap->m_samples.push_back(AnalogSample(j, 1, atof(tmp.c_str())));
+					cap->m_samples.push_back(AnalogSample(cap->m_samples.size(), 1, atof(tmp.c_str())));
 				tmp = "";
 			}
 			else
@@ -399,6 +399,14 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 		//LogDebug("Parsing took %.3f ms\n", dt * 1000);
 
 		m_channels[i]->SetData(cap);
+	}
+
+	//Refresh protocol decoders
+	for(size_t i=0; i<m_channels.size(); i++)
+	{
+		ProtocolDecoder* decoder = dynamic_cast<ProtocolDecoder*>(m_channels[i]);
+		if(decoder != NULL)
+			decoder->Refresh();
 	}
 
 	return false;
