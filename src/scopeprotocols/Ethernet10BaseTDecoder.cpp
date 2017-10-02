@@ -29,7 +29,9 @@
 
 #include "../scopehal/scopehal.h"
 #include "Ethernet10BaseTDecoder.h"
-#include "../scopehal/DigitalRenderer.h"
+#include "../scopehal/ChannelRenderer.h"
+#include "../scopehal/TextRenderer.h"
+#include "EthernetRenderer.h"
 
 using namespace std;
 
@@ -38,7 +40,7 @@ using namespace std;
 
 Ethernet10BaseTDecoder::Ethernet10BaseTDecoder(
 	std::string hwname, std::string color)
-	: ProtocolDecoder(hwname, OscilloscopeChannel::CHANNEL_TYPE_DIGITAL, color)
+	: ProtocolDecoder(hwname, OscilloscopeChannel::CHANNEL_TYPE_COMPLEX, color)
 {
 	//Set up channels
 	m_signalNames.push_back("din");
@@ -50,7 +52,7 @@ Ethernet10BaseTDecoder::Ethernet10BaseTDecoder(
 
 ChannelRenderer* Ethernet10BaseTDecoder::CreateRenderer()
 {
-	return new DigitalRenderer(this);
+	return new EthernetRenderer(this);
 }
 
 bool Ethernet10BaseTDecoder::ValidateChannel(size_t i, OscilloscopeChannel* channel)
@@ -100,8 +102,7 @@ void Ethernet10BaseTDecoder::Refresh()
 	}
 
 	//Copy our time scales from the input
-	//TODO: create EthernetCapture instead
-	DigitalCapture* cap = new DigitalCapture;
+	EthernetCapture* cap = new EthernetCapture;
 	m_timescale = m_channels[0]->m_timescale;
 	cap->m_timescale = din->m_timescale;
 
@@ -129,11 +130,16 @@ void Ethernet10BaseTDecoder::Refresh()
 
 		uint8_t current_byte = 0;
 		int bitcount = 0;
-		int bytecount = 0;
+
+		//Set of recovered bytes and timestamps
+		vector<uint8_t> bytes;
+		vector<uint64_t> starts;
+		vector<uint64_t> ends;
 
 		//Recover the Manchester bitstream
 		bool current_state = false;
 		int64_t ui_start = din->m_samples[i].m_offset * cap->m_timescale;
+		int64_t byte_start = ui_start;
 		//LogDebug("[T = %.3f ns] Found initial falling edge\n", ui_start * 1e-3f);
 		while(i < din->m_samples.size())
 		{
@@ -148,7 +154,7 @@ void Ethernet10BaseTDecoder::Refresh()
 			}
 
 			//If the edge came too soon or too late, possible sync error - restart from this edge
-			//TODO: detect really long gaps and consider that a new frame (handle separately)
+			//If the delta was more than ten UIs, it's a new frame - end this one
 			int64_t edgepos = din->m_samples[i].m_offset * cap->m_timescale;
 			int64_t delta = edgepos - ui_start;
 			/*LogDebug("[T = %.3f ns] Found edge! edgepos=%d ui_start = %d, Delta = %.3f ns (%.2f UI)\n",
@@ -157,6 +163,12 @@ void Ethernet10BaseTDecoder::Refresh()
 				(int)ui_start,
 				delta * 1e-3f,
 				delta * 1.0f / ui_width);*/
+			if(delta > 10 * ui_width)
+			{
+				LogDebug("Premature end of frame (middle of a bit)\n");
+				i++;
+				break;
+			}
 			if( (delta < eye_start) || (delta > eye_end) )
 			{
 				LogDebug("Edge was in the wrong place, skipping it and attempting resync\n");
@@ -170,7 +182,8 @@ void Ethernet10BaseTDecoder::Refresh()
 
 			//Edge is in the right spot! Decode it. Ethernet sends LSB first.
 			//Ethernet says rising edge in the middle of the bit = 1
-			//TODO: create sample objects etc
+			if(bitcount == 0)
+				byte_start = ui_start;
 			if(!current_state)
 				current_byte = (current_byte >> 1) | 0x80;
 			else
@@ -178,15 +191,14 @@ void Ethernet10BaseTDecoder::Refresh()
 			bitcount ++;
 			if(bitcount == 8)
 			{
-				LogDebug("%02x ", current_byte);
+				//Save this byte
+				bytes.push_back(current_byte);
+				starts.push_back(byte_start);
+				ends.push_back(ui_start + ui_width);
+
 				current_byte = 0;
 				bitcount = 0;
-				bytecount ++;
-				if((bytecount & 31) == 31)
-					LogDebug("\n");
 			}
-
-			//TODO: look for long differential zero at end of the message
 
 			//See if we have an edge at the end of this bit period
 			if(!FindEdge(i, din, current_state))
@@ -197,6 +209,14 @@ void Ethernet10BaseTDecoder::Refresh()
 			}
 			edgepos = din->m_samples[i].m_offset * cap->m_timescale;
 			delta = edgepos - ui_middle;
+
+			//If the next edge is more than ten UIs after this one, declare the frame over
+			if(delta > 10*ui_width)
+			{
+				LogDebug("Normal end of frame\n");
+				i++;
+				break;
+			}
 
 			//Next edge is way after the end of this bit.
 			//It must be the middle of our next bit, deal with it later
@@ -229,36 +249,150 @@ void Ethernet10BaseTDecoder::Refresh()
 			//Either way, i now points to the beginning of the next bit's UI
 			ui_start = din->m_samples[i].m_offset * cap->m_timescale;
 		}
-		LogDebug("\n");
+
+		//Crunch the data
+		EthernetFrameSegment garbage;
+		EthernetSample sample(-1, -1, garbage);	//ctor needs args even though we're gonna overwrite them
+		sample.m_sample.m_type = EthernetFrameSegment::TYPE_INVALID;
+		for(size_t i=0; i<bytes.size(); i++)
+		{
+			switch(sample.m_sample.m_type)
+			{
+				case EthernetFrameSegment::TYPE_INVALID:
+
+					//In between frames. Look for a preamble
+					if(bytes[i] != 0x55)
+						LogDebug("Ethernet10BaseTDecoder: Skipping unknown byte %02x\n", bytes[i]);
+
+					//Got a valid 55. We're now in the preamble
+					sample.m_offset = starts[i] / cap->m_timescale;
+					sample.m_sample.m_type = EthernetFrameSegment::TYPE_PREAMBLE;
+					sample.m_sample.m_data.clear();
+					sample.m_sample.m_data.push_back(0x55);
+					break;
+
+				case EthernetFrameSegment::TYPE_PREAMBLE:
+
+					//TODO: Verify that this byte is immediately after the previous one
+
+					//Look for the SFD
+					if(bytes[i] == 0xd5)
+					{
+						//Save the preamble
+						sample.m_duration = (starts[i] / cap->m_timescale) - sample.m_offset;
+						cap->m_samples.push_back(sample);
+
+						//Save the SFD
+						sample.m_offset = starts[i] / cap->m_timescale;
+						sample.m_duration = (ends[i] / cap->m_timescale) - sample.m_offset;
+						sample.m_sample.m_type = EthernetFrameSegment::TYPE_SFD;
+						sample.m_sample.m_data.clear();
+						sample.m_sample.m_data.push_back(0xd5);
+						cap->m_samples.push_back(sample);
+
+						//Set up for data
+						sample.m_sample.m_type = EthernetFrameSegment::TYPE_DST_MAC;
+						sample.m_sample.m_data.clear();
+					}
+
+					//No SFD, just add the preamble byte
+					else if(bytes[i] == 0x55)
+						sample.m_sample.m_data.push_back(0x55);
+
+					//Garbage (TODO: handle this better)
+					else
+						LogDebug("Ethernet10BaseTDecoder: Skipping unknown byte %02x\n", bytes[i]);
+
+					break;
+
+				case EthernetFrameSegment::TYPE_DST_MAC:
+
+					//Start of MAC? Record start time
+					if(sample.m_sample.m_data.empty())
+						sample.m_offset = starts[i] / cap->m_timescale;
+
+					//Add the data
+					sample.m_sample.m_data.push_back(bytes[i]);
+
+					//Are we done? Add it
+					if(sample.m_sample.m_data.size() == 6)
+					{
+						sample.m_duration = (ends[i] / cap->m_timescale) - sample.m_offset;
+						cap->m_samples.push_back(sample);
+
+						//Reset for next block of the frame
+						sample.m_sample.m_type = EthernetFrameSegment::TYPE_SRC_MAC;
+						sample.m_sample.m_data.clear();
+					}
+
+					break;
+
+				case EthernetFrameSegment::TYPE_SRC_MAC:
+
+					//Start of MAC? Record start time
+					if(sample.m_sample.m_data.empty())
+						sample.m_offset = starts[i] / cap->m_timescale;
+
+					//Add the data
+					sample.m_sample.m_data.push_back(bytes[i]);
+
+					//Are we done? Add it
+					if(sample.m_sample.m_data.size() == 6)
+					{
+						sample.m_duration = (ends[i] / cap->m_timescale) - sample.m_offset;
+						cap->m_samples.push_back(sample);
+
+						//Reset for next block of the frame
+						sample.m_sample.m_type = EthernetFrameSegment::TYPE_ETHERTYPE;
+						sample.m_sample.m_data.clear();
+					}
+
+					break;
+
+				case EthernetFrameSegment::TYPE_ETHERTYPE:
+
+					//Start of Ethertype? Record start time
+					if(sample.m_sample.m_data.empty())
+						sample.m_offset = starts[i] / cap->m_timescale;
+
+					//Add the data
+					sample.m_sample.m_data.push_back(bytes[i]);
+
+					//Are we done? Add it
+					if(sample.m_sample.m_data.size() == 2)
+					{
+						sample.m_duration = (ends[i] / cap->m_timescale) - sample.m_offset;
+						cap->m_samples.push_back(sample);
+
+						//Reset for next block of the frame
+						sample.m_sample.m_type = EthernetFrameSegment::TYPE_PAYLOAD;
+						sample.m_sample.m_data.clear();
+					}
+
+					break;
+
+				case EthernetFrameSegment::TYPE_PAYLOAD:
+
+					//Add a data element
+					//For now, each byte is its own payload blob
+					sample.m_offset = starts[i] / cap->m_timescale;
+					sample.m_duration = (ends[i] / cap->m_timescale) - sample.m_offset;
+					sample.m_sample.m_type = EthernetFrameSegment::TYPE_PAYLOAD;
+					sample.m_sample.m_data.clear();
+					sample.m_sample.m_data.push_back(bytes[i]);
+					cap->m_samples.push_back(sample);
+
+					//TODO: FCS
+
+					break;
+
+				default:
+					break;
+			}
+		}
 	}
 
-
-	/*
-	//Find the min/max values of the samples
-	//TODO: pick saner threshold, like median or something? Better glitch resistance
-	float min = 999;
-	float max = -999;
-	for(auto sample : *din)
-	{
-		if((float)sample > max)
-			max = sample;
-		if((float)sample < min)
-			min = sample;
-	}
-	float range = max - min;
-	float midpoint = range/2 + min;
-	LogDebug("Ethernet10BaseTDecoder: threshold is %.3f\n", midpoint);
-
-	//Threshold all of our samples
-	DigitalCapture* cap = new DigitalCapture;
-	for(size_t i=0; i<din->m_samples.size(); i++)
-	{
-		AnalogSample sin = din->m_samples[i];
-		bool b = (float)sin > midpoint;
-		cap->m_samples.push_back(DigitalSample(sin.m_offset, sin.m_duration, b));
-	}
 	SetData(cap);
-	*/
 }
 
 bool Ethernet10BaseTDecoder::FindFallingEdge(size_t& i, AnalogCapture* cap)

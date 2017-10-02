@@ -224,3 +224,13 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int widt
 	}
 	cr->restore();
 }
+
+void TimescaleRenderer::RenderSampleCallback(
+		const Cairo::RefPtr<Cairo::Context>& /*cr*/,
+		size_t /*i*/,
+		float /*xstart*/,
+		float /*xend*/,
+		int /*visleft*/,
+		int /*visright*/)
+{
+}

@@ -30,70 +30,23 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Declaration of Ethernet10BaseTDecoder
+	@brief Declaration of EthernetRenderer
  */
-#ifndef Ethernet10BaseTDecoder_h
-#define Ethernet10BaseTDecoder_h
 
-#include "../scopehal/ProtocolDecoder.h"
+#ifndef EthernetRenderer_h
+#define EthernetRenderer_h
+
+#include "../scopehal/TextRenderer.h"
 
 /**
-	@brief Part of an Ethernet frame (speed doesn't matter)
+	@brief Renderer for an Ethernet channel
  */
-class EthernetFrameSegment
+class EthernetRenderer : public TextRenderer
 {
 public:
-	enum SegmentType
-	{
-		TYPE_INVALID,
-		TYPE_PREAMBLE,
-		TYPE_SFD,
-		TYPE_DST_MAC,
-		TYPE_SRC_MAC,
-		TYPE_ETHERTYPE,
-		TYPE_VLAN_TAG,
-		TYPE_PAYLOAD,
-		TYPE_FCS
-	} m_type;
-
-	std::vector<uint8_t> m_data;
-
-	bool operator==(const EthernetFrameSegment& rhs) const
-	{
-		return (m_data == rhs.m_data) && (m_type == rhs.m_type);
-	}
-};
-
-typedef OscilloscopeSample<EthernetFrameSegment> EthernetSample;
-typedef CaptureChannel<EthernetFrameSegment> EthernetCapture;
-
-class Ethernet10BaseTDecoder : public ProtocolDecoder
-{
-public:
-	Ethernet10BaseTDecoder(std::string hwname, std::string color);
-
-	virtual void Refresh();
-	virtual ChannelRenderer* CreateRenderer();
-
-	virtual bool NeedsConfig();
-
-	static std::string GetProtocolName();
-
-	virtual bool ValidateChannel(size_t i, OscilloscopeChannel* channel);
-
-	PROTOCOL_DECODER_INITPROC(Ethernet10BaseTDecoder)
-
+	EthernetRenderer(OscilloscopeChannel* channel);
 protected:
-	bool FindFallingEdge(size_t& i, AnalogCapture* cap);
-	bool FindRisingEdge(size_t& i, AnalogCapture* cap);
-
-	bool FindEdge(size_t& i, AnalogCapture* cap, bool polarity)
-	{
-		if(polarity)
-			return FindRisingEdge(i, cap);
-		else
-			return FindFallingEdge(i, cap);
-	}
+	virtual std::string GetText(int i);
 };
 
 #endif

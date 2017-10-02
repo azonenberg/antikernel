@@ -308,7 +308,7 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 	for(unsigned int i=0; i<m_analogChannelCount; i++)
 	{
 		//See how many samples to expect (for progress display when downloading a large capture)
-		double start = GetTime();
+		//double start = GetTime();
 		string cmd = "C1:INSPECT? 'WAVE_ARRAY_COUNT'";
 		cmd[1] += i;
 		SendCommand(cmd);
@@ -338,7 +338,7 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 		cmd = "C1:INSPECT? DATA_ARRAY_1,FLOAT";
 		cmd[1] += i;
 		SendCommand(cmd);
-		double dt = GetTime() - start;
+		//double dt = GetTime() - start;
 		//LogDebug("Headers took %.3f ms\n", dt * 1000);
 
 		//Headers typically take ~400 ms
@@ -358,7 +358,7 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 		bool first  = true;
 		int lines_expected = num_samples / 5;
 		int lines = 0;
-		start = GetTime();
+		//start = GetTime();
 		while(true)
 		{
 			string payload = ReadSingleBlockString();
@@ -378,12 +378,12 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 			float local_progress = lines * 1.0f / lines_expected;
 			progress_callback(base_progress + local_progress / m_analogChannelCount);
 		}
-		dt = GetTime() - start;
+		//dt = GetTime() - start;
 		//LogDebug("RX took %.3f ms\n", dt * 1000);
 
 		//Parse it
 		string tmp;
-		start = GetTime();
+		//start = GetTime();
 		for(size_t j=data.find("\"") + 1; j<data.length() && data[j] != '\"'; j++)
 		{
 			if(isspace(data[j]))
@@ -395,7 +395,7 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 			else
 				tmp += data[j];
 		}
-		dt = GetTime() - start;
+		//dt = GetTime() - start;
 		//LogDebug("Parsing took %.3f ms\n", dt * 1000);
 
 		m_channels[i]->SetData(cap);
@@ -451,6 +451,8 @@ void LeCroyVICPOscilloscope::Stop()
 	LogDebug("Stop\n");
 }
 
-void LeCroyVICPOscilloscope::SetTriggerForChannel(OscilloscopeChannel* channel, std::vector<TriggerType> triggerbits)
+void LeCroyVICPOscilloscope::SetTriggerForChannel(
+	OscilloscopeChannel* /*channel*/,
+	vector<TriggerType> /*triggerbits*/)
 {
 }

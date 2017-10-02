@@ -78,7 +78,7 @@ public:
 		float xstart,
 		float xend,
 		int visleft,
-		int visright);
+		int visright) =0;
 	virtual void RenderEndCallback(
 		const Cairo::RefPtr<Cairo::Context>& cr,
 		int width,

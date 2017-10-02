@@ -35,6 +35,7 @@
 
 #include "scopehal.h"
 #include "ChannelRenderer.h"
+#include "ProtocolDecoder.h"
 
 using namespace std;
 
@@ -59,8 +60,14 @@ ChannelRenderer::~ChannelRenderer()
 
 void ChannelRenderer::MakePathSignalBody(
 	const Cairo::RefPtr<Cairo::Context>& cr,
-	float xstart, float xoff, float xend, float ybot, float ymid, float ytop)
+	float xstart, float /*xoff*/, float xend, float ybot, float ymid, float ytop)
 {
+	//If the signal is really tiny, shrink the rounding to avoid going out of bounds
+	float rounding = 10;
+	if(xstart + 2*rounding > xend)
+		rounding = (xend - xstart) / 2;
+
+	/*
 	//If the signal is really tiny, shrink the offset so we dont make Xs
 	if( (xstart + xoff)  > xend)
 		xoff = (xend - xstart) / 2;
@@ -72,6 +79,22 @@ void ChannelRenderer::MakePathSignalBody(
 	cr->line_to(xend,          ymid);
 	cr->line_to(xend - xoff,   ybot);
 	cr->line_to(xstart + xoff, ybot);
+	*/
+
+
+	cr->begin_new_sub_path();
+	cr->arc(xstart + rounding, ytop + rounding, rounding, M_PI, M_PI*1.5f);	//top left corner
+	cr->move_to(xstart + rounding, ytop);									//top edge
+	cr->line_to(xend - rounding, ytop);
+	cr->arc(xend - rounding, ytop + rounding, rounding, M_PI*1.5f, 0);		//top right corner
+	cr->move_to(xend, ytop + rounding);										//right edge
+	cr->line_to(xend, ybot - rounding);
+	cr->arc(xend - rounding, ybot - rounding, rounding, 0, M_PI_2);			//bottom right corner
+	cr->move_to(xend - rounding, ybot);										//bottom edge
+	cr->line_to(xstart + rounding, ybot);
+	cr->arc(xstart + rounding, ybot - rounding, rounding, M_PI_2, M_PI);	//bottom left corner
+	cr->move_to(xstart, ybot - rounding);									//left edge
+	cr->line_to(xstart, ytop + rounding);
 }
 
 void ChannelRenderer::RenderComplexSignal(
@@ -82,8 +105,6 @@ void ChannelRenderer::RenderComplexSignal(
 		string str,
 		Gdk::Color color)
 {
-	cr->set_source_rgb(color.get_red_p(), color.get_green_p(), color.get_blue_p());
-
 	int width = 0, sheight = 0;
 	GetStringWidth(cr, str, true, width, sheight);
 
@@ -135,6 +156,9 @@ void ChannelRenderer::RenderComplexSignal(
 	//Draw the text
 	if(str != "")
 	{
+		//Text is always white (TODO: only in overlays?)
+		cr->set_source_rgb(1, 1, 1);
+
 		//If we need to trim, decide which way to do it.
 		//If the text is all caps and includes an underscore, it's probably a macro with a prefix.
 		//Trim from the left in this case. Otherwise, trim from the right.
@@ -208,7 +232,7 @@ void ChannelRenderer::RenderStartCallback(
 	int width,
 	int /*visleft*/,
 	int /*visright*/,
-	std::vector<time_range>& /*ranges*/)
+	vector<time_range>& /*ranges*/)
 {
 	cr->save();
 
@@ -230,7 +254,7 @@ void ChannelRenderer::RenderStartCallback(
 	//If we're an overlay, do a simple dark layer on top
 	else
 	{
-		cr->set_source_rgba(0, 0, 0, 0.5);
+		cr->set_source_rgba(0, 0, 0, 0.75);
 		cr->rectangle(0, m_ypos, width, m_height);
 		cr->fill();
 	}
@@ -243,7 +267,7 @@ void ChannelRenderer::RenderEndCallback(
 	int /*width*/,
 	int /*visleft*/,
 	int /*visright*/,
-	std::vector<time_range>& /*ranges*/)
+	vector<time_range>& /*ranges*/)
 {
 	Gdk::Color color(m_channel->m_displaycolor);
 	cr->set_source_rgb(color.get_red_p(), color.get_green_p(), color.get_blue_p());
@@ -256,11 +280,12 @@ void ChannelRenderer::Render(
 	int width,
 	int visleft,
 	int visright,
-	std::vector<time_range>& ranges)
+	vector<time_range>& ranges)
 {
 	RenderStartCallback(cr, width, visleft, visright, ranges);
 
 	CaptureChannelBase* capture = m_channel->GetData();
+	ProtocolDecoder* decode = dynamic_cast<ProtocolDecoder*>(m_channel);
 	if(capture != NULL)
 	{
 		//Save time scales
@@ -281,7 +306,9 @@ void ChannelRenderer::Render(
 			time_range* range = &ranges[nrange];
 
 			//Get start X-position of sample (if not extending the previous one)
-			if(!extend && (i != 0))
+			//If this signal is a prototcol decoder, we want to start at the actual sample beginning.
+			//Analog/digital samples always start at 0, though.
+			if(!extend && ( (i != 0) || (decode != NULL) ) )
 			{
 				xstart = range->xstart + tscale * (tstart - range->tstart);
 
@@ -325,15 +352,4 @@ void ChannelRenderer::Render(
 	}
 
 	RenderEndCallback(cr, width, visleft, visright, ranges);
-}
-
-void ChannelRenderer::RenderSampleCallback(
-	const Cairo::RefPtr<Cairo::Context>& /*cr*/,
-	size_t /*i*/,
-	float /*xstart*/,
-	float /*xend*/,
-	int /*visleft*/,
-	int /*visright*/)
-{
-	//default to nothing
 }

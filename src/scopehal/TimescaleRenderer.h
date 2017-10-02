@@ -46,7 +46,21 @@ class TimescaleRenderer : public ChannelRenderer
 public:
 	TimescaleRenderer(OscilloscopeChannel* channel);
 
-	virtual void Render(const Cairo::RefPtr<Cairo::Context>& cr, int width, int visleft, int visright, std::vector<time_range>& ranges);
+	virtual void Render(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		int width,
+		int visleft,
+		int visright,
+		std::vector<time_range>& ranges);
+
+	//unused, but we have to override
+	virtual void RenderSampleCallback(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		size_t i,
+		float xstart,
+		float xend,
+		int visleft,
+		int visright);
 };
 
 #endif

@@ -41,10 +41,11 @@ using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
+
 TextRenderer::TextRenderer(OscilloscopeChannel* channel)
 : ChannelRenderer(channel)
 {
-	m_height = 22;
+	m_height = 25;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -63,13 +64,15 @@ void TextRenderer::RenderSampleCallback(
 	float ybot = m_ypos + m_height - 2*m_padding;
 	float ymid = (ybot-ytop)/2 + ytop;
 
+	string str = GetText(i);
+
 	Gdk::Color color(m_channel->m_displaycolor);
 	RenderComplexSignal(
 		cr,
 		visleft, visright,
 		xstart, xend, 5,
 		ybot, ymid, ytop,
-		GetText(i),
+		str,
 		color);
 }
 

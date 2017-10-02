@@ -34,6 +34,7 @@ scopeprotocols:
     sources:
         - scopeprotocols.cpp
         - Ethernet10BaseTDecoder.cpp
+        - EthernetRenderer.cpp
         - NRZDecoder.cpp
 
     flags:

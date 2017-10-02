@@ -30,70 +30,108 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Declaration of Ethernet10BaseTDecoder
+	@brief Implementation of EthernetRenderer
  */
-#ifndef Ethernet10BaseTDecoder_h
-#define Ethernet10BaseTDecoder_h
 
-#include "../scopehal/ProtocolDecoder.h"
+#include "../scopehal/scopehal.h"
+#include "../scopehal/ChannelRenderer.h"
+#include "../scopehal/TextRenderer.h"
+#include "EthernetRenderer.h"
+#include "Ethernet10BaseTDecoder.h"
 
-/**
-	@brief Part of an Ethernet frame (speed doesn't matter)
- */
-class EthernetFrameSegment
+using namespace std;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Construction / destruction
+
+EthernetRenderer::EthernetRenderer(OscilloscopeChannel* channel)
+	: TextRenderer(channel)
 {
-public:
-	enum SegmentType
-	{
-		TYPE_INVALID,
-		TYPE_PREAMBLE,
-		TYPE_SFD,
-		TYPE_DST_MAC,
-		TYPE_SRC_MAC,
-		TYPE_ETHERTYPE,
-		TYPE_VLAN_TAG,
-		TYPE_PAYLOAD,
-		TYPE_FCS
-	} m_type;
+}
 
-	std::vector<uint8_t> m_data;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Rendering
 
-	bool operator==(const EthernetFrameSegment& rhs) const
-	{
-		return (m_data == rhs.m_data) && (m_type == rhs.m_type);
-	}
-};
-
-typedef OscilloscopeSample<EthernetFrameSegment> EthernetSample;
-typedef CaptureChannel<EthernetFrameSegment> EthernetCapture;
-
-class Ethernet10BaseTDecoder : public ProtocolDecoder
+string EthernetRenderer::GetText(int i)
 {
-public:
-	Ethernet10BaseTDecoder(std::string hwname, std::string color);
+	EthernetCapture* data = dynamic_cast<EthernetCapture*>(m_channel->GetData());
+	if(data == NULL)
+		return "";
+	if(i >= (int)data->m_samples.size())
+		return "";
 
-	virtual void Refresh();
-	virtual ChannelRenderer* CreateRenderer();
-
-	virtual bool NeedsConfig();
-
-	static std::string GetProtocolName();
-
-	virtual bool ValidateChannel(size_t i, OscilloscopeChannel* channel);
-
-	PROTOCOL_DECODER_INITPROC(Ethernet10BaseTDecoder)
-
-protected:
-	bool FindFallingEdge(size_t& i, AnalogCapture* cap);
-	bool FindRisingEdge(size_t& i, AnalogCapture* cap);
-
-	bool FindEdge(size_t& i, AnalogCapture* cap, bool polarity)
+	auto sample = data->m_samples[i];
+	switch(sample.m_sample.m_type)
 	{
-		if(polarity)
-			return FindRisingEdge(i, cap);
-		else
-			return FindFallingEdge(i, cap);
-	}
-};
+		case EthernetFrameSegment::TYPE_PREAMBLE:
+			return "PREAMBLE";
+			
+		case EthernetFrameSegment::TYPE_SFD:
+			return "SFD";
+			
+		case EthernetFrameSegment::TYPE_DST_MAC:
+			{
+				if(sample.m_sample.m_data.size() != 6)
+					return "[invalid dest MAC length]";
 
-#endif
+				char tmp[32];
+				snprintf(tmp, sizeof(tmp), "Dest MAC: %02x:%02x:%02x:%02x:%02x:%02x",
+					sample.m_sample.m_data[0],
+					sample.m_sample.m_data[1],
+					sample.m_sample.m_data[2],
+					sample.m_sample.m_data[3],
+					sample.m_sample.m_data[4],
+					sample.m_sample.m_data[5]);
+				return tmp;
+			}
+
+		case EthernetFrameSegment::TYPE_SRC_MAC:
+			{
+				if(sample.m_sample.m_data.size() != 6)
+					return "[invalid src MAC length]";
+
+				char tmp[32];
+				snprintf(tmp, sizeof(tmp), "Src MAC: %02x:%02x:%02x:%02x:%02x:%02x",
+					sample.m_sample.m_data[0],
+					sample.m_sample.m_data[1],
+					sample.m_sample.m_data[2],
+					sample.m_sample.m_data[3],
+					sample.m_sample.m_data[4],
+					sample.m_sample.m_data[5]);
+				return tmp;
+			}
+
+		case EthernetFrameSegment::TYPE_ETHERTYPE:
+			{
+				if(sample.m_sample.m_data.size() != 2)
+					return "[invalid Ethertype length]";
+
+				char tmp[32];
+				uint16_t ethertype = (sample.m_sample.m_data[0] << 8) | sample.m_sample.m_data[1];
+				snprintf(tmp, sizeof(tmp), "Ethertype: %04x", ethertype);
+
+				string ret = tmp;
+
+				//TODO: look up a table of common Ethertype values
+				
+				return ret;
+			}
+
+		case EthernetFrameSegment::TYPE_PAYLOAD:
+			{
+				string ret;
+				for(auto b : sample.m_sample.m_data)
+				{
+					char tmp[32];
+					snprintf(tmp, sizeof(tmp), "%02x ", b);
+					ret += tmp;
+				}
+				return ret;
+			}
+
+		default:
+			break;
+	}
+
+	return "";
+}
