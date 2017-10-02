@@ -187,6 +187,7 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 			//Draw channels in numerical order.
 			//This allows painters-algorithm handling of protocol decoders that wish to be drawn
 			//on top of the original channel.
+			m_timescaleRender->Render(cr, width, 0+xoff, width+xoff, ranges);
 			for(size_t i=0; i<m_scope->GetChannelCount(); i++)
 			{
 				auto r = m_renderers[m_scope->GetChannel(i)];
@@ -328,11 +329,11 @@ void OscilloscopeView::Refresh()
 	LogIndenter li;
 	if(m_scope->GetChannelCount() != 0)
 	{
-		TimescaleRenderer* pTimescale = new TimescaleRenderer(m_scope->GetChannel(0));
-		pTimescale->m_ypos = y;
-		y += pTimescale->m_height + spacing;
-		m_renderers[NULL] = pTimescale;
-		LogTrace("%30s: y = %d - %d\n", "timescale", pTimescale->m_ypos, pTimescale->m_ypos + pTimescale->m_height);
+		m_timescaleRender = new TimescaleRenderer(m_scope->GetChannel(0));
+		m_timescaleRender->m_ypos = y;
+		y += m_timescaleRender->m_height + spacing;
+		LogTrace("%30s: y = %d - %d\n", "timescale",
+			m_timescaleRender->m_ypos, m_timescaleRender->m_ypos + m_timescaleRender->m_height);
 	}
 
 	//Create renderers for each channel

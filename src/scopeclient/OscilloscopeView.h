@@ -37,6 +37,7 @@
 #define OscilloscopeView_h
 
 #include "../scopehal/ChannelRenderer.h"
+#include "../scopehal/TimescaleRenderer.h"
 
 class Oscilloscope;
 class MainWindow;
@@ -79,6 +80,7 @@ protected:
 	Gtk::Menu m_channelContextMenu;
 	OscilloscopeChannel* m_selectedChannel;
 	Gtk::Menu m_protocolDecodeMenu;
+	TimescaleRenderer* m_timescaleRender;
 };
 
 #endif
