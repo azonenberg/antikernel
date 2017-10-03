@@ -55,6 +55,10 @@ public:
 	OscilloscopeView& GetScopeView()
 	{ return m_view; }
 
+	void OnZoomOut();
+	void OnZoomIn();
+	void OnZoomFit();
+
 protected:
 
 	//Initialization
@@ -63,13 +67,7 @@ protected:
 	//Widgets
 	Gtk::VBox m_vbox;
 		Gtk::Toolbar m_toolbar;
-			Gtk::ToolButton m_btnZoomOut;
-			Gtk::ToolButton m_btnZoomIn;
-			Gtk::ToolButton m_btnZoomFit;
-			Gtk::SeparatorToolItem m_sep1;
 			Gtk::ToolButton m_btnStart;
-			Gtk::SeparatorToolItem m_sep2;
-			Gtk::ToolButton m_btnDecode;
 		Gtk::ScrolledWindow m_vscroller;
 			Gtk::HPaned m_splitter;
 				ChannelListView m_channelview;
@@ -87,9 +85,6 @@ protected:
 	//NameServer* m_namesrvr;
 
 	//Message handlers
-	void OnZoomOut();
-	void OnZoomIn();
-	void OnZoomFit();
 	void OnDecode();
 	void OnStart();
 

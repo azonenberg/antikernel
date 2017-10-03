@@ -47,11 +47,7 @@ using namespace std;
 	@brief Initializes the main window
  */
 MainWindow::MainWindow(Oscilloscope* scope, std::string host, int port/*, NameServer* namesrvr*/)
-	: m_btnZoomOut(Gtk::Stock::ZOOM_OUT)
-	, m_btnZoomIn(Gtk::Stock::ZOOM_IN)
-	, m_btnZoomFit(Gtk::Stock::ZOOM_FIT)
-	, m_btnStart(Gtk::Stock::YES)
-	, m_btnDecode(Gtk::Stock::CONVERT)
+	: m_btnStart(Gtk::Stock::YES)
 	, m_channelview(this)
 	, m_view(scope, this)
 	, m_scope(scope)
@@ -105,18 +101,8 @@ void MainWindow::CreateWidgets()
 	//Set up window hierarchy
 	add(m_vbox);
 		m_vbox.pack_start(m_toolbar, Gtk::PACK_SHRINK);
-			m_toolbar.append(m_btnZoomOut, sigc::mem_fun(*this, &MainWindow::OnZoomOut));
-				m_btnZoomOut.set_tooltip_text("Zoom out");
-			m_toolbar.append(m_btnZoomIn, sigc::mem_fun(*this, &MainWindow::OnZoomIn));
-				m_btnZoomIn.set_tooltip_text("Zoom in");
-			m_toolbar.append(m_btnZoomFit, sigc::mem_fun(*this, &MainWindow::OnZoomFit));
-				m_btnZoomFit.set_tooltip_text("Zoom fit");
-			m_toolbar.append(m_sep1);
 			m_toolbar.append(m_btnStart, sigc::mem_fun(*this, &MainWindow::OnStart));
 				m_btnStart.set_tooltip_text("Start capture");
-			/*m_toolbar.append(m_sep2);
-			m_toolbar.append(m_btnDecode, sigc::mem_fun(*this, &MainWindow::OnDecode));
-				m_btnDecode.set_tooltip_text("Protocol decode");*/
 		m_vbox.pack_start(m_vscroller);
 			m_vscroller.add(m_viewscroller);
 				m_viewscroller.add(m_view);

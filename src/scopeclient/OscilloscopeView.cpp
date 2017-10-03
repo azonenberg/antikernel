@@ -58,6 +58,7 @@ OscilloscopeView::OscilloscopeView(Oscilloscope* scope, MainWindow* parent)
 
 	add_events(
 		Gdk::EXPOSURE_MASK |
+		Gdk::SCROLL_MASK |
 		Gdk::BUTTON_PRESS_MASK |
 		Gdk::BUTTON_RELEASE_MASK);
 
@@ -288,78 +289,91 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 
 bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
 {
-	//Left button?
-	if(event->button == 1)
+	switch(event->button)
 	{
-		//Re-calculate mappings
-		vector<time_range> ranges;
-		MakeTimeRanges(ranges);
-
-		//Figure out time scale
-		float tscale = 0;
-		if(m_scope->GetChannelCount() != 0)
+		//Left
+		case 1:
 		{
-			OscilloscopeChannel* chan = m_scope->GetChannel(0);
-			CaptureChannelBase* capture = chan->GetData();
-			if(capture != NULL)
-				 tscale = chan->m_timescale * capture->m_timescale;
-		}
+			//Re-calculate mappings
+			vector<time_range> ranges;
+			MakeTimeRanges(ranges);
 
-		//Figure out which range the cursor position is in
-		for(size_t i=0; i<ranges.size(); i++)
-		{
-			time_range& range = ranges[i];
-			if( (event->x >= range.xstart) && (event->x <= range.xend) )
+			//Figure out time scale
+			float tscale = 0;
+			if(m_scope->GetChannelCount() != 0)
 			{
-				float dx = event->x - range.xstart;
-				float dt = dx / tscale;
+				OscilloscopeChannel* chan = m_scope->GetChannel(0);
+				CaptureChannelBase* capture = chan->GetData();
+				if(capture != NULL)
+					 tscale = chan->m_timescale * capture->m_timescale;
+			}
 
-				//Round dt to the nearest integer rather than truncating
-				int64_t dt_floor = floor(dt);
-				if( (dt - dt_floor) > 0.5)
-					dt_floor ++;
+			//Figure out which range the cursor position is in
+			for(size_t i=0; i<ranges.size(); i++)
+			{
+				time_range& range = ranges[i];
+				if( (event->x >= range.xstart) && (event->x <= range.xend) )
+				{
+					float dx = event->x - range.xstart;
+					float dt = dx / tscale;
 
-				m_cursorpos = range.tstart + dt_floor;
-				queue_draw();
+					//Round dt to the nearest integer rather than truncating
+					int64_t dt_floor = floor(dt);
+					if( (dt - dt_floor) > 0.5)
+						dt_floor ++;
+
+					m_cursorpos = range.tstart + dt_floor;
+					queue_draw();
+				}
 			}
 		}
-	}
+		break;
 
-	//Right button
-	else if(event->button == 3)
-	{
-		//Figure out which channel the cursor position is in
-		//Painter's algorithm: the most recently drawn (top) channel is higher priority in the selection
-		for(size_t i=0; i<m_scope->GetChannelCount(); i++)
+		//Middle
+		case 2:
+			m_parent->OnZoomFit();
+			break;
+
+		//Right
+		case 3:
 		{
-			auto chan = m_scope->GetChannel(i);
-			auto render = m_renderers[chan];
+			//Figure out which channel the cursor position is in
+			//Painter's algorithm: the most recently drawn (top) channel is higher priority in the selection
+			for(size_t i=0; i<m_scope->GetChannelCount(); i++)
+			{
+				auto chan = m_scope->GetChannel(i);
+				auto render = m_renderers[chan];
 
-			if( (event->y >= render->m_ypos) && (event->y <= (render->m_ypos + render->m_height)) )
-				m_selectedChannel = chan;
+				if( (event->y >= render->m_ypos) && (event->y <= (render->m_ypos + render->m_height)) )
+					m_selectedChannel = chan;
+			}
+			LogDebug("Selected channel %s\n", m_selectedChannel->GetHwname().c_str());
+
+			auto children = m_protocolDecodeMenu.get_children();
+			for(auto item : children)
+			{
+				Gtk::MenuItem* menu = dynamic_cast<Gtk::MenuItem*>(item);
+				if(menu == NULL)
+					continue;
+
+				//Gray out decoders that don't make sense for us
+				auto decoder = ProtocolDecoder::CreateDecoder(
+					menu->get_label(),
+					"dummy",
+					"");
+				if(decoder->ValidateChannel(0, m_selectedChannel))
+					menu->set_sensitive(true);
+				else
+					menu->set_sensitive(false);
+			}
+
+			//Show the context menu
+			m_channelContextMenu.popup(event->button, event->time);
 		}
-		LogDebug("Selected channel %s\n", m_selectedChannel->GetHwname().c_str());
+		break;
 
-		auto children = m_protocolDecodeMenu.get_children();
-		for(auto item : children)
-		{
-			Gtk::MenuItem* menu = dynamic_cast<Gtk::MenuItem*>(item);
-			if(menu == NULL)
-				continue;
-
-			//Gray out decoders that don't make sense for us
-			auto decoder = ProtocolDecoder::CreateDecoder(
-				menu->get_label(),
-				"dummy",
-				"");
-			if(decoder->ValidateChannel(0, m_selectedChannel))
-				menu->set_sensitive(true);
-			else
-				menu->set_sensitive(false);
-		}
-
-		//Show the context menu
-		m_channelContextMenu.popup(event->button, event->time);
+		default:
+			LogDebug("button %d\n", event->button);
 	}
 
 	return true;
@@ -492,6 +506,15 @@ void OscilloscopeView::MakeTimeRanges(vector<time_range>& ranges)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // View event handlers
+
+bool OscilloscopeView::on_scroll_event (GdkEventScroll* ev)
+{
+	if(ev->delta_y < 0)
+		m_parent->OnZoomIn();
+	else if(ev->delta_y > 0)
+		m_parent->OnZoomOut();
+	return true;
+}
 
 void OscilloscopeView::OnAutoFitVertical()
 {
