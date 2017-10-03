@@ -82,7 +82,7 @@ OscilloscopeView::OscilloscopeView(Oscilloscope* scope, MainWindow* parent)
 			sigc::bind<string>(sigc::mem_fun(*this, &OscilloscopeView::OnProtocolDecode), p));
 		m_protocolDecodeMenu.append(*item);
 	}
-	
+
 	m_protocolDecodeMenu.show_all();
 	m_channelContextMenu.show_all();
 }
@@ -288,17 +288,18 @@ bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
 	else if(event->button == 3)
 	{
 		//Figure out which channel the cursor position is in
+		//Painter's algorithm: the most recently drawn (top) channel is higher priority in the selection
 		for(size_t i=0; i<m_scope->GetChannelCount(); i++)
 		{
 			auto chan = m_scope->GetChannel(i);
 			auto render = m_renderers[chan];
 
 			if( (event->y >= render->m_ypos) && (event->y <= (render->m_ypos + render->m_height)) )
-			{
 				m_selectedChannel = chan;
-				break;
-			}
 		}
+		LogDebug("Selected channel %s\n", m_selectedChannel->GetHwname().c_str());
+
+		//TODO: gray out decoders that don't make sense for us
 
 		//Show the context menu
 		m_channelContextMenu.popup(event->button, event->time);
@@ -491,19 +492,19 @@ void OscilloscopeView::OnProtocolDecode(string protocol)
 	LogDebug("Decoding current channel as %s\n", protocol.c_str());
 	auto decoder = ProtocolDecoder::CreateDecoder(
 		protocol,
-		m_selectedChannel->GetHwname(),
+		m_selectedChannel->GetHwname() + "/" + protocol,
 		GetDefaultChannelColor(m_scope->GetChannelCount() + 1)
 		);
 	m_scope->AddChannel(decoder);
+
+	//Single input? Hook it up
+	if(decoder->GetInputCount() == 1)
+		decoder->SetInput(0, m_selectedChannel);
 
 	//TODO: dialog for configuring stuff
 	if(decoder->NeedsConfig())
 	{
 	}
-
-	//Just hook up the first input and run with it
-	else
-		decoder->SetInput(0, m_selectedChannel);
 
 	//TODO: have query to see if this decoder should be an overlay or its own line
 
@@ -512,10 +513,14 @@ void OscilloscopeView::OnProtocolDecode(string protocol)
 	m_renderers[decoder] = render;
 
 	//Configure the renderer
-	//For now, always do decoders as overlays
 	auto original_render = m_renderers[m_selectedChannel];
 	render->m_ypos = original_render->m_ypos;
 	render->m_overlay = true;
+
+	//If the original renderer is also an overlay, we're doing a second-level decode!
+	//Move us down below them.
+	if(original_render->m_overlay)
+		render->m_ypos += original_render->m_height;
 
 	//Done, update things
 	decoder->Refresh();

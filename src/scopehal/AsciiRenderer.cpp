@@ -57,6 +57,12 @@ std::string AsciiRenderer::GetText(int i)
 		char sbuf[16] = {0};
 		if(isprint(sample.m_sample))
 			sbuf[0] = sample.m_sample;
+		else if(sample.m_sample == '\r')		//special case common non-printable chars
+			return "\r";
+		else if(sample.m_sample == '\n')
+			return "\n";
+		else if(sample.m_sample == '\b')
+			return "\b";
 		else
 			snprintf(sbuf, sizeof(sbuf), "\\x%02x", 0xFF & sample.m_sample);
 		return sbuf;
