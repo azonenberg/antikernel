@@ -114,15 +114,19 @@ void MainWindow::CreateWidgets()
 			m_toolbar.append(m_sep1);
 			m_toolbar.append(m_btnStart, sigc::mem_fun(*this, &MainWindow::OnStart));
 				m_btnStart.set_tooltip_text("Start capture");
-			m_toolbar.append(m_sep2);
+			/*m_toolbar.append(m_sep2);
 			m_toolbar.append(m_btnDecode, sigc::mem_fun(*this, &MainWindow::OnDecode));
-				m_btnDecode.set_tooltip_text("Protocol decode");
+				m_btnDecode.set_tooltip_text("Protocol decode");*/
 		m_vbox.pack_start(m_vscroller);
+			m_vscroller.add(m_viewscroller);
+				m_viewscroller.add(m_view);
+			/*
 			m_vscroller.add(m_splitter);
 				m_splitter.pack1(m_channelview);
 				m_splitter.pack2(m_viewscroller);
 					m_viewscroller.add(m_view);
 				m_splitter.set_position(200);
+				*/
 		m_vbox.pack_start(m_statusbar, Gtk::PACK_SHRINK);
 			m_statusbar.set_size_request(-1,16);
 			m_statusbar.pack_start(m_statprogress, Gtk::PACK_SHRINK);

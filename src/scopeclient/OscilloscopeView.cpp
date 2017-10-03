@@ -226,6 +226,47 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 
 			//Done
 			cr->restore();
+
+			//Draw channel name overlays (constant position regardles of X scrolling, but still scroll Y if needed)
+			cr->save();
+				cr->translate(0, -yoff);
+
+				int labelmargin = 2;
+				for(size_t i=0; i<m_scope->GetChannelCount(); i++)
+				{
+					auto chan = m_scope->GetChannel(i);
+					auto r = m_renderers[chan];
+
+					auto ybot = r->m_ypos + r->m_height;
+
+					int twidth, theight;
+					GetStringWidth(cr, chan->GetHwname(), true, twidth, theight);
+
+					cr->set_source_rgba(0, 0, 0, 0.75);
+					cr->rectangle(0, ybot - theight - labelmargin*2, twidth + labelmargin*2, theight + labelmargin*2);
+					cr->fill();
+
+					cr->set_source_rgba(1, 1, 1, 1);
+
+					cr->save();
+						Glib::RefPtr<Pango::Layout> tlayout = Pango::Layout::create (cr);
+						cr->move_to(labelmargin, ybot - theight - labelmargin);
+						Pango::FontDescription font("sans normal 10");
+						font.set_weight(Pango::WEIGHT_NORMAL);
+						tlayout->set_font_description(font);
+						tlayout->set_text(chan->GetHwname());
+						tlayout->update_from_cairo_context(cr);
+						tlayout->show_in_cairo_context(cr);
+					cr->restore();
+
+				}
+
+				/*cr->set_source_rgb(1, 0, 0);
+				cr->move_to(0, 50);
+				cr->line_to(50, 50);
+				cr->stroke();
+				*/
+			cr->restore();
 		}
 
 		if(m_sizeDirty)
@@ -299,7 +340,23 @@ bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
 		}
 		LogDebug("Selected channel %s\n", m_selectedChannel->GetHwname().c_str());
 
-		//TODO: gray out decoders that don't make sense for us
+		auto children = m_protocolDecodeMenu.get_children();
+		for(auto item : children)
+		{
+			Gtk::MenuItem* menu = dynamic_cast<Gtk::MenuItem*>(item);
+			if(menu == NULL)
+				continue;
+
+			//Gray out decoders that don't make sense for us
+			auto decoder = ProtocolDecoder::CreateDecoder(
+				menu->get_label(),
+				"dummy",
+				"");
+			if(decoder->ValidateChannel(0, m_selectedChannel))
+				menu->set_sensitive(true);
+			else
+				menu->set_sensitive(false);
+		}
 
 		//Show the context menu
 		m_channelContextMenu.popup(event->button, event->time);
@@ -481,48 +538,66 @@ void OscilloscopeView::OnAutoFitVertical()
 
 void OscilloscopeView::OnProtocolDecode(string protocol)
 {
-	//Decoding w/o a channel selected (and full of data) is nonsensical
-	if(m_selectedChannel == NULL)
-		return;
-	auto data = m_selectedChannel->GetData();
-	if(data == NULL)
-		return;
-
-	//Create the decoder
-	LogDebug("Decoding current channel as %s\n", protocol.c_str());
-	auto decoder = ProtocolDecoder::CreateDecoder(
-		protocol,
-		m_selectedChannel->GetHwname() + "/" + protocol,
-		GetDefaultChannelColor(m_scope->GetChannelCount() + 1)
-		);
-	m_scope->AddChannel(decoder);
-
-	//Single input? Hook it up
-	if(decoder->GetInputCount() == 1)
-		decoder->SetInput(0, m_selectedChannel);
-
-	//TODO: dialog for configuring stuff
-	if(decoder->NeedsConfig())
+	try
 	{
+		//Decoding w/o a channel selected (and full of data) is nonsensical
+		if(m_selectedChannel == NULL)
+			return;
+		auto data = m_selectedChannel->GetData();
+		if(data == NULL)
+			return;
+
+		//Create the decoder
+		LogDebug("Decoding current channel as %s\n", protocol.c_str());
+		auto decoder = ProtocolDecoder::CreateDecoder(
+			protocol,
+			m_selectedChannel->GetHwname() + "/" + protocol,
+			GetDefaultChannelColor(m_scope->GetChannelCount() + 1)
+			);
+
+		//Single input? Hook it up
+		if(decoder->GetInputCount() == 1)
+		{
+			if(decoder->ValidateChannel(0, m_selectedChannel))
+				decoder->SetInput(0, m_selectedChannel);
+			else
+			{
+				LogError("Input is not valid for this decoder\n");
+				delete decoder;
+				return;
+			}
+		}
+
+		//TODO: dialog for configuring stuff
+		if(decoder->NeedsConfig())
+		{
+		}
+
+		//TODO: have query to see if this decoder should be an overlay or its own line
+
+		//Add the channel only after we've configured it successfully
+		m_scope->AddChannel(decoder);
+
+		//Create a renderer for it
+		auto render = decoder->CreateRenderer();
+		m_renderers[decoder] = render;
+
+		//Configure the renderer
+		auto original_render = m_renderers[m_selectedChannel];
+		render->m_ypos = original_render->m_ypos;
+		render->m_overlay = true;
+
+		//If the original renderer is also an overlay, we're doing a second-level decode!
+		//Move us down below them.
+		if(original_render->m_overlay)
+			render->m_ypos += original_render->m_height;
+
+		//Done, update things
+		decoder->Refresh();
+		queue_draw();
 	}
-
-	//TODO: have query to see if this decoder should be an overlay or its own line
-
-	//Create a renderer for it
-	auto render = decoder->CreateRenderer();
-	m_renderers[decoder] = render;
-
-	//Configure the renderer
-	auto original_render = m_renderers[m_selectedChannel];
-	render->m_ypos = original_render->m_ypos;
-	render->m_overlay = true;
-
-	//If the original renderer is also an overlay, we're doing a second-level decode!
-	//Move us down below them.
-	if(original_render->m_overlay)
-		render->m_ypos += original_render->m_height;
-
-	//Done, update things
-	decoder->Refresh();
-	queue_draw();
+	catch(const JtagException& e)
+	{
+		LogError(e.GetDescription().c_str());
+	}
 }
