@@ -44,6 +44,7 @@ void ScopeProtocolStaticInit()
 {
 	AddDecoderClass(Ethernet10BaseTDecoder);
 	AddDecoderClass(NRZDecoder);
+	AddDecoderClass(UARTDecoder);
 	
 	/*
 	AddDecoderClass(DigitalToAnalogDecoder);
@@ -53,6 +54,5 @@ void ScopeProtocolStaticInit()
 	AddDecoderClass(SchmittTriggerDecoder);
 	AddDecoderClass(SPIDecoder);
 	AddDecoderClass(StateDecoder);
-	AddDecoderClass(UARTDecoder);
 	*/
 }

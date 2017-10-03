@@ -36,6 +36,7 @@ scopeprotocols:
         - Ethernet10BaseTDecoder.cpp
         - EthernetRenderer.cpp
         - NRZDecoder.cpp
+        - UARTDecoder.cpp
 
     flags:
         - global

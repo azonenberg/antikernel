@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2016 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -34,6 +34,8 @@
  */
 
 #include "../scopehal/scopehal.h"
+#include "../scopehal/ChannelRenderer.h"
+#include "../scopehal/TextRenderer.h"
 #include "../scopehal/AsciiRenderer.h"
 #include "UARTDecoder.h"
 
@@ -41,20 +43,26 @@
 // Construction / destruction
 
 UARTDecoder::UARTDecoder(
-	std::string hwname, std::string color, NameServer& namesrvr)
-	: ProtocolDecoder(hwname, OscilloscopeChannel::CHANNEL_TYPE_COMPLEX, color, namesrvr)
+	std::string hwname, std::string color)
+	: ProtocolDecoder(hwname, OscilloscopeChannel::CHANNEL_TYPE_COMPLEX, color)
 {
 	//Set up channels
 	m_signalNames.push_back("din");
-	m_channels.push_back(NULL);	
+	m_channels.push_back(NULL);
 
 	m_baudname = "Baud rate";
 	m_parameters[m_baudname] = ProtocolDecoderParameter(ProtocolDecoderParameter::TYPE_INT);
-	m_parameters[m_baudname].SetIntVal(9600);
+	m_parameters[m_baudname].SetIntVal(115200);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Factory methods
+
+bool UARTDecoder::NeedsConfig()
+{
+	//baud rate has to be set
+	return true;
+}
 
 ChannelRenderer* UARTDecoder::CreateRenderer()
 {
@@ -90,17 +98,17 @@ void UARTDecoder::Refresh()
 		SetData(NULL);
 		return;
 	}
-	
+
 	//Get the bit period
 	float bit_period = 1.0f / m_parameters[m_baudname].GetFloatVal();
 	bit_period *= 1E12;
 	int64_t ibitper = bit_period;
 	int64_t scaledbitper = ibitper / din->m_timescale;
-	
+
 	//UART processing
 	AsciiCapture* cap = new AsciiCapture;
 	cap->m_timescale = din->m_timescale;
-	
+
 	//Time-domain processing to reflect potentially variable sampling rate for RLE captures
 	int64_t next_value = 0;
 	size_t isample = 0;
@@ -117,13 +125,13 @@ void UARTDecoder::Refresh()
 			isample ++;
 		if(isample >= din->m_samples.size())
 			break;
-			
+
 		//Time of the start bit
 		int64_t tstart = din->m_samples[isample].m_offset;
-		
+
 		//The next data bit should be measured 1.5 bit periods after the falling edge
 		next_value = tstart + scaledbitper + scaledbitper/2;
-		
+
 		//Read eight data bits
 		unsigned char dval = 0;
 		for(int ibit=0; ibit<8; ibit++)
@@ -133,24 +141,24 @@ void UARTDecoder::Refresh()
 				isample ++;
 			if(isample >= din->m_samples.size())
 				break;
-			
+
 			//Got the sample
 			dval = (dval >> 1) | (din->m_samples[isample].m_sample ? 0x80 : 0);
-			
+
 			//Go on to the next bit
 			next_value += scaledbitper;
 		}
-		
+
 		//If we ran out of space before we hit the end of the buffer, abort
 		if(isample >= din->m_samples.size())
 			break;
-			
+
 		//All good, read the stop bit
 		while( (isample < din->m_samples.size()) && ((din->m_samples[isample].m_offset + din->m_samples[isample].m_duration) < next_value))
 			isample ++;
 		if(isample >= din->m_samples.size())
 			break;
-			
+
 		//Save the sample
 		int64_t tend = next_value + (scaledbitper/2);
 		cap->m_samples.push_back(AsciiSample(
@@ -158,6 +166,6 @@ void UARTDecoder::Refresh()
 			tend-tstart,
 			(char)dval));
 	}
-	
+
 	SetData(cap);
 }

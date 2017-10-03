@@ -42,6 +42,7 @@
 
 #include "Ethernet10BaseTDecoder.h"
 #include "NRZDecoder.h"
+#include "UARTDecoder.h"
 /*
 #include "DigitalToAnalogDecoder.h"
 #include "DMADecoder.h"
@@ -49,7 +50,6 @@
 #include "RPCNameserverDecoder.h"
 #include "SchmittTriggerDecoder.h"
 #include "SPIDecoder.h"
-#include "UARTDecoder.h"
 */
 void ScopeProtocolStaticInit();
 

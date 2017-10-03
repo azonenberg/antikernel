@@ -38,6 +38,7 @@ scopehal:
     sources:
         - scopehal.cpp
         - AnalogRenderer.cpp
+        - AsciiRenderer.cpp
         - ChannelRenderer.cpp
         - DigitalRenderer.cpp
         - LeCroyVICPOscilloscope.cpp
