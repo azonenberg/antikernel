@@ -76,6 +76,7 @@ protected:
 	std::string ReadData();
 	std::string ReadMultiBlockString();
 	std::string ReadSingleBlockString();
+	bool ReadWaveformBlock(std::string& data);
 
 	uint8_t GetNextSequenceNumber(bool eoi);
 
