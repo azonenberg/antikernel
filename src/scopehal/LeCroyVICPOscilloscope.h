@@ -88,6 +88,7 @@ protected:
 
 	//hardware analog channel count, independent of LA option or protocol decodes
 	unsigned int m_analogChannelCount;
+	unsigned int m_digitalChannelCount;
 
 	std::string m_vendor;
 	std::string m_model;

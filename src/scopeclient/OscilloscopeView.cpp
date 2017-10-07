@@ -230,7 +230,7 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 
 			//Draw channel name overlays (constant position regardles of X scrolling, but still scroll Y if needed)
 			cr->save();
-				cr->translate(0, -yoff);
+				cr->translate(1, -yoff);
 
 				int labelmargin = 2;
 				for(size_t i=0; i<m_scope->GetChannelCount(); i++)

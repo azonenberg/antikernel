@@ -37,6 +37,7 @@ scopehal:
 
     sources:
         - scopehal.cpp
+        - base64.cpp
         - AnalogRenderer.cpp
         - AsciiRenderer.cpp
         - ChannelRenderer.cpp

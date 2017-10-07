@@ -103,10 +103,10 @@ void MainWindow::CreateWidgets()
 		m_vbox.pack_start(m_toolbar, Gtk::PACK_SHRINK);
 			m_toolbar.append(m_btnStart, sigc::mem_fun(*this, &MainWindow::OnStart));
 				m_btnStart.set_tooltip_text("Start capture");
-		m_vbox.pack_start(m_vscroller);
-			m_vscroller.add(m_viewscroller);
+		m_vbox.pack_start(m_viewscroller);
+			m_viewscroller.add(m_view);
+			/*m_vscroller.add(m_viewscroller);
 				m_viewscroller.add(m_view);
-			/*
 			m_vscroller.add(m_splitter);
 				m_splitter.pack1(m_channelview);
 				m_splitter.pack2(m_viewscroller);
@@ -121,8 +121,8 @@ void MainWindow::CreateWidgets()
 			m_statprogress.set_show_text();
 
 	//Set dimensions
-	m_vscroller.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
-	m_viewscroller.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_NEVER);
+	//m_vscroller.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
+	m_viewscroller.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 
 	//Set up message handlers
 	m_viewscroller.get_hadjustment()->signal_value_changed().connect(sigc::mem_fun(*this, &MainWindow::OnScopeScroll));

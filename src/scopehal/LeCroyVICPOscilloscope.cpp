@@ -30,6 +30,7 @@
 #include "scopehal.h"
 #include "LeCroyVICPOscilloscope.h"
 #include "ProtocolDecoder.h"
+#include "base64.h"
 
 using namespace std;
 
@@ -112,6 +113,7 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 			1));
 	}
 	m_analogChannelCount = nchans;
+	m_digitalChannelCount = 0;
 
 	//Look at options and see if we have digital channels too
 	SendCommand("*OPT?", true);
@@ -141,21 +143,33 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 		if(opt != "")
 			options.push_back(opt);
 
-		//TODO: add config for various options if we have them
-
-		//Print out the option list
+		//Print out the option list and do processing for each
 		LogDebug("Installed options:\n");
 		if(options.empty())
 			LogDebug("* None\n");
 		for(auto o : options)
-			LogDebug("* %s\n", o.c_str());
-	}
+		{
+			//If we have the LA module installed, add the digital channels
+			if(o == "MSXX")
+			{
+				LogDebug("* MSXX (logic analyzer)\n");
+				m_digitalChannelCount = 16;
 
-	/*m_channels.push_back(new OscilloscopeChannel(
-		"D8",
-		OscilloscopeChannel::CHANNEL_TYPE_ANALOG,
-		"#ffffff",
-		1));*/
+				char chn[8];
+				for(int i=0; i<16; i++)
+				{
+					snprintf(chn, sizeof(chn), "D%d", i);
+					m_channels.push_back(new OscilloscopeChannel(
+						chn,
+						OscilloscopeChannel::CHANNEL_TYPE_DIGITAL,
+						GetDefaultChannelColor(m_channels.size()),
+						1));
+				}
+			}
+			else
+				LogDebug("* %s (not yet implemented)\n", o.c_str());
+		}
+	}
 
 	//Desired format for waveform data
 	SendCommand("WAVEFORM_SETUP SP,0,NP,0,FP,0,SN,0");
@@ -314,6 +328,11 @@ bool LeCroyVICPOscilloscope::ReadWaveformBlock(string& data)
 	//Second blocks is a header including the message length. Parse that.
 	string lhdr = ReadSingleBlockString();
 	unsigned int num_bytes = atoi(lhdr.c_str() + 2);
+	if(num_bytes == 0)
+	{
+		ReadData();
+		return true;
+	}
 	//LogDebug("Expecting %d bytes (%d samples)\n", num_bytes, num_samples);
 
 	//Done with headers, data comes next
@@ -410,6 +429,55 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 
 		//Done, update the data
 		m_channels[i]->SetData(cap);
+	}
+
+	if(m_digitalChannelCount > 0)
+	{
+		//Ask for the waveform. This is a weird XML-y format but I can't find any other way to get it :(
+		string cmd = "Digital1:WF?";
+		SendCommand(cmd);
+		string data;
+		if(!ReadWaveformBlock(data))
+			return false;
+
+		//For now, we assume Digital1 is using default config with all channels enabled.
+
+		//Quick and dirty string searching. We only care about a small fraction of the XML
+		//so no sense bringing in a full parser.
+		string tmp = data.substr(data.find("<HorPerStep>") + 12);
+		tmp = tmp.substr(0, tmp.find("</HorPerStep>"));
+		float interval = atof(tmp.c_str()) * 1e12f;
+		//LogDebug("Sample interval: %.2f ps\n", interval);
+
+		tmp = data.substr(data.find("<NumSamples>") + 12);
+		tmp = tmp.substr(0, tmp.find("</NumSamples>"));
+		int num_samples = atoi(tmp.c_str());
+		//LogDebug("Expecting %d samples\n", num_samples);
+
+		//Pull out the actual binary data (Base64 coded)
+		tmp = data.substr(data.find("<BinaryData>") + 12);
+		tmp = tmp.substr(0, tmp.find("</BinaryData>"));
+
+		//Decode the base64
+		base64_decodestate state;
+		base64_init_decodestate(&state);
+		unsigned char* block = new unsigned char[tmp.length()];	//base64 is smaller than plaintext, leave room
+		int binlen = base64_decode_block(tmp.c_str(), tmp.length(), (char*)block, &state);
+
+		//We have each channel's data from start to finish before the next (no interleaving).
+		for(unsigned int i=0; i<m_digitalChannelCount; i++)
+		{
+			DigitalCapture* cap = new DigitalCapture;
+			cap->m_timescale = interval;
+
+			for(int j=0; j<num_samples; j++)
+				cap->m_samples.push_back(DigitalSample(j, 1, block[i*num_samples + j]));
+
+			//Done, update the data
+			m_channels[m_analogChannelCount + i]->SetData(cap);
+		}
+
+		delete[] block;
 	}
 
 	//Refresh protocol decoders
