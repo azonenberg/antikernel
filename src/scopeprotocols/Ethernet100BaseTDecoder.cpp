@@ -27,37 +27,100 @@
 *                                                                                                                      *
 ***********************************************************************************************************************/
 
-/**
-	@file
-	@author Andrew D. Zonenberg
-	@brief Declaration of Ethernet10BaseTDecoder
- */
-#ifndef Ethernet10BaseTDecoder_h
-#define Ethernet10BaseTDecoder_h
+#include "../scopehal/scopehal.h"
+#include "EthernetProtocolDecoder.h"
+#include "Ethernet100BaseTDecoder.h"
+#include "../scopehal/ChannelRenderer.h"
+#include "../scopehal/TextRenderer.h"
+#include "EthernetRenderer.h"
 
-#include "../scopehal/ProtocolDecoder.h"
+using namespace std;
 
-class Ethernet10BaseTDecoder : public EthernetProtocolDecoder
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Construction / destruction
+
+Ethernet100BaseTDecoder::Ethernet100BaseTDecoder(
+	string hwname, string color)
+	: EthernetProtocolDecoder(hwname, color)
 {
-public:
-	Ethernet10BaseTDecoder(std::string hwname, std::string color);
+}
 
-	virtual void Refresh();
-	static std::string GetProtocolName();
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Accessors
 
-	PROTOCOL_DECODER_INITPROC(Ethernet10BaseTDecoder)
+string Ethernet100BaseTDecoder::GetProtocolName()
+{
+	return "Ethernet - 100baseT";
+}
 
-protected:
-	bool FindFallingEdge(size_t& i, AnalogCapture* cap);
-	bool FindRisingEdge(size_t& i, AnalogCapture* cap);
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Actual decoder logic
 
-	bool FindEdge(size_t& i, AnalogCapture* cap, bool polarity)
+void Ethernet100BaseTDecoder::Refresh()
+{
+	//Get the input data
+	if(m_channels[0] == NULL)
 	{
-		if(polarity)
-			return FindRisingEdge(i, cap);
-		else
-			return FindFallingEdge(i, cap);
+		SetData(NULL);
+		return;
 	}
-};
+	AnalogCapture* din = dynamic_cast<AnalogCapture*>(m_channels[0]->GetData());
+	if(din == NULL)
+	{
+		SetData(NULL);
+		return;
+	}
 
-#endif
+	//Can't do much if we have no samples to work with
+	if(din->GetDepth() == 0)
+	{
+		SetData(NULL);
+		return;
+	}
+
+	//Copy our time scales from the input
+	EthernetCapture* cap = new EthernetCapture;
+	m_timescale = m_channels[0]->m_timescale;
+	cap->m_timescale = din->m_timescale;
+
+	/*
+
+	*/
+	SetData(cap);
+}
+
+bool Ethernet100BaseTDecoder::FindFallingEdge(size_t& i, AnalogCapture* cap)
+{
+	size_t j = i;
+
+	while(j < cap->m_samples.size())
+	{
+		AnalogSample sin = cap->m_samples[j];
+		if(sin < -1)
+		{
+			i = j;
+			return true;
+		}
+		j++;
+	}
+
+	return false;	//not found
+}
+
+bool Ethernet100BaseTDecoder::FindRisingEdge(size_t& i, AnalogCapture* cap)
+{
+	size_t j = i;
+
+	while(j < cap->m_samples.size())
+	{
+		AnalogSample sin = cap->m_samples[j];
+		if(sin > 1)
+		{
+			i = j;
+			return true;
+		}
+		j++;
+	}
+
+	return false;	//not found
+}

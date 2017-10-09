@@ -30,22 +30,22 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Declaration of Ethernet10BaseTDecoder
+	@brief Declaration of Ethernet100BaseTDecoder
  */
-#ifndef Ethernet10BaseTDecoder_h
-#define Ethernet10BaseTDecoder_h
+#ifndef Ethernet100BaseTDecoder_h
+#define Ethernet100BaseTDecoder_h
 
 #include "../scopehal/ProtocolDecoder.h"
 
-class Ethernet10BaseTDecoder : public EthernetProtocolDecoder
+class Ethernet100BaseTDecoder : public EthernetProtocolDecoder
 {
 public:
-	Ethernet10BaseTDecoder(std::string hwname, std::string color);
+	Ethernet100BaseTDecoder(std::string hwname, std::string color);
 
 	virtual void Refresh();
 	static std::string GetProtocolName();
 
-	PROTOCOL_DECODER_INITPROC(Ethernet10BaseTDecoder)
+	PROTOCOL_DECODER_INITPROC(Ethernet100BaseTDecoder)
 
 protected:
 	bool FindFallingEdge(size_t& i, AnalogCapture* cap);

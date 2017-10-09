@@ -462,7 +462,7 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 		base64_decodestate state;
 		base64_init_decodestate(&state);
 		unsigned char* block = new unsigned char[tmp.length()];	//base64 is smaller than plaintext, leave room
-		int binlen = base64_decode_block(tmp.c_str(), tmp.length(), (char*)block, &state);
+		base64_decode_block(tmp.c_str(), tmp.length(), (char*)block, &state);
 
 		//We have each channel's data from start to finish before the next (no interleaving).
 		for(unsigned int i=0; i<m_digitalChannelCount; i++)

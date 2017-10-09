@@ -37,7 +37,7 @@
 #include "../scopehal/ChannelRenderer.h"
 #include "../scopehal/TextRenderer.h"
 #include "EthernetRenderer.h"
-#include "Ethernet10BaseTDecoder.h"
+#include "EthernetProtocolDecoder.h"
 
 using namespace std;
 

@@ -30,34 +30,58 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Declaration of Ethernet10BaseTDecoder
+	@brief Declaration of EthernetProtocolDecoder
  */
-#ifndef Ethernet10BaseTDecoder_h
-#define Ethernet10BaseTDecoder_h
+#ifndef EthernetProtocolDecoder_h
+#define EthernetProtocolDecoder_h
 
 #include "../scopehal/ProtocolDecoder.h"
 
-class Ethernet10BaseTDecoder : public EthernetProtocolDecoder
+/**
+	@brief Part of an Ethernet frame (speed doesn't matter)
+ */
+class EthernetFrameSegment
 {
 public:
-	Ethernet10BaseTDecoder(std::string hwname, std::string color);
+	enum SegmentType
+	{
+		TYPE_INVALID,
+		TYPE_PREAMBLE,
+		TYPE_SFD,
+		TYPE_DST_MAC,
+		TYPE_SRC_MAC,
+		TYPE_ETHERTYPE,
+		TYPE_VLAN_TAG,
+		TYPE_PAYLOAD,
+		TYPE_FCS
+	} m_type;
 
-	virtual void Refresh();
-	static std::string GetProtocolName();
+	std::vector<uint8_t> m_data;
 
-	PROTOCOL_DECODER_INITPROC(Ethernet10BaseTDecoder)
+	bool operator==(const EthernetFrameSegment& rhs) const
+	{
+		return (m_data == rhs.m_data) && (m_type == rhs.m_type);
+	}
+};
+
+typedef OscilloscopeSample<EthernetFrameSegment> EthernetSample;
+typedef CaptureChannel<EthernetFrameSegment> EthernetCapture;
+
+class EthernetProtocolDecoder : public ProtocolDecoder
+{
+public:
+	EthernetProtocolDecoder(std::string hwname, std::string color);
+
+	virtual ChannelRenderer* CreateRenderer();
+	virtual bool NeedsConfig();
+	virtual bool ValidateChannel(size_t i, OscilloscopeChannel* channel);
 
 protected:
-	bool FindFallingEdge(size_t& i, AnalogCapture* cap);
-	bool FindRisingEdge(size_t& i, AnalogCapture* cap);
-
-	bool FindEdge(size_t& i, AnalogCapture* cap, bool polarity)
-	{
-		if(polarity)
-			return FindRisingEdge(i, cap);
-		else
-			return FindFallingEdge(i, cap);
-	}
+	void BytesToFrames(
+		std::vector<uint8_t>& bytes,
+		std::vector<uint64_t>& starts,
+		std::vector<uint64_t>& ends,
+		EthernetCapture* cap);
 };
 
 #endif

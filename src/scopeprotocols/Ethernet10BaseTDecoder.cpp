@@ -28,6 +28,7 @@
 ***********************************************************************************************************************/
 
 #include "../scopehal/scopehal.h"
+#include "EthernetProtocolDecoder.h"
 #include "Ethernet10BaseTDecoder.h"
 #include "../scopehal/ChannelRenderer.h"
 #include "../scopehal/TextRenderer.h"
@@ -38,28 +39,10 @@ using namespace std;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-Ethernet10BaseTDecoder::Ethernet10BaseTDecoder(
-	std::string hwname, std::string color)
-	: ProtocolDecoder(hwname, OscilloscopeChannel::CHANNEL_TYPE_COMPLEX, color)
+Ethernet10BaseTDecoder::Ethernet10BaseTDecoder(string hwname, string color)
+	: EthernetProtocolDecoder(hwname, color)
 {
-	//Set up channels
-	m_signalNames.push_back("din");
-	m_channels.push_back(NULL);
-}
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Factory methods
-
-ChannelRenderer* Ethernet10BaseTDecoder::CreateRenderer()
-{
-	return new EthernetRenderer(this);
-}
-
-bool Ethernet10BaseTDecoder::ValidateChannel(size_t i, OscilloscopeChannel* channel)
-{
-	if( (i == 0) && (channel->GetType() == OscilloscopeChannel::CHANNEL_TYPE_ANALOG) )
-		return true;
-	return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -68,12 +51,6 @@ bool Ethernet10BaseTDecoder::ValidateChannel(size_t i, OscilloscopeChannel* chan
 string Ethernet10BaseTDecoder::GetProtocolName()
 {
 	return "Ethernet - 10baseT";
-}
-
-bool Ethernet10BaseTDecoder::NeedsConfig()
-{
-	//No config needed
-	return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -250,168 +227,8 @@ void Ethernet10BaseTDecoder::Refresh()
 			ui_start = din->m_samples[i].m_offset * cap->m_timescale;
 		}
 
-		//Crunch the data
-		EthernetFrameSegment garbage;
-		EthernetSample sample(-1, -1, garbage);	//ctor needs args even though we're gonna overwrite them
-		sample.m_sample.m_type = EthernetFrameSegment::TYPE_INVALID;
-		for(size_t i=0; i<bytes.size(); i++)
-		{
-			switch(sample.m_sample.m_type)
-			{
-				case EthernetFrameSegment::TYPE_INVALID:
-
-					//In between frames. Look for a preamble
-					if(bytes[i] != 0x55)
-						LogDebug("Ethernet10BaseTDecoder: Skipping unknown byte %02x\n", bytes[i]);
-
-					//Got a valid 55. We're now in the preamble
-					sample.m_offset = starts[i] / cap->m_timescale;
-					sample.m_sample.m_type = EthernetFrameSegment::TYPE_PREAMBLE;
-					sample.m_sample.m_data.clear();
-					sample.m_sample.m_data.push_back(0x55);
-					break;
-
-				case EthernetFrameSegment::TYPE_PREAMBLE:
-
-					//TODO: Verify that this byte is immediately after the previous one
-
-					//Look for the SFD
-					if(bytes[i] == 0xd5)
-					{
-						//Save the preamble
-						sample.m_duration = (starts[i] / cap->m_timescale) - sample.m_offset;
-						cap->m_samples.push_back(sample);
-
-						//Save the SFD
-						sample.m_offset = starts[i] / cap->m_timescale;
-						sample.m_duration = (ends[i] / cap->m_timescale) - sample.m_offset;
-						sample.m_sample.m_type = EthernetFrameSegment::TYPE_SFD;
-						sample.m_sample.m_data.clear();
-						sample.m_sample.m_data.push_back(0xd5);
-						cap->m_samples.push_back(sample);
-
-						//Set up for data
-						sample.m_sample.m_type = EthernetFrameSegment::TYPE_DST_MAC;
-						sample.m_sample.m_data.clear();
-					}
-
-					//No SFD, just add the preamble byte
-					else if(bytes[i] == 0x55)
-						sample.m_sample.m_data.push_back(0x55);
-
-					//Garbage (TODO: handle this better)
-					else
-						LogDebug("Ethernet10BaseTDecoder: Skipping unknown byte %02x\n", bytes[i]);
-
-					break;
-
-				case EthernetFrameSegment::TYPE_DST_MAC:
-
-					//Start of MAC? Record start time
-					if(sample.m_sample.m_data.empty())
-						sample.m_offset = starts[i] / cap->m_timescale;
-
-					//Add the data
-					sample.m_sample.m_data.push_back(bytes[i]);
-
-					//Are we done? Add it
-					if(sample.m_sample.m_data.size() == 6)
-					{
-						sample.m_duration = (ends[i] / cap->m_timescale) - sample.m_offset;
-						cap->m_samples.push_back(sample);
-
-						//Reset for next block of the frame
-						sample.m_sample.m_type = EthernetFrameSegment::TYPE_SRC_MAC;
-						sample.m_sample.m_data.clear();
-					}
-
-					break;
-
-				case EthernetFrameSegment::TYPE_SRC_MAC:
-
-					//Start of MAC? Record start time
-					if(sample.m_sample.m_data.empty())
-						sample.m_offset = starts[i] / cap->m_timescale;
-
-					//Add the data
-					sample.m_sample.m_data.push_back(bytes[i]);
-
-					//Are we done? Add it
-					if(sample.m_sample.m_data.size() == 6)
-					{
-						sample.m_duration = (ends[i] / cap->m_timescale) - sample.m_offset;
-						cap->m_samples.push_back(sample);
-
-						//Reset for next block of the frame
-						sample.m_sample.m_type = EthernetFrameSegment::TYPE_ETHERTYPE;
-						sample.m_sample.m_data.clear();
-					}
-
-					break;
-
-				case EthernetFrameSegment::TYPE_ETHERTYPE:
-
-					//Start of Ethertype? Record start time
-					if(sample.m_sample.m_data.empty())
-						sample.m_offset = starts[i] / cap->m_timescale;
-
-					//Add the data
-					sample.m_sample.m_data.push_back(bytes[i]);
-
-					//Are we done? Add it
-					if(sample.m_sample.m_data.size() == 2)
-					{
-						sample.m_duration = (ends[i] / cap->m_timescale) - sample.m_offset;
-						cap->m_samples.push_back(sample);
-
-						//Reset for next block of the frame
-						sample.m_sample.m_type = EthernetFrameSegment::TYPE_PAYLOAD;
-						sample.m_sample.m_data.clear();
-					}
-
-					break;
-
-				case EthernetFrameSegment::TYPE_PAYLOAD:
-
-					//Add a data element
-					//For now, each byte is its own payload blob
-					sample.m_offset = starts[i] / cap->m_timescale;
-					sample.m_duration = (ends[i] / cap->m_timescale) - sample.m_offset;
-					sample.m_sample.m_type = EthernetFrameSegment::TYPE_PAYLOAD;
-					sample.m_sample.m_data.clear();
-					sample.m_sample.m_data.push_back(bytes[i]);
-					cap->m_samples.push_back(sample);
-
-					//If almost at end of packet, next 4 bytes are FCS
-					if(i == bytes.size() - 5)
-					{
-						sample.m_sample.m_data.clear();
-						sample.m_sample.m_type = EthernetFrameSegment::TYPE_FCS;
-					}
-					break;
-
-				case EthernetFrameSegment::TYPE_FCS:
-
-					//Start of FCS? Record start time
-					if(sample.m_sample.m_data.empty())
-						sample.m_offset = starts[i] / cap->m_timescale;
-
-					//Add the data
-					sample.m_sample.m_data.push_back(bytes[i]);
-
-					//Are we done? Add it
-					if(sample.m_sample.m_data.size() == 4)
-					{
-						sample.m_duration = (ends[i] / cap->m_timescale) - sample.m_offset;
-						cap->m_samples.push_back(sample);
-					}
-
-					break;
-
-				default:
-					break;
-			}
-		}
+		//Crunch the Manchester-coded data
+		BytesToFrames(bytes, starts, ends, cap);
 	}
 
 	SetData(cap);
