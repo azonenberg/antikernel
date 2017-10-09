@@ -38,7 +38,6 @@
 
 #include "../scopehal/Oscilloscope.h"
 #include "OscilloscopeView.h"
-#include "ChannelListView.h"
 
 /**
 	@brief Main application window class
@@ -46,7 +45,7 @@
 class MainWindow	: public Gtk::Window
 {
 public:
-	MainWindow(Oscilloscope* scope, std::string host, int port/*, NameServer* namesrvr*/);
+	MainWindow(Oscilloscope* scope, std::string host, int port);
 	~MainWindow();
 
 	Oscilloscope* GetScope()
@@ -68,11 +67,8 @@ protected:
 	Gtk::VBox m_vbox;
 		Gtk::Toolbar m_toolbar;
 			Gtk::ToolButton m_btnStart;
-		Gtk::ScrolledWindow m_vscroller;
-			Gtk::HPaned m_splitter;
-				ChannelListView m_channelview;
-				Gtk::ScrolledWindow m_viewscroller;
-					OscilloscopeView m_view;
+		Gtk::ScrolledWindow m_viewscroller;
+			OscilloscopeView m_view;
 		Gtk::Statusbar m_statusbar;
 			Gtk::ProgressBar m_statprogress;
 
@@ -82,13 +78,8 @@ protected:
 	//Status polling
 	bool OnTimer(int timer);
 
-	//NameServer* m_namesrvr;
-
 	//Message handlers
-	void OnDecode();
 	void OnStart();
-
-	void OnScopeScroll();
 
 	int OnCaptureProgressUpdate(float progress);
 

@@ -33,7 +33,6 @@ scopeclient:
 
     sources:
         - main.cpp
-        - ChannelListView.cpp
         - MainWindow.cpp
         - OscilloscopeView.cpp
         - ProtocolDecoderDialog.cpp
