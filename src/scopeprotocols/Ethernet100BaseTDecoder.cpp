@@ -83,44 +83,278 @@ void Ethernet100BaseTDecoder::Refresh()
 	m_timescale = m_channels[0]->m_timescale;
 	cap->m_timescale = din->m_timescale;
 
-	/*
+	const int64_t ui_width 			= 8000;
+	const int64_t ui_width_samples	= ui_width / din->m_timescale;
+	//const int64_t ui_halfwidth 		= 4000;
+	//const int64_t jitter_tol 		= 1500;
 
-	*/
+	//Logical voltage of each point after some hysteresis
+	vector<int> voltages;
+	int oldstate = GetState(din->m_samples[0]);
+	for(auto s : din->m_samples)
+	{
+		int newstate = oldstate;
+		float voltage = s;
+		switch(oldstate)
+		{
+			//At the middle? Need significant motion either way to change state
+			case 0:
+				if(voltage > 0.6)
+					newstate = 1;
+				else if(voltage < -0.6)
+					newstate = -1;
+				break;
+
+			//High? Move way low to change
+			case 1:
+				if(voltage < 0.2)
+					newstate = 0;
+				break;
+
+			//Low? Move way high to change
+			case -1:
+				if(voltage > -0.2)
+					newstate = 0;
+				break;
+		}
+
+		voltages.push_back(newstate);
+		oldstate = newstate;
+	}
+
+	//MLT-3 decode
+	//TODO: some kind of sanity checking that voltage is changing in the right direction
+	int old_voltage = voltages[0];
+	int old_index = 0;
+	vector<DigitalSample> bits;
+	for(size_t i=0; i<voltages.size(); i++)
+	{
+		if(voltages[i] != old_voltage)
+		{
+			//Don't actually process the first bit since it's truncated
+			if(old_index != 0)
+			{
+				//See how long the voltage stayed constant.
+				//For each UI, add a "0" bit, then a "1" bit for the current state
+				int64_t tstart = din->m_samples[old_index].m_offset;
+				int64_t tchange = din->m_samples[i].m_offset;
+				int64_t dt = (tchange - tstart) * din->m_timescale;
+				int num_uis = round(dt * 1.0f / ui_width);
+
+				/*LogDebug("Voltage changed to %2d at %10.6f us (%d UIs): ",
+					voltages[i],
+					tchange * din->m_timescale * 1e-6f,
+					num_uis);*/
+
+				//Add zero bits for each UI without a transition
+				int64_t tnext;
+				for(int j=0; j<(num_uis - 1); j++)
+				{
+					tnext = tstart + ui_width_samples*j;
+					bits.push_back(DigitalSample(
+						tnext,
+						ui_width_samples,
+						0));
+				}
+				tnext = tstart + ui_width_samples*(num_uis - 1);
+
+				//and then a 1 bit
+				bits.push_back(DigitalSample(
+					tnext,
+					(tchange + din->m_samples[i].m_duration) - tnext,
+					1));
+			}
+
+			old_index = i;
+			old_voltage = voltages[i];
+		}
+	}
+
+	//RX LFSR sync
+	//TODO: decide how big a window to look for idles in
+	//For now, assume the link is idle at the time we triggered
+	int idle_offset = 0;
+	unsigned int lfsr =
+		( (!bits[idle_offset + 0]) << 10 ) |
+		( (!bits[idle_offset + 1]) << 9 ) |
+		( (!bits[idle_offset + 2]) << 8 ) |
+		( (!bits[idle_offset + 3]) << 7 ) |
+		( (!bits[idle_offset + 4]) << 6 ) |
+		( (!bits[idle_offset + 5]) << 5 ) |
+		( (!bits[idle_offset + 6]) << 4 ) |
+		( (!bits[idle_offset + 7]) << 3 ) |
+		( (!bits[idle_offset + 8]) << 2 ) |
+		( (!bits[idle_offset + 9]) << 1 ) |
+		( (!bits[idle_offset + 10]) << 0 );
+
+	//Descramble
+	vector<DigitalSample> descrambled_bits;
+	for(unsigned int i=11; i<bits.size(); i++)
+	{
+		auto b = bits[i];
+		lfsr = (lfsr << 1) ^ ((lfsr >> 8)&1) ^ ((lfsr >> 10)&1);
+
+		descrambled_bits.push_back(DigitalSample(
+			b.m_offset,
+			b.m_duration,
+			b.m_sample ^ (lfsr & 1)));
+	}
+
+	//Search until we find a 1100010001 (J-K, start of stream) sequence
+	bool ssd[10] = {1, 1, 0, 0, 0, 1, 0, 0, 0, 1};
+	unsigned int i = 0;
+	for(i=0; i<descrambled_bits.size() - 10; i++)
+	{
+		bool hit = true;
+		for(int j=0; j<10; j++)
+		{
+			if(descrambled_bits[i+j].m_sample != ssd[j])
+			{
+				hit = false;
+				break;
+			}
+		}
+
+		if(hit)
+			break;
+	}
+	if(i < bits.size())
+		LogDebug("Found SSD at sample %d\n", i);
+
+	//Skip the J-K as we already parsed it
+	i += 10;
+
+	//4b5b decode table
+	static const int code_5to4[]=
+	{
+		-1, //0x00 unused
+		-1, //0x01 unused
+		-1, //0x02 unused
+		-1, //0x03 unused
+		-1, //0x04 = /H/, tx error
+		-1, //0x05 unused
+		-1, //0x06 unused
+		0, //0x07 = /R/, second half of ESD
+		-1, //0x08 unused
+		0x1,
+		0x4,
+		0x5,
+		-1, //0x0c unused
+		0, //0x0d = /T/, first half of ESD
+		0x6,
+		0x7,
+		-1, //0x10 unused
+		0, //0x11 = /K/, second half of SSD
+		0x8,
+		0x9,
+		0x2,
+		0x3,
+		0xa,
+		0xb,
+		0, //0x18 = /J/, first half of SSD
+		-1, //0x19 unused
+		0xc,
+		0xd,
+		0xe,
+		0xf,
+		0x0,
+		0, //0x1f = idle
+	};
+
+	//Set of recovered bytes and timestamps
+	vector<uint8_t> bytes;
+	vector<uint64_t> starts;
+	vector<uint64_t> ends;
+
+	//Grab 5 bits at a time and decode them
+	bool first = true;
+	uint8_t current_byte = 0;
+	uint64_t current_start = 0;
+	for(; i<descrambled_bits.size()-5; i+=5)
+	{
+		unsigned int code =
+			(descrambled_bits[i+0].m_sample << 4) |
+			(descrambled_bits[i+1].m_sample << 3) |
+			(descrambled_bits[i+2].m_sample << 2) |
+			(descrambled_bits[i+3].m_sample << 1) |
+			(descrambled_bits[i+4].m_sample << 0);
+
+		//Handle special stuff
+		if(code == 0x18)
+		{
+			//This is a /J/. Next code should be 0x11, /K/ - start of frame.
+			//Don't check it for now, just jump ahead 5 bits and get ready to read data
+			i += 5;
+			continue;
+		}
+		else if(code == 0x0d)
+		{
+			//This is a /T/. Next code should be 0x07, /R/ - end of frame.
+			//Crunch this frame
+			BytesToFrames(bytes, starts, ends, cap);
+
+			//Skip the /R/
+			i += 5;
+
+			//and reset for the next one
+			starts.clear();
+			ends.clear();
+			bytes.clear();
+			continue;
+		}
+		//TODO: process /H/ - 0x04
+
+		//Ignore idles
+		else if(code == 0x1f)
+			continue;
+
+		//Nope, normal nibble.
+		int decoded = code_5to4[code];
+		if(first)
+		{
+			current_start = descrambled_bits[i].m_offset;
+			current_byte = decoded;
+		}
+		else
+		{
+			current_byte |= decoded << 4;
+
+			bytes.push_back(current_byte);
+			starts.push_back(current_start * cap->m_timescale);
+			uint64_t end = descrambled_bits[i+4].m_offset + descrambled_bits[i+4].m_duration;
+			ends.push_back(end * cap->m_timescale);
+		}
+
+		first = !first;
+	}
+
+	/*
+	//DEBUG: Visualize the bits on the timeline
+	for(auto b : descrambled_bits)
+	{
+		EthernetFrameSegment seg;
+		seg.m_type = EthernetFrameSegment::TYPE_PAYLOAD;
+		seg.m_data.push_back(b.m_sample);
+		if(b.m_offset < tssd)
+			seg.m_type = EthernetFrameSegment::TYPE_PREAMBLE;
+		else if(b.m_offset == tssd)
+			seg.m_type = EthernetFrameSegment::TYPE_SFD;
+		cap->m_samples.push_back(EthernetSample(
+			b.m_offset,
+			b.m_duration,
+			seg));
+
+	}*/
+
 	SetData(cap);
 }
 
-bool Ethernet100BaseTDecoder::FindFallingEdge(size_t& i, AnalogCapture* cap)
+int Ethernet100BaseTDecoder::GetState(float voltage)
 {
-	size_t j = i;
-
-	while(j < cap->m_samples.size())
-	{
-		AnalogSample sin = cap->m_samples[j];
-		if(sin < -1)
-		{
-			i = j;
-			return true;
-		}
-		j++;
-	}
-
-	return false;	//not found
-}
-
-bool Ethernet100BaseTDecoder::FindRisingEdge(size_t& i, AnalogCapture* cap)
-{
-	size_t j = i;
-
-	while(j < cap->m_samples.size())
-	{
-		AnalogSample sin = cap->m_samples[j];
-		if(sin > 1)
-		{
-			i = j;
-			return true;
-		}
-		j++;
-	}
-
-	return false;	//not found
+	if(voltage > 0.3)
+		return 1;
+	else if(voltage < -0.3)
+		return -1;
+	else
+		return 0;
 }

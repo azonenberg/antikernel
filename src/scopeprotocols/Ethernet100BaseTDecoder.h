@@ -48,16 +48,7 @@ public:
 	PROTOCOL_DECODER_INITPROC(Ethernet100BaseTDecoder)
 
 protected:
-	bool FindFallingEdge(size_t& i, AnalogCapture* cap);
-	bool FindRisingEdge(size_t& i, AnalogCapture* cap);
-
-	bool FindEdge(size_t& i, AnalogCapture* cap, bool polarity)
-	{
-		if(polarity)
-			return FindRisingEdge(i, cap);
-		else
-			return FindFallingEdge(i, cap);
-	}
+	int GetState(float voltage);
 };
 
 #endif
