@@ -64,7 +64,7 @@ public:
 	int m_padding;
 	int m_width;
 
-	bool m_overlay;
+	bool m_overlay;		//true to draw on top of another channel
 
 	virtual void RenderStartCallback(
 		const Cairo::RefPtr<Cairo::Context>& cr,
