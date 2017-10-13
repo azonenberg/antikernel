@@ -49,6 +49,10 @@ public:
 
 protected:
 	int GetState(float voltage);
+	bool TrySync(
+		std::vector<DigitalSample>& bits,
+		std::vector<DigitalSample>& descrambled_bits,
+		unsigned int idle_offset);
 };
 
 #endif

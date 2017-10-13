@@ -50,7 +50,7 @@ Ethernet100BaseTDecoder::Ethernet100BaseTDecoder(
 
 string Ethernet100BaseTDecoder::GetProtocolName()
 {
-	return "Ethernet - 100baseT";
+	return "Ethernet - 100baseTX";
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -171,33 +171,21 @@ void Ethernet100BaseTDecoder::Refresh()
 	}
 
 	//RX LFSR sync
-	//TODO: decide how big a window to look for idles in
-	//For now, assume the link is idle at the time we triggered
-	int idle_offset = 0;
-	unsigned int lfsr =
-		( (!bits[idle_offset + 0]) << 10 ) |
-		( (!bits[idle_offset + 1]) << 9 ) |
-		( (!bits[idle_offset + 2]) << 8 ) |
-		( (!bits[idle_offset + 3]) << 7 ) |
-		( (!bits[idle_offset + 4]) << 6 ) |
-		( (!bits[idle_offset + 5]) << 5 ) |
-		( (!bits[idle_offset + 6]) << 4 ) |
-		( (!bits[idle_offset + 7]) << 3 ) |
-		( (!bits[idle_offset + 8]) << 2 ) |
-		( (!bits[idle_offset + 9]) << 1 ) |
-		( (!bits[idle_offset + 10]) << 0 );
-
-	//Descramble
 	vector<DigitalSample> descrambled_bits;
-	for(unsigned int i=11; i<bits.size(); i++)
+	bool synced = false;
+	for(unsigned int idle_offset = 0; idle_offset<15000 && idle_offset<bits.size(); idle_offset++)
 	{
-		auto b = bits[i];
-		lfsr = (lfsr << 1) ^ ((lfsr >> 8)&1) ^ ((lfsr >> 10)&1);
-
-		descrambled_bits.push_back(DigitalSample(
-			b.m_offset,
-			b.m_duration,
-			b.m_sample ^ (lfsr & 1)));
+		if(TrySync(bits, descrambled_bits, idle_offset))
+		{
+			LogDebug("Got good LFSR sync at offset %u\n", idle_offset);
+			synced = true;
+			break;
+		}
+	}
+	if(!synced)
+	{
+		LogError("Ethernet100BaseTDecoder: Unable to sync RX LFSR\n");
+		descrambled_bits.clear();
 	}
 
 	//Search until we find a 1100010001 (J-K, start of stream) sequence
@@ -218,8 +206,7 @@ void Ethernet100BaseTDecoder::Refresh()
 		if(hit)
 			break;
 	}
-	if(i < bits.size())
-		LogDebug("Found SSD at sample %d\n", i);
+	LogDebug("Found SSD at %u\n", i);
 
 	//Skip the J-K as we already parsed it
 	i += 10;
@@ -328,25 +315,54 @@ void Ethernet100BaseTDecoder::Refresh()
 		first = !first;
 	}
 
-	/*
-	//DEBUG: Visualize the bits on the timeline
-	for(auto b : descrambled_bits)
+	SetData(cap);
+}
+
+bool Ethernet100BaseTDecoder::TrySync(
+	vector<DigitalSample>& bits,
+	vector<DigitalSample>& descrambled_bits,
+	unsigned int idle_offset)
+{
+	if( (idle_offset + 64) >= bits.size())
+		return false;
+	descrambled_bits.clear();
+
+	//For now, assume the link is idle at the time we triggered
+	unsigned int lfsr =
+		( (!bits[idle_offset + 0]) << 10 ) |
+		( (!bits[idle_offset + 1]) << 9 ) |
+		( (!bits[idle_offset + 2]) << 8 ) |
+		( (!bits[idle_offset + 3]) << 7 ) |
+		( (!bits[idle_offset + 4]) << 6 ) |
+		( (!bits[idle_offset + 5]) << 5 ) |
+		( (!bits[idle_offset + 6]) << 4 ) |
+		( (!bits[idle_offset + 7]) << 3 ) |
+		( (!bits[idle_offset + 8]) << 2 ) |
+		( (!bits[idle_offset + 9]) << 1 ) |
+		( (!bits[idle_offset + 10]) << 0 );
+
+	//Descramble
+	for(unsigned int i=idle_offset + 11; i<bits.size(); i++)
 	{
-		EthernetFrameSegment seg;
-		seg.m_type = EthernetFrameSegment::TYPE_PAYLOAD;
-		seg.m_data.push_back(b.m_sample);
-		if(b.m_offset < tssd)
-			seg.m_type = EthernetFrameSegment::TYPE_PREAMBLE;
-		else if(b.m_offset == tssd)
-			seg.m_type = EthernetFrameSegment::TYPE_SFD;
-		cap->m_samples.push_back(EthernetSample(
+		auto b = bits[i];
+		lfsr = (lfsr << 1) ^ ((lfsr >> 8)&1) ^ ((lfsr >> 10)&1);
+
+		descrambled_bits.push_back(DigitalSample(
 			b.m_offset,
 			b.m_duration,
-			seg));
+			b.m_sample ^ (lfsr & 1)));
+	}
 
-	}*/
+	//We should have at least 64 "1" bits in a row once the descrambling is done.
+	//The minimum inter-frame gap is a lot bigger than this.
+	for(int i=0; i<64; i++)
+	{
+		if(descrambled_bits[i + idle_offset + 11].m_sample != 1)
+			return false;
+	}
 
-	SetData(cap);
+	//Synced, all good
+	return true;
 }
 
 int Ethernet100BaseTDecoder::GetState(float voltage)
