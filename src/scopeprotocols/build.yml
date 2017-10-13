@@ -37,6 +37,8 @@ scopeprotocols:
         - Ethernet100BaseTDecoder.cpp
         - EthernetProtocolDecoder.cpp
         - EthernetRenderer.cpp
+        - EyeDecoder.cpp
+        - EyeRenderer.cpp
         - NRZDecoder.cpp
         - UARTDecoder.cpp
 

@@ -101,6 +101,13 @@ public:
 	ParameterMapType::iterator GetParamEnd()
 	{ return m_parameters.end(); }
 
+	/**
+		@brief Return true (default) if this decoder should be overlaid on top of the original waveform.
+
+		Return false (override) if it should be rendered as its own line.
+	 */
+	virtual bool IsOverlay();
+
 	virtual bool NeedsConfig() =0;	//false if we can automatically do the decode from the signal w/ no configuration
 
 protected:

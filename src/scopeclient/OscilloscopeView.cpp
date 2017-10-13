@@ -596,8 +596,6 @@ void OscilloscopeView::OnProtocolDecode(string protocol)
 		{
 		}
 
-		//TODO: have query to see if this decoder should be an overlay or its own line
-
 		//Add the channel only after we've configured it successfully
 		m_scope->AddChannel(decoder);
 
@@ -606,14 +604,39 @@ void OscilloscopeView::OnProtocolDecode(string protocol)
 		m_renderers[decoder] = render;
 
 		//Configure the renderer
+		//If we're an overlay, draw us on top of the original channel.
 		auto original_render = m_renderers[m_selectedChannel];
-		render->m_ypos = original_render->m_ypos;
-		render->m_overlay = true;
+		if(decoder->IsOverlay())
+		{
+			render->m_ypos = original_render->m_ypos;
+			render->m_overlay = true;
 
-		//If the original renderer is also an overlay, we're doing a second-level decode!
-		//Move us down below them.
-		if(original_render->m_overlay)
-			render->m_ypos += original_render->m_height;
+			//If the original renderer is also an overlay, we're doing a second-level decode!
+			//Move us down below them.
+			//TODO: push other decoders as needed?
+			if(original_render->m_overlay)
+				render->m_ypos += original_render->m_height;
+		}
+
+		//NOT an overlay.
+		//Insert us right after the original channel.
+		else
+		{
+			int spacing = 5;			//TODO: this should be a member variable and not redeclared everywhere
+			render->m_overlay = false;
+			render->m_ypos = original_render->m_ypos + original_render->m_height + spacing;
+
+			//Loop over all renderers and push the ones below us as needed
+			for(auto it : m_renderers)
+			{
+				auto r = it.second;
+				if(r == render)
+					continue;
+
+				if(r->m_ypos >= render->m_ypos)
+					r->m_ypos += render->m_height;
+			}
+		}
 
 		//Done, update things
 		decoder->Refresh();

@@ -30,31 +30,35 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Scope protocol initialization
+	@brief Declaration of EyeDecoder
  */
+#ifndef EyeDecoder_h
+#define EyeDecoder_h
 
-#include "scopeprotocols.h"
+#include "../scopehal/ProtocolDecoder.h"
 
-#define AddDecoderClass(T) ProtocolDecoder::AddDecoderClass(T::GetProtocolName(), T::CreateInstance)
-
-/**
-	@brief Static initialization for protocol list
- */
-void ScopeProtocolStaticInit()
+class EyeDecoder : public ProtocolDecoder
 {
-	AddDecoderClass(Ethernet10BaseTDecoder);
-	AddDecoderClass(Ethernet100BaseTDecoder);
-	AddDecoderClass(EyeDecoder);
-	AddDecoderClass(NRZDecoder);
-	AddDecoderClass(UARTDecoder);
-	
-	/*
-	AddDecoderClass(DigitalToAnalogDecoder);
-	AddDecoderClass(DMADecoder);
-	AddDecoderClass(RPCDecoder);
-	AddDecoderClass(RPCNameserverDecoder);
-	AddDecoderClass(SchmittTriggerDecoder);
-	AddDecoderClass(SPIDecoder);
-	AddDecoderClass(StateDecoder);
-	*/
-}
+public:
+	EyeDecoder(std::string hwname, std::string color);
+
+	virtual void Refresh();
+	virtual ChannelRenderer* CreateRenderer();
+
+	virtual bool NeedsConfig();
+	virtual bool IsOverlay();
+
+	static std::string GetProtocolName();
+
+	virtual bool ValidateChannel(size_t i, OscilloscopeChannel* channel);
+
+	int64_t GetUIWidth()
+	{ return m_uiWidth; }
+
+	PROTOCOL_DECODER_INITPROC(EyeDecoder)
+
+protected:
+	int64_t m_uiWidth;
+};
+
+#endif

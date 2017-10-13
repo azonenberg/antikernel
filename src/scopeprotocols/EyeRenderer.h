@@ -30,31 +30,56 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Scope protocol initialization
+	@brief Declaration of EyeRenderer
  */
 
-#include "scopeprotocols.h"
+#ifndef EyeRenderer_h
+#define EyeRenderer_h
 
-#define AddDecoderClass(T) ProtocolDecoder::AddDecoderClass(T::GetProtocolName(), T::CreateInstance)
+class ChannelRenderer;
 
 /**
-	@brief Static initialization for protocol list
+	@brief A pixel in an eye pattern
  */
-void ScopeProtocolStaticInit()
+class EyePatternPixel
 {
-	AddDecoderClass(Ethernet10BaseTDecoder);
-	AddDecoderClass(Ethernet100BaseTDecoder);
-	AddDecoderClass(EyeDecoder);
-	AddDecoderClass(NRZDecoder);
-	AddDecoderClass(UARTDecoder);
-	
-	/*
-	AddDecoderClass(DigitalToAnalogDecoder);
-	AddDecoderClass(DMADecoder);
-	AddDecoderClass(RPCDecoder);
-	AddDecoderClass(RPCNameserverDecoder);
-	AddDecoderClass(SchmittTriggerDecoder);
-	AddDecoderClass(SPIDecoder);
-	AddDecoderClass(StateDecoder);
-	*/
-}
+public:
+	float m_voltage;
+	int64_t m_count;		//number of pixels with this value
+
+	bool operator==(const EyePatternPixel& rhs) const
+	{
+		return (m_voltage == rhs.m_voltage) && (m_count == rhs.m_count);
+	}
+};
+
+typedef OscilloscopeSample<EyePatternPixel> EyeSample;
+typedef CaptureChannel<EyePatternPixel> EyeCapture;
+
+/**
+	@brief Renderer for an eye pattern
+ */
+class EyeRenderer : public ChannelRenderer
+{
+public:
+	EyeRenderer(OscilloscopeChannel* channel);
+
+	virtual void Render(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		int width,
+		int visleft,
+		int visright,
+		std::vector<time_range>& ranges);
+
+protected:
+	//unused
+	virtual void RenderSampleCallback(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		size_t i,
+		float xstart,
+		float xend,
+		int visleft,
+		int visright);
+};
+
+#endif

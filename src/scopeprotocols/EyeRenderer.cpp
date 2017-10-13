@@ -30,31 +30,93 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Scope protocol initialization
+	@brief Implementation of EyeRenderer
  */
 
-#include "scopeprotocols.h"
+#include "../scopehal/scopehal.h"
+#include "../scopehal/ChannelRenderer.h"
+#include "../scopehal/ProtocolDecoder.h"
+#include "EyeRenderer.h"
+#include "EyeDecoder.h"
 
-#define AddDecoderClass(T) ProtocolDecoder::AddDecoderClass(T::GetProtocolName(), T::CreateInstance)
+using namespace std;
 
-/**
-	@brief Static initialization for protocol list
- */
-void ScopeProtocolStaticInit()
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Construction / destruction
+EyeRenderer::EyeRenderer(OscilloscopeChannel* channel)
+: ChannelRenderer(channel)
 {
-	AddDecoderClass(Ethernet10BaseTDecoder);
-	AddDecoderClass(Ethernet100BaseTDecoder);
-	AddDecoderClass(EyeDecoder);
-	AddDecoderClass(NRZDecoder);
-	AddDecoderClass(UARTDecoder);
-	
-	/*
-	AddDecoderClass(DigitalToAnalogDecoder);
-	AddDecoderClass(DMADecoder);
-	AddDecoderClass(RPCDecoder);
-	AddDecoderClass(RPCNameserverDecoder);
-	AddDecoderClass(SchmittTriggerDecoder);
-	AddDecoderClass(SPIDecoder);
-	AddDecoderClass(StateDecoder);
-	*/
+	m_height = 256;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Rendering
+
+void EyeRenderer::Render(
+	const Cairo::RefPtr<Cairo::Context>& cr,
+	int width,
+	int visleft,
+	int visright,
+	vector<time_range>& ranges)
+{
+	RenderStartCallback(cr, width, visleft, visright, ranges);
+
+	EyeCapture* capture = dynamic_cast<EyeCapture*>(m_channel->GetData());
+	if(capture != NULL)
+	{
+		//Save time scales
+		float tscale = m_channel->m_timescale * capture->m_timescale;
+
+		//Find the maximum count value of any sample
+		int64_t maxcount = 0;
+		for(size_t i=0; i<capture->GetDepth(); i++)
+		{
+			auto sample = (*capture)[i];
+			if(sample.m_count > maxcount)
+				maxcount = sample.m_count;
+		}
+
+		//Loop over the samples and render them
+		int64_t ui_width = dynamic_cast<EyeDecoder*>(m_channel)->GetUIWidth();
+		for(size_t i=0; i<capture->GetDepth(); i++)
+		{
+			int64_t tstart = capture->GetSampleStart(i);
+			int64_t tend = tstart + capture->GetSampleLen(i);
+			float xstart = tscale * tstart;
+			float xend = tscale * tend;
+
+			auto sample = (*capture)[i];
+
+			float yscale = 0.4 * m_height;
+			float yoffset = m_height / 2;
+			float ystart = yscale * sample.m_voltage * -1 + yoffset;
+			float yend = ystart + 1;
+			ystart += m_ypos;
+			yend += m_ypos;
+
+			float width = xend - xstart;
+			if(width < 1)
+				width = 1;
+
+			float count = (1.0f * sample.m_count) / maxcount;
+
+			cr->set_source_rgb(count, 0, count);
+			for(int j=0; j<3; j++)
+				cr->rectangle(xstart + 150 + j*ui_width*tscale, ystart, /*width*/4, /*yend-ystart*/4);
+			cr->fill();
+		}
+	}
+
+	RenderEndCallback(cr, width, visleft, visright, ranges);
+}
+
+void EyeRenderer::RenderSampleCallback(
+	const Cairo::RefPtr<Cairo::Context>& /*cr*/,
+	size_t /*i*/,
+	float /*xstart*/,
+	float /*xend*/,
+	int /*visleft*/,
+	int /*visright*/)
+{
+	//Unused, but we have to override it
 }

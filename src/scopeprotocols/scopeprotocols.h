@@ -43,6 +43,7 @@
 #include "EthernetProtocolDecoder.h"
 #include "Ethernet10BaseTDecoder.h"
 #include "Ethernet100BaseTDecoder.h"
+#include "EyeDecoder.h"
 #include "NRZDecoder.h"
 #include "UARTDecoder.h"
 /*

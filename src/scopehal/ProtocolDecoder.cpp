@@ -145,6 +145,11 @@ ProtocolDecoder::~ProtocolDecoder()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Accessors
 
+bool ProtocolDecoder::IsOverlay()
+{
+	return true;
+}
+
 ProtocolDecoderParameter& ProtocolDecoder::GetParameter(string s)
 {
 	if(m_parameters.find(s) == m_parameters.end())

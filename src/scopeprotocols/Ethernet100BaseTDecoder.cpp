@@ -177,7 +177,7 @@ void Ethernet100BaseTDecoder::Refresh()
 	{
 		if(TrySync(bits, descrambled_bits, idle_offset))
 		{
-			LogDebug("Got good LFSR sync at offset %u\n", idle_offset);
+			//LogDebug("Got good LFSR sync at offset %u\n", idle_offset);
 			synced = true;
 			break;
 		}
@@ -206,7 +206,7 @@ void Ethernet100BaseTDecoder::Refresh()
 		if(hit)
 			break;
 	}
-	LogDebug("Found SSD at %u\n", i);
+	//LogDebug("Found SSD at %u\n", i);
 
 	//Skip the J-K as we already parsed it
 	i += 10;
