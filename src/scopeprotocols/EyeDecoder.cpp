@@ -111,10 +111,9 @@ void EyeDecoder::Refresh()
 	cap->m_timescale = din->m_timescale;
 
 	//Keep count of how many times we've seen each pixel at a given offset
-	//TODO: the current trigger setup assumes MLT-3, can we make this generic?
+	//TODO: make trigger level configurable
 	map<int64_t, map<float, int64_t> > pixmap;
-	float trigger_level1 = 0.5;
-	float trigger_level2 = -0.5;
+	float trigger_level = 0.5;
 	float last_sample_value = 0;
 	int64_t tstart = 0;
 	vector<int64_t> ui_widths;
@@ -126,13 +125,9 @@ void EyeDecoder::Refresh()
 		int64_t old_tstart = tstart;
 
 		//Dual-edge trigger, no holdoff
-		if( (f > trigger_level1) && (last_sample_value < trigger_level1) )
+		if( (f > trigger_level) && (last_sample_value < trigger_level) )
 			tstart = sin.m_offset;
-		if( (f < trigger_level1) && (last_sample_value > trigger_level1) )
-			tstart = sin.m_offset;
-		if( (f > trigger_level2) && (last_sample_value < trigger_level2) )
-			tstart = sin.m_offset;
-		if( (f < trigger_level2) && (last_sample_value > trigger_level2) )
+		if( (f < trigger_level) && (last_sample_value > trigger_level) )
 			tstart = sin.m_offset;
 		last_sample_value = f;
 
@@ -146,24 +141,26 @@ void EyeDecoder::Refresh()
 
 	//Figure out the best guess width of the unit interval
 	//We should never trigger more than once in a UI, but we might have several UIs between triggers
-	//HACK: Assume at least 100 single-UI samples, average them
-	sort(ui_widths.begin(), ui_widths.end());
-	unsigned int num_avg = 100;
-	unsigned int num_skip = 50;
-	if(ui_widths.size() < num_avg + num_skip)
+	//Compute a histogram of the UI widths and pick the highest bin. This is probably one UI.
+	//TODO: it might be a harmonic!
+	map<int, int64_t> hist;
+	for(auto w : ui_widths)
+		hist[w] ++;
+	int max_bin = 0;
+	int64_t max_count = 0;
+	for(auto it : hist)
 	{
-		delete cap;
-		return;
+		if(it.second > max_count)
+		{
+			max_count = it.second;
+			max_bin = it.first;
+		}
 	}
 
-	int64_t eye_width = 0;
-	for(unsigned int i=num_skip; i<num_avg + num_skip; i++)
-		eye_width += ui_widths[i];
-	eye_width /= num_avg;
-	eye_width = 32;				//FIXME
-	m_uiWidth = eye_width;
+	int64_t eye_width = max_bin + 1;	//This heuristic seems to err on the low side so round up
 	LogDebug("Calculated UI width: %ld samples / %.3f ns\n",
 		eye_width, eye_width * cap->m_timescale / 1e3);
+	m_uiWidth = eye_width;
 
 	//Merge data from adjacent UIs
 	map<int64_t, map<float, int64_t> > pixmap_merged;
