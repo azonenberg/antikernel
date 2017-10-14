@@ -181,6 +181,9 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int widt
 				float to = t - r.tstart;	//offset since start of this range
 				float x = (to*tscale) + r.xstart;
 
+				if(x < visleft)
+					continue;
+
 				if(x > visright)
 					break;
 				if(x > xend_adj)

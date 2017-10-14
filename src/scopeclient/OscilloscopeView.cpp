@@ -188,12 +188,13 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 			//Draw channels in numerical order.
 			//This allows painters-algorithm handling of protocol decoders that wish to be drawn
 			//on top of the original channel.
-			m_timescaleRender->Render(cr, width, 0+xoff, width+xoff, ranges);
+			m_timescaleRender->Render(cr, width, 0+xoff, pwidth+xoff, ranges);
 			for(size_t i=0; i<m_scope->GetChannelCount(); i++)
 			{
-				auto r = m_renderers[m_scope->GetChannel(i)];
+				auto chan = m_scope->GetChannel(i);
+				auto r = m_renderers[chan];
 				//TODO: do we always have one for each channel?
-				r->Render(cr, width, 0 + xoff, width + xoff, ranges);
+				r->Render(cr, width, 0 + xoff, pwidth + xoff, ranges);
 			}
 
 			//Figure out time scale for cursor
@@ -347,7 +348,7 @@ bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
 				if( (event->y >= render->m_ypos) && (event->y <= (render->m_ypos + render->m_height)) )
 					m_selectedChannel = chan;
 			}
-			LogDebug("Selected channel %s\n", m_selectedChannel->GetHwname().c_str());
+			//LogDebug("Selected channel %s\n", m_selectedChannel->GetHwname().c_str());
 
 			auto children = m_protocolDecodeMenu.get_children();
 			for(auto item : children)
