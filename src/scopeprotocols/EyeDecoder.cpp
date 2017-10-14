@@ -157,7 +157,7 @@ void EyeDecoder::Refresh()
 		}
 	}
 
-	int64_t eye_width = max_bin + 1;	//This heuristic seems to err on the low side so round up
+	int64_t eye_width = max_bin;
 	LogDebug("Calculated UI width: %ld samples / %.3f ns\n",
 		eye_width, eye_width * cap->m_timescale / 1e3);
 	m_uiWidth = eye_width;

@@ -139,7 +139,6 @@ void EyeRenderer::Render(
 	RenderStartCallback(cr, width, visleft, visright, ranges);
 	cr->save();
 
-
 	EyeCapture* capture = dynamic_cast<EyeCapture*>(m_channel->GetData());
 	if(capture != NULL)
 	{
