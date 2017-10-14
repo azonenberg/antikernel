@@ -341,13 +341,21 @@ void ChannelRenderer::Render(
 				nrange ++;
 			range = &ranges[nrange];
 
-			//Render and update width
+			//Update our window width.
+			//If the sample's X value is outside  the visible region of the frame, don't actually render it.
+			//TODO: more efficient search for start?
 			float xend = range->xstart + tscale * (tend - range->tstart);
+			if(xend > m_width)
+				m_width = xend;
+			if(xend < visleft)
+				continue;
+			if(xstart > visright)
+				break;
+
+			//Render if we get here
 			//if(fabs(xstart > 100000) || fabs(xend > 100000) )
 			//	printf("xstart = %.2f xend = %.2f\n", xstart, xend);
 			RenderSampleCallback(cr, i, xstart, xend, visleft, visright);
-			if(xend > m_width)
-				m_width = xend;
 		}
 	}
 
