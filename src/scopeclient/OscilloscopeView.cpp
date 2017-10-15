@@ -279,6 +279,7 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 		}
 	}
 
+
 	catch(const JtagException& ex)
 	{
 		printf("%s\n", ex.GetDescription().c_str());
@@ -350,22 +351,70 @@ bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
 			}
 			//LogDebug("Selected channel %s\n", m_selectedChannel->GetHwname().c_str());
 
+			//Gray out decoders that don't make sense for the type of channel we've selected
 			auto children = m_protocolDecodeMenu.get_children();
+			if(m_selectedChannel != NULL)
+			{
+				for(auto item : children)
+				{
+					Gtk::MenuItem* menu = dynamic_cast<Gtk::MenuItem*>(item);
+					if(menu == NULL)
+						continue;
+
+					auto decoder = ProtocolDecoder::CreateDecoder(
+						menu->get_label(),
+						"dummy",
+						"");
+					if(decoder->ValidateChannel(0, m_selectedChannel))
+						menu->set_sensitive(true);
+					else
+						menu->set_sensitive(false);
+				}
+			}
+
+			//Gray out other context items that don't make sense
+			children = m_channelContextMenu.get_children();
 			for(auto item : children)
 			{
 				Gtk::MenuItem* menu = dynamic_cast<Gtk::MenuItem*>(item);
 				if(menu == NULL)
 					continue;
 
-				//Gray out decoders that don't make sense for us
-				auto decoder = ProtocolDecoder::CreateDecoder(
-					menu->get_label(),
-					"dummy",
-					"");
-				if(decoder->ValidateChannel(0, m_selectedChannel))
-					menu->set_sensitive(true);
-				else
-					menu->set_sensitive(false);
+				string label = menu->get_label();
+
+				//Only applies to analog channels
+				if(label == "Autofit vertical")
+				{
+					//Cannot autofit without capture data
+					if(m_selectedChannel == NULL)
+					{
+						menu->set_sensitive(false);
+						continue;
+					}
+					auto data = m_selectedChannel->GetData();
+					if(data == NULL)
+					{
+						menu->set_sensitive(false);
+						continue;
+					}
+
+					//We have data
+					//If it's not an analog channel, skip (makes no sense to autofit a digital channel)
+					auto adata = dynamic_cast<AnalogCapture*>(data);
+					if(adata != NULL)
+						menu->set_sensitive(true);
+					else
+						menu->set_sensitive(false);
+				}
+
+				//Can only decode if we have a selected channel
+				else if(label == "Decode")
+				{
+					if(m_selectedChannel)
+						menu->set_sensitive(true);
+					else
+						menu->set_sensitive(false);
+				}
 			}
 
 			//Show the context menu
@@ -510,10 +559,16 @@ void OscilloscopeView::MakeTimeRanges(vector<time_range>& ranges)
 
 bool OscilloscopeView::on_scroll_event (GdkEventScroll* ev)
 {
-	if(ev->delta_y < 0)
-		m_parent->OnZoomIn();
-	else if(ev->delta_y > 0)
-		m_parent->OnZoomOut();
+	if(ev->delta_y != 0)
+	{
+		if(ev->delta_y < 0)
+			m_parent->OnZoomIn();
+		else
+			m_parent->OnZoomOut();
+	}
+
+	else if(ev->delta_x != 0)
+		LogDebug("X scroll %.2f\n", ev->delta_x);
 	return true;
 }
 
