@@ -125,21 +125,8 @@ void AnalogRenderer::RenderStartCallback(
 		selected_step = step;
 	}
 
-	//Grid color
-	cr->set_source_rgba(0.7, 0.7, 0.7, 1.0);
-
-	//Center line
-	cr->move_to(visleft, ymid - volts_to_pixels(0));
-	cr->line_to(visright, ymid - volts_to_pixels(0));
-	cr->stroke();
-
-	//Draw the grid lines
-	vector<double> dashes;
-	dashes.push_back(2);
-	dashes.push_back(2);
-	cr->set_dash(dashes, 0);
-
-	//Draw grid up and down from the center
+	//Calculate grid positions
+	m_gridmap.clear();
 	for(float dv=0; ; dv += selected_step)
 	{
 		//Need to flip signs on offset so it goes in the right direction all the time
@@ -151,19 +138,28 @@ void AnalogRenderer::RenderStartCallback(
 			break;
 
 		if(yb <= ybot)
-		{
-			cr->move_to(visleft, yb);
-			cr->line_to(visright, yb);
-		}
-
+			m_gridmap[-dv] = yb;
 		if(yt >= ytop)
-		{
-			cr->move_to(visleft, yt);
-			cr->line_to(visright, yt);
-		}
+			m_gridmap[dv] = yt;
 	}
+
+	//Center line is solid
+	cr->set_source_rgba(0.7, 0.7, 0.7, 1.0);
+	cr->move_to(visleft, ymid - volts_to_pixels(0));
+	cr->line_to(visright, ymid - volts_to_pixels(0));
 	cr->stroke();
 
+	//Dotted lines above and below
+	vector<double> dashes;
+	dashes.push_back(2);
+	dashes.push_back(2);
+	cr->set_dash(dashes, 0);
+	for(auto it : m_gridmap)
+	{
+		cr->move_to(visleft, it.second);
+		cr->line_to(visright, it.second);
+	}
+	cr->stroke();
 	cr->unset_dash();
 }
 
@@ -211,12 +207,44 @@ void AnalogRenderer::RenderEndCallback(
 	const Cairo::RefPtr<Cairo::Context>& cr,
 	int /*width*/,
 	int /*visleft*/,
-	int /*visright*/,
+	int visright,
 	vector<time_range>& /*ranges*/)
 {
+	float ytop = m_ypos + m_padding;
+	//float ybot = m_ypos + m_height - m_padding;
+	float plotheight = m_height - 2*m_padding;
+	float halfheight = plotheight/2;
+	//float ymid = halfheight + ytop;
+
+	//Draw the actual plot
 	Gdk::Color color(m_channel->m_displaycolor);
 	cr->set_source_rgb(color.get_red_p(), color.get_green_p(), color.get_blue_p());
 	cr->stroke();
+
+	//Draw background for the Y axis labels
+	int lineheight, linewidth;
+	GetStringWidth(cr, "500 mV_x", false, linewidth, lineheight);
+	cr->set_source_rgba(0, 0, 0, 0.5);
+	cr->rectangle(visright - linewidth, ytop, linewidth, plotheight);
+	cr->fill();
+
+	//Draw text for the Y axis labels
+	cr->set_source_rgba(1.0, 1.0, 1.0, 1.0);
+	for(auto it : m_gridmap)
+	{
+		float v = it.first;
+		char tmp[32];
+		if(v < 1)
+			snprintf(tmp, sizeof(tmp), "%.0f mV", v*1000);
+		else
+			snprintf(tmp, sizeof(tmp), "%.2f V", v);
+
+		float y = it.second - lineheight;
+		if(y < ytop)
+			continue;
+		DrawString(visright - linewidth, y, cr, tmp, false);
+	}
+	cr->begin_new_path();
 
 	cr->restore();
 }

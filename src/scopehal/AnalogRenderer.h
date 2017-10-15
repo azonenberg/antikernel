@@ -72,6 +72,7 @@ public:
 	float m_yoffset;
 
 protected:
+	std::map<float, float> m_gridmap;
 	float pixels_to_volts(float p, bool offset = true);
 	float volts_to_pixels(float v, bool offset = true);
 };
