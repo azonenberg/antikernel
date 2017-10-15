@@ -39,7 +39,7 @@ using namespace std;
 
 EyeDecoder::EyeDecoder(
 	std::string hwname, std::string color)
-	: ProtocolDecoder(hwname, OscilloscopeChannel::CHANNEL_TYPE_DIGITAL, color)
+	: ProtocolDecoder(hwname, OscilloscopeChannel::CHANNEL_TYPE_COMPLEX, color)
 {
 	//Set up channels
 	m_signalNames.push_back("din");
