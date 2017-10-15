@@ -75,6 +75,17 @@ protected:
 	std::map<float, float> m_gridmap;
 	float pixels_to_volts(float p, bool offset = true);
 	float volts_to_pixels(float v, bool offset = true);
+
+public:
+	static void DrawVerticalAxisLabels(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		int width,
+		int visleft,
+		int visright,
+		std::vector<time_range>& ranges,
+		float ytop,
+		float plotheight,
+		std::map<float, float>& gridmap);
 };
 
 #endif

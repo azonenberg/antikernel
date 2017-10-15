@@ -205,22 +205,35 @@ void AnalogRenderer::RenderSampleCallback(
 
 void AnalogRenderer::RenderEndCallback(
 	const Cairo::RefPtr<Cairo::Context>& cr,
-	int /*width*/,
-	int /*visleft*/,
+	int width,
+	int visleft,
 	int visright,
-	vector<time_range>& /*ranges*/)
+	vector<time_range>& ranges)
 {
 	float ytop = m_ypos + m_padding;
-	//float ybot = m_ypos + m_height - m_padding;
 	float plotheight = m_height - 2*m_padding;
-	float halfheight = plotheight/2;
-	//float ymid = halfheight + ytop;
 
 	//Draw the actual plot
 	Gdk::Color color(m_channel->m_displaycolor);
 	cr->set_source_rgb(color.get_red_p(), color.get_green_p(), color.get_blue_p());
 	cr->stroke();
 
+	//and then the text for the Y axis scale
+	DrawVerticalAxisLabels(cr, width, visleft, visright, ranges, ytop, plotheight, m_gridmap);
+
+	cr->restore();
+}
+
+void AnalogRenderer::DrawVerticalAxisLabels(
+	const Cairo::RefPtr<Cairo::Context>& cr,
+	int /*width*/,
+	int /*visleft*/,
+	int visright,
+	vector<time_range>& /*ranges*/,
+	float ytop,
+	float plotheight,
+	map<float, float>& gridmap)
+{
 	//Draw background for the Y axis labels
 	int lineheight, linewidth;
 	GetStringWidth(cr, "500 mV_x", false, linewidth, lineheight);
@@ -230,7 +243,7 @@ void AnalogRenderer::RenderEndCallback(
 
 	//Draw text for the Y axis labels
 	cr->set_source_rgba(1.0, 1.0, 1.0, 1.0);
-	for(auto it : m_gridmap)
+	for(auto it : gridmap)
 	{
 		float v = it.first;
 		char tmp[32];
@@ -245,6 +258,4 @@ void AnalogRenderer::RenderEndCallback(
 		DrawString(visright - linewidth, y, cr, tmp, false);
 	}
 	cr->begin_new_path();
-
-	cr->restore();
 }
