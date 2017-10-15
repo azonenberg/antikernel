@@ -66,6 +66,8 @@ protected:
 	virtual bool on_button_press_event(GdkEventButton* event);
 	virtual bool on_scroll_event (GdkEventScroll* ev);
 
+	void OnZoomInVertical();
+	void OnZoomOutVertical();
 	void OnAutoFitVertical();
 	void OnProtocolDecode(std::string protocol);
 

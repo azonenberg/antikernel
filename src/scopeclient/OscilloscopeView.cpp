@@ -291,6 +291,19 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 
 bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
 {
+	//Any mouse button will change the selected channel
+	//Figure out which channel the cursor position is in
+	//Painter's algorithm: the most recently drawn (top) channel is higher priority in the selection
+	for(size_t i=0; i<m_scope->GetChannelCount(); i++)
+	{
+		auto chan = m_scope->GetChannel(i);
+		auto render = m_renderers[chan];
+
+		if( (event->y >= render->m_ypos) && (event->y <= (render->m_ypos + render->m_height)) )
+			m_selectedChannel = chan;
+	}
+	//LogDebug("Selected channel %s\n", m_selectedChannel->GetHwname().c_str());
+
 	switch(event->button)
 	{
 		//Left
@@ -339,19 +352,9 @@ bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
 		//Right
 		case 3:
 		{
-			//Figure out which channel the cursor position is in
-			//Painter's algorithm: the most recently drawn (top) channel is higher priority in the selection
-			for(size_t i=0; i<m_scope->GetChannelCount(); i++)
-			{
-				auto chan = m_scope->GetChannel(i);
-				auto render = m_renderers[chan];
-
-				if( (event->y >= render->m_ypos) && (event->y <= (render->m_ypos + render->m_height)) )
-					m_selectedChannel = chan;
-			}
-			//LogDebug("Selected channel %s\n", m_selectedChannel->GetHwname().c_str());
-
 			//Gray out decoders that don't make sense for the type of channel we've selected
+			bool foundDecoder = false;
+
 			auto children = m_protocolDecodeMenu.get_children();
 			if(m_selectedChannel != NULL)
 			{
@@ -366,7 +369,10 @@ bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
 						"dummy",
 						"");
 					if(decoder->ValidateChannel(0, m_selectedChannel))
+					{
+						foundDecoder = true;
 						menu->set_sensitive(true);
+					}
 					else
 						menu->set_sensitive(false);
 				}
@@ -407,10 +413,11 @@ bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
 						menu->set_sensitive(false);
 				}
 
-				//Can only decode if we have a selected channel
+				//Can only decode if we have a selected channel,
+				//and at least one protocol decoder is willing to touch it.
 				else if(label == "Decode")
 				{
-					if(m_selectedChannel)
+					if(m_selectedChannel && foundDecoder)
 						menu->set_sensitive(true);
 					else
 						menu->set_sensitive(false);
@@ -421,6 +428,22 @@ bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
 			m_channelContextMenu.popup(event->button, event->time);
 		}
 		break;
+
+		//Front and back thumb buttons: vertical zoom
+		case 9:
+			if(m_selectedChannel)
+				OnZoomInVertical();
+			break;
+		case 8:
+			if(m_selectedChannel)
+				OnZoomOutVertical();
+			break;
+
+		//Middle thumb button: autofit
+		case 10:
+			OnAutoFitVertical();
+			break;
+
 
 		default:
 			LogDebug("button %d\n", event->button);
@@ -570,6 +593,54 @@ bool OscilloscopeView::on_scroll_event (GdkEventScroll* ev)
 	else if(ev->delta_x != 0)
 		LogDebug("X scroll %.2f\n", ev->delta_x);
 	return true;
+}
+
+void OscilloscopeView::OnZoomInVertical()
+{
+	//Cannot autofit without capture data
+	if(m_selectedChannel == NULL)
+		return;
+	auto data = m_selectedChannel->GetData();
+	if(data == NULL)
+		return;
+
+	//We have data
+	//If it's not an analog channel, skip (makes no sense to autofit a digital channel)
+	auto adata = dynamic_cast<AnalogCapture*>(data);
+	if(adata == NULL)
+		return;
+
+	//Update the render scale
+	auto render = dynamic_cast<AnalogRenderer*>(m_renderers[m_selectedChannel]);
+	if(!render)
+		return;
+
+	render->m_yscale *= 1.1f;
+	queue_draw();
+}
+
+void OscilloscopeView::OnZoomOutVertical()
+{
+	//Cannot autofit without capture data
+	if(m_selectedChannel == NULL)
+		return;
+	auto data = m_selectedChannel->GetData();
+	if(data == NULL)
+		return;
+
+	//We have data
+	//If it's not an analog channel, skip (makes no sense to autofit a digital channel)
+	auto adata = dynamic_cast<AnalogCapture*>(data);
+	if(adata == NULL)
+		return;
+
+	//Update the render scale
+	auto render = dynamic_cast<AnalogRenderer*>(m_renderers[m_selectedChannel]);
+	if(!render)
+		return;
+
+	render->m_yscale /= 1.1f;
+	queue_draw();
 }
 
 void OscilloscopeView::OnAutoFitVertical()
