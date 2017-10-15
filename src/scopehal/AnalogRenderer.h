@@ -70,6 +70,10 @@ public:
 
 	float m_yscale;
 	float m_yoffset;
+
+protected:
+	float pixels_to_volts(float p, bool offset = true);
+	float volts_to_pixels(float v, bool offset = true);
 };
 
 #endif

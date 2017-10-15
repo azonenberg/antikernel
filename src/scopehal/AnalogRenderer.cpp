@@ -52,6 +52,25 @@ AnalogRenderer::AnalogRenderer(OscilloscopeChannel* channel)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Rendering
 
+float AnalogRenderer::pixels_to_volts(float p, bool offset)
+{
+	float plotheight = m_height - 2*m_padding;
+	p = ( p / (plotheight * m_yscale) );
+
+	if(offset)
+		return p - m_yoffset;
+	else
+		return p;
+}
+
+float AnalogRenderer::volts_to_pixels(float v, bool offset)
+{
+	float plotheight = m_height - 2*m_padding;
+	if(offset)
+		v += m_yoffset;
+	return v * plotheight * m_yscale;
+}
+
 void AnalogRenderer::RenderStartCallback(
 	const Cairo::RefPtr<Cairo::Context>& cr,
 	int width,
@@ -63,20 +82,12 @@ void AnalogRenderer::RenderStartCallback(
 
 	float ytop = m_ypos + m_padding;
 	float ybot = m_ypos + m_height - m_padding;
-	float plotheight = ybot-ytop;
-	float halfheight = m_height/2 - m_padding;
+	float plotheight = m_height - 2*m_padding;
+	float halfheight = plotheight/2;
 	float ymid = halfheight + ytop;
 
-	//Draw grid
-	cr->set_source_rgba(0.7, 0.7, 0.7, 1.0);
-
-	//Center line
-	cr->move_to(visleft, ymid);
-	cr->line_to(visright, ymid);
-	cr->stroke();
-
 	//Volts from the center line of our graph to the top. May not be the max value in the signal.
-	float volts_per_half_span = m_yscale / 2;
+	float volts_per_half_span = pixels_to_volts(halfheight, false);
 
 	//Decide what voltage step to use. Pick from a list (in volts)
 	const float step_sizes[12]=
@@ -114,19 +125,42 @@ void AnalogRenderer::RenderStartCallback(
 		selected_step = step;
 	}
 
+	//Grid color
+	cr->set_source_rgba(0.7, 0.7, 0.7, 1.0);
+
+	//Center line
+	cr->move_to(visleft, ymid - volts_to_pixels(0));
+	cr->line_to(visright, ymid - volts_to_pixels(0));
+	cr->stroke();
+
 	//Draw the grid lines
 	vector<double> dashes;
 	dashes.push_back(2);
 	dashes.push_back(2);
 	cr->set_dash(dashes, 0);
 
-	for(float dy=0; dy<halfheight; dy += selected_step*plotheight)
+	//Draw grid up and down from the center
+	for(float dv=0; ; dv += selected_step)
 	{
-		cr->move_to(visleft, ymid + dy);
-		cr->line_to(visright, ymid + dy);
+		//Need to flip signs on offset so it goes in the right direction all the time
+		float yt = ymid - volts_to_pixels(dv + m_yoffset, false);
+		float yb = ymid + volts_to_pixels(dv - m_yoffset, false);
 
-		cr->move_to(visleft, ymid - dy);
-		cr->line_to(visright, ymid - dy);
+		//Stop if we're off the edge
+		if( (yb > ybot) && (yt < ytop) )
+			break;
+
+		if(yb <= ybot)
+		{
+			cr->move_to(visleft, yb);
+			cr->line_to(visright, yb);
+		}
+
+		if(yt >= ytop)
+		{
+			cr->move_to(visleft, yt);
+			cr->line_to(visright, yt);
+		}
 	}
 	cr->stroke();
 
@@ -144,8 +178,9 @@ void AnalogRenderer::RenderSampleCallback(
 {
 	float ytop = m_ypos + m_padding;
 	float ybot = m_ypos + m_height - m_padding;
-	float yd = ybot-ytop;
-	float ymid = m_height/2 - m_padding + ytop;
+	float plotheight = m_height - 2*m_padding;
+	float halfheight = plotheight/2;
+	float ymid = halfheight + ytop;
 
 	AnalogCapture* capture = dynamic_cast<AnalogCapture*>(m_channel->GetData());
 	if(capture == NULL)
@@ -155,7 +190,7 @@ void AnalogRenderer::RenderSampleCallback(
 
 	//Calculate position. If the sample would go off the edge of our render, crop it
 	//0 volts is by default the center of our display area
-	float y = ymid - ( (sample.m_sample + m_yoffset) * yd * m_yscale);
+	float y = ymid - volts_to_pixels(sample.m_sample);
 	if(y < ytop)
 		y = ytop;
 	if(y > ybot)
