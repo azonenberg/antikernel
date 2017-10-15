@@ -582,6 +582,7 @@ void OscilloscopeView::MakeTimeRanges(vector<time_range>& ranges)
 
 bool OscilloscopeView::on_scroll_event (GdkEventScroll* ev)
 {
+	//Y scroll: time/div
 	if(ev->delta_y != 0)
 	{
 		if(ev->delta_y < 0)
@@ -590,27 +591,65 @@ bool OscilloscopeView::on_scroll_event (GdkEventScroll* ev)
 			m_parent->OnZoomOut();
 	}
 
+	//X scroll: vertical offset
 	else if(ev->delta_x != 0)
-		LogDebug("X scroll %.2f\n", ev->delta_x);
+	{
+		if(ev->delta_x < 0)
+			OnOffsetDown();
+		else
+			OnOffsetUp();
+	}
 	return true;
+}
+
+bool OscilloscopeView::IsAnalogChannelSelected()
+{
+	//No point if we don't have data
+	if(m_selectedChannel == NULL)
+		return false;
+	auto data = m_selectedChannel->GetData();
+	if(data == NULL)
+		return false;
+
+	//We have data - make sure it's analog
+	auto adata = dynamic_cast<AnalogCapture*>(data);
+	if(adata == NULL)
+		return false;
+
+	return true;
+}
+
+void OscilloscopeView::OnOffsetUp()
+{
+	//Update the render offset
+	if(!IsAnalogChannelSelected())
+		return;
+	auto render = dynamic_cast<AnalogRenderer*>(m_renderers[m_selectedChannel]);
+	if(!render)
+		return;
+
+	render->m_yoffset += render->m_yscale * 0.1;
+	queue_draw();
+}
+
+void OscilloscopeView::OnOffsetDown()
+{
+	//Update the render offset
+	if(!IsAnalogChannelSelected())
+		return;
+	auto render = dynamic_cast<AnalogRenderer*>(m_renderers[m_selectedChannel]);
+	if(!render)
+		return;
+
+	render->m_yoffset -= render->m_yscale * 0.1;
+	queue_draw();
 }
 
 void OscilloscopeView::OnZoomInVertical()
 {
-	//Cannot autofit without capture data
-	if(m_selectedChannel == NULL)
-		return;
-	auto data = m_selectedChannel->GetData();
-	if(data == NULL)
-		return;
-
-	//We have data
-	//If it's not an analog channel, skip (makes no sense to autofit a digital channel)
-	auto adata = dynamic_cast<AnalogCapture*>(data);
-	if(adata == NULL)
-		return;
-
 	//Update the render scale
+	if(!IsAnalogChannelSelected())
+		return;
 	auto render = dynamic_cast<AnalogRenderer*>(m_renderers[m_selectedChannel]);
 	if(!render)
 		return;
@@ -621,20 +660,9 @@ void OscilloscopeView::OnZoomInVertical()
 
 void OscilloscopeView::OnZoomOutVertical()
 {
-	//Cannot autofit without capture data
-	if(m_selectedChannel == NULL)
-		return;
-	auto data = m_selectedChannel->GetData();
-	if(data == NULL)
-		return;
-
-	//We have data
-	//If it's not an analog channel, skip (makes no sense to autofit a digital channel)
-	auto adata = dynamic_cast<AnalogCapture*>(data);
-	if(adata == NULL)
-		return;
-
 	//Update the render scale
+	if(!IsAnalogChannelSelected())
+		return;
 	auto render = dynamic_cast<AnalogRenderer*>(m_renderers[m_selectedChannel]);
 	if(!render)
 		return;
@@ -645,20 +673,17 @@ void OscilloscopeView::OnZoomOutVertical()
 
 void OscilloscopeView::OnAutoFitVertical()
 {
-	//Cannot autofit without capture data
-	if(m_selectedChannel == NULL)
-		return;
-	auto data = m_selectedChannel->GetData();
-	if(data == NULL)
+	//Sanity check that it's actually analog
+	if(!IsAnalogChannelSelected())
 		return;
 
-	//We have data
-	//If it's not an analog channel, skip (makes no sense to autofit a digital channel)
-	auto adata = dynamic_cast<AnalogCapture*>(data);
-	if(adata == NULL)
+	//Should be an analog renderer, we're very confused otherwise
+	auto render = dynamic_cast<AnalogRenderer*>(m_renderers[m_selectedChannel]);
+	if(!render)
 		return;
 
 	//Find the min/max values of the samples
+	auto adata = dynamic_cast<AnalogCapture*>(m_selectedChannel->GetData());
 	float min = 999;
 	float max = -999;
 	for(auto sample : *adata)
@@ -672,10 +697,6 @@ void OscilloscopeView::OnAutoFitVertical()
 
 	//Calculate the display scale to make it fit the available space in the renderer
 	//Renderer uses normalized units of +/- 0.5, we just need a scaling factor
-	//Should be an analog renderer, we're very confused otherwise
-	auto render = dynamic_cast<AnalogRenderer*>(m_renderers[m_selectedChannel]);
-	if(!render)
-		return;
 	render->m_yscale = 1.0f / range;
 
 	//Calculate the offset to center our waveform in the display area
