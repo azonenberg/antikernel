@@ -37,6 +37,8 @@
 #include "ChannelRenderer.h"
 #include "AnalogRenderer.h"
 
+using namespace std;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 AnalogRenderer::AnalogRenderer(OscilloscopeChannel* channel)
@@ -50,6 +52,87 @@ AnalogRenderer::AnalogRenderer(OscilloscopeChannel* channel)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Rendering
 
+void AnalogRenderer::RenderStartCallback(
+	const Cairo::RefPtr<Cairo::Context>& cr,
+	int width,
+	int visleft,
+	int visright,
+	vector<time_range>& ranges)
+{
+	ChannelRenderer::RenderStartCallback(cr, width, visleft, visright, ranges);
+
+	float ytop = m_ypos + m_padding;
+	float ybot = m_ypos + m_height - m_padding;
+	float plotheight = ybot-ytop;
+	float halfheight = m_height/2 - m_padding;
+	float ymid = halfheight + ytop;
+
+	//Draw grid
+	cr->set_source_rgba(0.7, 0.7, 0.7, 1.0);
+
+	//Center line
+	cr->move_to(visleft, ymid);
+	cr->line_to(visright, ymid);
+	cr->stroke();
+
+	//Volts from the center line of our graph to the top. May not be the max value in the signal.
+	float volts_per_half_span = m_yscale / 2;
+
+	//Decide what voltage step to use. Pick from a list (in volts)
+	const float step_sizes[12]=
+	{
+		//mV per div
+		0.001,
+		0.0025,
+		0.005,
+
+		0.01,
+		0.025,
+		0.05,
+
+		0.1,
+		0.25,
+		0.5,
+
+		1,
+		2.5,
+		5
+	};
+
+	const int min_steps = 2;
+	const int max_steps = 4;
+
+	float selected_step = 1;
+	for(int i=0; i<12; i++)
+	{
+		float step = step_sizes[i];
+		float steps_per_half_span = volts_per_half_span / step;
+		if(steps_per_half_span > max_steps)
+			continue;
+		if(steps_per_half_span < min_steps)
+			continue;
+		selected_step = step;
+	}
+
+	//Draw the grid lines
+	vector<double> dashes;
+	dashes.push_back(2);
+	dashes.push_back(2);
+	cr->set_dash(dashes, 0);
+
+	for(float dy=0; dy<halfheight; dy += selected_step*plotheight)
+	{
+		cr->move_to(visleft, ymid + dy);
+		cr->line_to(visright, ymid + dy);
+
+		cr->move_to(visleft, ymid - dy);
+		cr->line_to(visright, ymid - dy);
+	}
+	cr->stroke();
+
+	cr->unset_dash();
+}
+
 void AnalogRenderer::RenderSampleCallback(
 	const Cairo::RefPtr<Cairo::Context>& cr,
 	size_t i,
@@ -60,9 +143,9 @@ void AnalogRenderer::RenderSampleCallback(
 	)
 {
 	float ytop = m_ypos + m_padding;
-	float ybot = m_ypos + m_height - 2*m_padding;
+	float ybot = m_ypos + m_height - m_padding;
 	float yd = ybot-ytop;
-	float ymid = yd/2 + ytop;
+	float ymid = m_height/2 - m_padding + ytop;
 
 	AnalogCapture* capture = dynamic_cast<AnalogCapture*>(m_channel->GetData());
 	if(capture == NULL)
@@ -94,7 +177,7 @@ void AnalogRenderer::RenderEndCallback(
 	int /*width*/,
 	int /*visleft*/,
 	int /*visright*/,
-	std::vector<time_range>& /*ranges*/)
+	vector<time_range>& /*ranges*/)
 {
 	Gdk::Color color(m_channel->m_displaycolor);
 	cr->set_source_rgb(color.get_red_p(), color.get_green_p(), color.get_blue_p());

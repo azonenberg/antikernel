@@ -46,6 +46,13 @@ class AnalogRenderer : public ChannelRenderer
 public:
 	AnalogRenderer(OscilloscopeChannel* channel);
 
+	virtual void RenderStartCallback(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		int width,
+		int visleft,
+		int visright,
+		std::vector<time_range>& ranges);
+
 	virtual void RenderSampleCallback(
 		const Cairo::RefPtr<Cairo::Context>& cr,
 		size_t i,
