@@ -108,7 +108,7 @@ void EyeDecoder::Refresh()
 	//Initialize the capture
 	EyeCapture* cap = new EyeCapture;
 	m_timescale = m_channels[0]->m_timescale;
-	cap->m_timescale = din->m_timescale * 100;	//TODO: magnification factor
+	cap->m_timescale = din->m_timescale;
 
 	//Keep count of how many times we've seen each pixel at a given offset
 	//TODO: make trigger level configurable

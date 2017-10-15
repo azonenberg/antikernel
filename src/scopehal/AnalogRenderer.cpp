@@ -127,6 +127,7 @@ void AnalogRenderer::RenderStartCallback(
 
 	//Calculate grid positions
 	m_gridmap.clear();
+	m_gridmap[0] = 0;
 	for(float dv=0; ; dv += selected_step)
 	{
 		//Need to flip signs on offset so it goes in the right direction all the time
@@ -156,6 +157,8 @@ void AnalogRenderer::RenderStartCallback(
 	cr->set_dash(dashes, 0);
 	for(auto it : m_gridmap)
 	{
+		if(it.second == ymid)	//no dots on center line
+			continue;
 		cr->move_to(visleft, it.second);
 		cr->line_to(visright, it.second);
 	}
@@ -252,7 +255,7 @@ void AnalogRenderer::DrawVerticalAxisLabels(
 		else
 			snprintf(tmp, sizeof(tmp), "%.2f V", v);
 
-		float y = it.second - lineheight;
+		float y = it.second - lineheight/2;
 		if(y < ytop)
 			continue;
 		DrawString(visright - linewidth, y, cr, tmp, false);

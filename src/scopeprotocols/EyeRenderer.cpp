@@ -126,6 +126,7 @@ EyeRenderer::EyeRenderer(OscilloscopeChannel* channel)
 : ChannelRenderer(channel)
 {
 	m_height = 256;
+	m_padding = 25;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -143,6 +144,12 @@ void EyeRenderer::Render(
 	float plotheight = m_height - 2*m_padding;
 	float halfheight = plotheight/2;
 	float ymid = halfheight + ytop;
+	float xmid = (visright - visleft)/2 + visleft;
+
+	float x_padding = 125;
+	float plot_width = (visright - visleft) - 2*x_padding;
+	float plotleft = xmid - plot_width/2;
+	float plotright = xmid + plot_width/2;
 
 	RenderStartCallback(cr, width, visleft, visright, ranges);
 	cr->save();
@@ -151,7 +158,9 @@ void EyeRenderer::Render(
 	if(capture != NULL)
 	{
 		//Save time scales
-		float tscale = m_channel->m_timescale * capture->m_timescale;
+		int64_t ui_width = dynamic_cast<EyeDecoder*>(m_channel)->GetUIWidth();
+		int row_width = ui_width*3;
+		float pixels_per_ui = plot_width / 3;
 
 		float yscale = 0.4 * plotheight;
 		float yoffset = halfheight;
@@ -161,37 +170,82 @@ void EyeRenderer::Render(
 
 		//Center line is solid
 		cr->set_source_rgba(0.7, 0.7, 0.7, 1.0);
-		cr->move_to(visleft, ymid);
-		cr->line_to(visright, ymid);
+		cr->move_to(plotleft, ymid);
+		cr->line_to(plotright, ymid);
+		cr->move_to(xmid, ybot);
+		cr->line_to(xmid, ytop);
 		cr->stroke();
 
-		//Dotted lines above and below
+		//Dotted lines above and below center
 		vector<double> dashes;
 		dashes.push_back(2);
 		dashes.push_back(2);
 		cr->set_dash(dashes, 0);
-		map<float, float> gridmap;
-		gridmap[0] = ymid;
-		for(float dv=y_grid; ; dv += y_grid)
-		{
-			float dy = dv * yscale;
-			if(dy >= halfheight)
-				break;
 
-			gridmap[dv] = ymid - dy;
-			gridmap[-dv] = ymid + dy;
+			map<float, float> gridmap;
+			gridmap[0] = ymid;
+			for(float dv=y_grid; ; dv += y_grid)
+			{
+				float dy = dv * yscale;
+				if(dy > halfheight)
+					break;
 
-			cr->move_to(visleft, ymid + dy);
-			cr->line_to(visright, ymid + dy);
+				gridmap[dv] = ymid - dy;
+				gridmap[-dv] = ymid + dy;
 
-			cr->move_to(visleft, ymid - dy);
-			cr->line_to(visright, ymid - dy);
-		}
-		cr->stroke();
+				cr->move_to(plotleft, ymid + dy);
+				cr->line_to(plotright + 15, ymid + dy);
+
+				cr->move_to(plotleft, ymid - dy);
+				cr->line_to(plotright + 15, ymid - dy);
+			}
+
+			//and left/right of center
+			float x_gridpitch = 0.125;	//in UIs
+			for(float dt = 0; dt < 1.55; dt += x_gridpitch)
+			{
+				float dx = dt * pixels_per_ui;
+
+				cr->move_to(xmid - dx, ybot);
+				cr->line_to(xmid - dx, ytop);
+
+				cr->move_to(xmid + dx, ybot);
+				cr->line_to(xmid + dx, ytop);
+			}
+
+			cr->stroke();
+
 		cr->unset_dash();
 
+		//Draw text for the X axis labels
+		char tmp[32];
+		for(float dt = 0; dt < 1.55; dt += x_gridpitch * 2)
+		{
+			float dx = dt * pixels_per_ui;
+
+			cr->move_to(xmid - dx, ybot);
+			cr->line_to(xmid - dx, ybot + 20);
+
+			cr->move_to(xmid + dx, ybot);
+			cr->line_to(xmid + dx, ybot + 20);
+
+			cr->set_source_rgba(0.7, 0.7, 0.7, 1.0);
+			cr->set_dash(dashes, 0);
+			cr->stroke();
+			cr->unset_dash();
+
+			cr->set_source_rgba(1.0, 1.0, 1.0, 1.0);
+			snprintf(tmp, sizeof(tmp), "%.2f UI", dt);
+			DrawString(xmid + dx + 5, ybot + 5, cr, tmp, false);
+
+			if(dt != 0)
+			{
+				snprintf(tmp, sizeof(tmp), "%.2f UI", -dt);
+				DrawString(xmid - dx + 5, ybot + 5, cr, tmp, false);
+			}
+		}
+
 		//Create pixel value histogram
-		int64_t ui_width = dynamic_cast<EyeDecoder*>(m_channel)->GetUIWidth();
 		int pixel_count = ui_width * m_height;
 		int64_t* histogram = new int64_t[pixel_count];
 		for(int i=0; i<pixel_count; i++)
@@ -223,7 +277,6 @@ void EyeRenderer::Render(
 		float cmax = maxcount * saturation;
 
 		//Convert to RGB values
-		int row_width = ui_width*3;
 		RGBQUAD* pixels = new RGBQUAD[pixel_count * 4];
 		for(int y=0; y<plotheight; y++)
 		{
@@ -273,15 +326,15 @@ void EyeRenderer::Render(
 		//Render the bitmap over our background and grid
 		cr->save();
 			cr->begin_new_path();
-			cr->translate(250 + visleft, ytop);
-			cr->scale(tscale, 1);
+			cr->translate(x_padding + visleft, ytop);
+			cr->scale(plot_width / row_width, 1);
 			cr->set_source(surface, 0.0, 0.0);
 			cr->rectangle(0, 0, row_width, plotheight);
 			cr->clip();
 			cr->paint();
 		cr->restore();
 
-		//Draw background for the Y axis labels
+		//Draw text for the Y axis labels
 		AnalogRenderer::DrawVerticalAxisLabels(cr, width, visleft, visright, ranges, ytop, plotheight, gridmap);
 
 		delete[] pixels;
