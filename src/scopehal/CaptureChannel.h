@@ -67,6 +67,8 @@ public:
 	virtual int64_t GetSampleLen(size_t i) const =0;
 
 	virtual bool EqualityTest(size_t i, size_t j) const =0;
+
+	virtual bool SamplesAdjacent(size_t i, size_t j) const =0;
 };
 
 /**
@@ -107,6 +109,14 @@ public:
 	virtual bool EqualityTest(size_t i, size_t j) const
 	{
 		return (m_samples[i].m_sample == m_samples[j].m_sample);
+	}
+
+	virtual bool SamplesAdjacent(size_t i, size_t j) const
+	{
+		auto sa = m_samples[i];
+		auto sb = m_samples[j];
+
+		return (sa.m_offset + sa.m_duration) == sb.m_offset;
 	}
 
 	virtual int64_t GetEndTime() const

@@ -317,7 +317,9 @@ void ChannelRenderer::Render(
 			}
 
 			//If this sample has the same value as the next one, treat it as an extension of the next
-			if( (i+1) < capture->GetDepth() && (capture->EqualityTest(i, i+1)) )
+			//... but only if they directly abut
+			if( (i+1) < capture->GetDepth() && (capture->EqualityTest(i, i+1)) &&
+				capture->SamplesAdjacent(i, i+1) )
 			{
 				extend = true;
 				continue;
