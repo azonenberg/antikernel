@@ -55,9 +55,9 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int widt
 	cr->save();
 
 	//Cache some coordinates
-	float ytop = m_ypos + m_padding;
-	float ybot = m_ypos + m_height - m_padding;
-	float ymid = m_ypos + (m_height / 2);
+	double ytop = m_ypos + m_padding;
+	double ybot = m_ypos + m_height - m_padding;
+	double ymid = m_ypos + (m_height / 2);
 
 	m_width = 0;
 
@@ -74,15 +74,15 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int widt
 		cr->stroke();
 
 		//Save time scales
-		float tscale = m_channel->m_timescale * capture->m_timescale;
+		double tscale = m_channel->m_timescale * capture->m_timescale;
 
 		//Figure out about how much time per graduation to use
 		const int min_label_grad_width = 100;		//Minimum distance between text labels, in pixels
 		int64_t ps_per_grad = min_label_grad_width / m_channel->m_timescale;
 
 		//Round up to the nearest multiple of 5
-		float grad_log_ps = log(ps_per_grad) / log(10);
-		float grad_log_ps_rounded = ceil(grad_log_ps);
+		double grad_log_ps = log(ps_per_grad) / log(10);
+		double grad_log_ps_rounded = ceil(grad_log_ps);
 		int64_t grad_ps_rounded = pow(10, grad_log_ps_rounded);
 		if( (grad_ps_rounded/2) > ps_per_grad )
 			grad_ps_rounded /= 2;
@@ -121,7 +121,7 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int widt
 		{
 			time_range r = ranges[ranges.size() - 1];
 
-			float dx = (visright - r.xstart) / tscale;
+			double dx = (visright - r.xstart) / tscale;
 			tend = (dx + r.tstart) * capture->m_timescale;
 		}
 
@@ -135,19 +135,19 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int widt
 				continue;
 
 			//Round start time up to nearest multiple of samples_per_div
-			float samples_per_div = static_cast<float>(grad_ps_rounded) / capture->m_timescale;
+			double samples_per_div = static_cast<double>(grad_ps_rounded) / capture->m_timescale;
 			int64_t tstart_rounded =
-				ceil(static_cast<float>(r.tstart) / samples_per_div) * samples_per_div;
+				ceil(static_cast<double>(r.tstart) / samples_per_div) * samples_per_div;
 
-			float tend_adj = r.tend;
+			double tend_adj = r.tend;
 			if(i == (ranges.size() - 1) )
 				tend_adj = tend / capture->m_timescale;	//go to end of screen on last one
-			float xend_adj = (static_cast<float>(tend_adj - r.tstart) * tscale) + r.xstart;
+			double xend_adj = (static_cast<double>(tend_adj - r.tstart) * tscale) + r.xstart;
 
 			//Clamp end to start of next range
 			if( (i+1) < ranges.size() )
 			{
-				float nstart = ranges[i+1].xstart;
+				double nstart = ranges[i+1].xstart;
 				if(xend_adj > nstart)
 					xend_adj = nstart;
 			}
@@ -160,12 +160,12 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int widt
 				nsubticks = 5;
 			if( (grad_ps_rounded / 10) >= capture->m_timescale)
 				nsubticks = 10;
-			float subtick = samples_per_div / nsubticks;
+			double subtick = samples_per_div / nsubticks;
 			for(int tick=1; tick < nsubticks; tick++)
 			{
-				float to = tstart_rounded - r.tstart;
-				float x = (to*tscale) + r.xstart;
-				float subx = x - (tick * subtick * tscale);
+				double to = tstart_rounded - r.tstart;
+				double x = (to*tscale) + r.xstart;
+				double subx = x - (tick * subtick * tscale);
 				if(subx < r.xstart)
 					continue;
 				if(subx > xend_adj)
@@ -176,10 +176,10 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int widt
 			}
 
 			//Print tick marks and labels
-			for(float t = tstart_rounded; t < tend_adj; t += samples_per_div)
+			for(double t = tstart_rounded; t < tend_adj; t += samples_per_div)
 			{
-				float to = t - r.tstart;	//offset since start of this range
-				float x = (to*tscale) + r.xstart;
+				double to = t - r.tstart;	//offset since start of this range
+				double x = (to*tscale) + r.xstart;
 
 				if(x < visleft)
 					continue;
@@ -189,7 +189,7 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int widt
 				if(x > xend_adj)
 					continue;
 
-				float tscaled = t * capture->m_timescale;
+				double tscaled = t * capture->m_timescale;
 
 				//Tick mark
 				cr->move_to(x, ytop);
@@ -197,14 +197,14 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int widt
 				cr->stroke();
 
 				//Format the string
-				float scaled_time = static_cast<float>(tscaled) / unit_divisor;
+				double scaled_time = static_cast<double>(tscaled) / unit_divisor;
 				char namebuf[256];
 				if(tscale*samples_per_div > 100)
-					snprintf(namebuf, sizeof(namebuf), "%.6f %s", scaled_time, units);
+					snprintf(namebuf, sizeof(namebuf), "%.6lf %s", scaled_time, units);
 				else if(tscale*samples_per_div > 75)
-					snprintf(namebuf, sizeof(namebuf), "%.4f %s", scaled_time, units);
+					snprintf(namebuf, sizeof(namebuf), "%.4lf %s", scaled_time, units);
 				else
-					snprintf(namebuf, sizeof(namebuf), "%.2f %s", scaled_time, units);
+					snprintf(namebuf, sizeof(namebuf), "%.2lf %s", scaled_time, units);
 
 				//Render it
 				int swidth = 0, sheight = 0;
@@ -215,7 +215,7 @@ void TimescaleRenderer::Render(const Cairo::RefPtr<Cairo::Context>& cr, int widt
 				//Draw fine ticks
 				for(int tick=1; tick < nsubticks; tick++)
 				{
-					float subx = x + (tick * subtick * tscale);
+					double subx = x + (tick * subtick * tscale);
 					if(subx > xend_adj)
 						break;
 					cr->move_to(subx, ytop);
