@@ -30,32 +30,24 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Scope protocol initialization
+	@brief Declaration of EthernetAutonegotiationRenderer
  */
 
-#include "scopeprotocols.h"
+#ifndef EthernetAutonegotiationRenderer_h
+#define EthernetAutonegotiationRenderer_h
 
-#define AddDecoderClass(T) ProtocolDecoder::AddDecoderClass(T::GetProtocolName(), T::CreateInstance)
+#include "../scopehal/TextRenderer.h"
 
 /**
-	@brief Static initialization for protocol list
+	@brief Renderer for an Ethernet autonegotiation channel
  */
-void ScopeProtocolStaticInit()
+class EthernetAutonegotiationRenderer : public TextRenderer
 {
-	AddDecoderClass(Ethernet10BaseTDecoder);
-	AddDecoderClass(Ethernet100BaseTDecoder);
-	AddDecoderClass(EthernetAutonegotiationDecoder);
-	AddDecoderClass(EyeDecoder);
-	AddDecoderClass(NRZDecoder);
-	AddDecoderClass(UARTDecoder);
-	
-	/*
-	AddDecoderClass(DigitalToAnalogDecoder);
-	AddDecoderClass(DMADecoder);
-	AddDecoderClass(RPCDecoder);
-	AddDecoderClass(RPCNameserverDecoder);
-	AddDecoderClass(SchmittTriggerDecoder);
-	AddDecoderClass(SPIDecoder);
-	AddDecoderClass(StateDecoder);
-	*/
-}
+public:
+	EthernetAutonegotiationRenderer(OscilloscopeChannel* channel);
+protected:
+	virtual std::string GetText(int i);
+	virtual Gdk::Color GetColor(int i);
+};
+
+#endif

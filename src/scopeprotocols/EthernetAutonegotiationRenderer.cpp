@@ -30,32 +30,82 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Scope protocol initialization
+	@brief Implementation of EthernetAutonegotiationRenderer
  */
 
-#include "scopeprotocols.h"
+#include "../scopehal/scopehal.h"
+#include "../scopehal/ChannelRenderer.h"
+#include "../scopehal/TextRenderer.h"
+#include "EthernetAutonegotiationRenderer.h"
+#include "EthernetAutonegotiationDecoder.h"
 
-#define AddDecoderClass(T) ProtocolDecoder::AddDecoderClass(T::GetProtocolName(), T::CreateInstance)
+using namespace std;
 
-/**
-	@brief Static initialization for protocol list
- */
-void ScopeProtocolStaticInit()
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Construction / destruction
+
+EthernetAutonegotiationRenderer::EthernetAutonegotiationRenderer(OscilloscopeChannel* channel)
+	: TextRenderer(channel)
 {
-	AddDecoderClass(Ethernet10BaseTDecoder);
-	AddDecoderClass(Ethernet100BaseTDecoder);
-	AddDecoderClass(EthernetAutonegotiationDecoder);
-	AddDecoderClass(EyeDecoder);
-	AddDecoderClass(NRZDecoder);
-	AddDecoderClass(UARTDecoder);
-	
-	/*
-	AddDecoderClass(DigitalToAnalogDecoder);
-	AddDecoderClass(DMADecoder);
-	AddDecoderClass(RPCDecoder);
-	AddDecoderClass(RPCNameserverDecoder);
-	AddDecoderClass(SchmittTriggerDecoder);
-	AddDecoderClass(SPIDecoder);
-	AddDecoderClass(StateDecoder);
-	*/
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Rendering
+
+Gdk::Color EthernetAutonegotiationRenderer::GetColor(int i)
+{
+	return TextRenderer::GetColor(i);
+}
+
+string EthernetAutonegotiationRenderer::GetText(int i)
+{
+	EthernetAutonegotiationCapture* data = dynamic_cast<EthernetAutonegotiationCapture*>(m_channel->GetData());
+	if(data == NULL)
+		return "";
+	if(i >= (int)data->m_samples.size())
+		return "";
+
+	auto s = data->m_samples[i];
+	unsigned int sel = s & 0x1f;
+	unsigned int ability = (s >> 5) & 0x7f;
+	bool xnp = (s >> 12) & 1;
+	bool rf = (s >> 13) & 1;
+	bool ack = (s >> 14) & 1;
+	bool np = (s >> 15) & 1;
+
+	//Not 802.3? Just display as hex
+	char tmp[128];
+	if(sel != 1)
+	{
+		snprintf(tmp, sizeof(tmp), "%04x", (int)s);
+		return tmp;
+	}
+
+	//Yes, it's 802.3
+	string ret = "Base: ";
+	if(ability & 0x40)
+		ret += "apause ";
+	if(ability & 0x20)
+		ret += "pause ";
+	if(ability & 0x10)
+		ret += "T4 ";
+	if(ability & 0x8)
+		ret += "100/full ";
+	if(ability & 0x4)
+		ret += "100/half ";
+	if(ability & 0x2)
+		ret += "10/full ";
+	if(ability & 0x1)
+		ret += "10/half ";
+
+	if(xnp)
+		ret += "XNP ";
+	if(rf)
+		ret += "FAULT ";
+	if(ack)
+		ret += "ACK ";
+	if(np)
+		ret += "Next-page";
+
+	return ret;
 }

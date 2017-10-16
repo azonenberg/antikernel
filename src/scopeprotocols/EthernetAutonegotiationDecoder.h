@@ -30,32 +30,33 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Scope protocol initialization
+	@brief Declaration of EthernetAutonegotiationDecoder
  */
 
-#include "scopeprotocols.h"
+#ifndef EthernetAutonegotiationDecoder_h
+#define EthernetAutonegotiationDecoder_h
 
-#define AddDecoderClass(T) ProtocolDecoder::AddDecoderClass(T::GetProtocolName(), T::CreateInstance)
+#include "../scopehal/ProtocolDecoder.h"
 
-/**
-	@brief Static initialization for protocol list
- */
-void ScopeProtocolStaticInit()
+typedef OscilloscopeSample<uint16_t> EthernetAutonegotiationSample;
+typedef CaptureChannel<uint16_t> EthernetAutonegotiationCapture;
+
+class EthernetAutonegotiationDecoder : public ProtocolDecoder
 {
-	AddDecoderClass(Ethernet10BaseTDecoder);
-	AddDecoderClass(Ethernet100BaseTDecoder);
-	AddDecoderClass(EthernetAutonegotiationDecoder);
-	AddDecoderClass(EyeDecoder);
-	AddDecoderClass(NRZDecoder);
-	AddDecoderClass(UARTDecoder);
-	
-	/*
-	AddDecoderClass(DigitalToAnalogDecoder);
-	AddDecoderClass(DMADecoder);
-	AddDecoderClass(RPCDecoder);
-	AddDecoderClass(RPCNameserverDecoder);
-	AddDecoderClass(SchmittTriggerDecoder);
-	AddDecoderClass(SPIDecoder);
-	AddDecoderClass(StateDecoder);
-	*/
-}
+public:
+	EthernetAutonegotiationDecoder(std::string hwname, std::string color);
+
+	virtual void Refresh();
+	virtual ChannelRenderer* CreateRenderer();
+	virtual bool NeedsConfig();
+
+	static std::string GetProtocolName();
+
+	virtual bool ValidateChannel(size_t i, OscilloscopeChannel* channel);
+
+	PROTOCOL_DECODER_INITPROC(EthernetAutonegotiationDecoder)
+
+protected:
+};
+
+#endif
