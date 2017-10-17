@@ -377,6 +377,18 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 {
 	LogDebug("Acquire data\n");
 
+	//See how many captures we have (if using sequence mode)
+	SendCommand("SEQUENCE?");
+	string seqinfo = ReadSingleBlockString();
+	int num_sequences = 1;
+	if(seqinfo.find("ON") != string::npos)
+	{
+		float max_samples;
+		sscanf(seqinfo.c_str(), "ON,%d,%f", &num_sequences, &max_samples);
+	}
+	if(num_sequences > 1)
+		LogDebug("Capturing %d sequences\n", num_sequences);
+
 	for(unsigned int i=0; i<m_analogChannelCount; i++)
 	{
 		progress_callback(i*1.0f / m_analogChannelCount);
@@ -397,9 +409,9 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 		float v_gain = *reinterpret_cast<float*>(pdesc + 156);
 		float v_off = *reinterpret_cast<float*>(pdesc + 160);
 		float interval = *reinterpret_cast<float*>(pdesc + 176) * 1e12f;
-		//double h_off = *reinterpret_cast<double*>(pdesc + 180);
+		double h_off = *reinterpret_cast<double*>(pdesc + 180);
 		//LogDebug("V: gain=%f off=%f\n", v_gain, v_off);
-		//LogDebug("H: off=%lf\n", h_off);
+		LogDebug("H: off=%lf\n", h_off * interval);
 		//LogDebug("Sample interval: %.2f ps\n", interval);
 
 		//double dt = GetTime() - start;
