@@ -90,40 +90,7 @@ void AnalogRenderer::RenderStartCallback(
 	float volts_per_half_span = pixels_to_volts(halfheight, false);
 
 	//Decide what voltage step to use. Pick from a list (in volts)
-	const float step_sizes[12]=
-	{
-		//mV per div
-		0.001,
-		0.0025,
-		0.005,
-
-		0.01,
-		0.025,
-		0.05,
-
-		0.1,
-		0.25,
-		0.5,
-
-		1,
-		2.5,
-		5
-	};
-
-	const int min_steps = 2;
-	const int max_steps = 4;
-
-	float selected_step = 1;
-	for(int i=0; i<12; i++)
-	{
-		float step = step_sizes[i];
-		float steps_per_half_span = volts_per_half_span / step;
-		if(steps_per_half_span > max_steps)
-			continue;
-		if(steps_per_half_span < min_steps)
-			continue;
-		selected_step = step;
-	}
+	float selected_step = PickStepSize(volts_per_half_span);
 
 	//Calculate grid positions
 	m_gridmap.clear();
@@ -225,6 +192,46 @@ void AnalogRenderer::RenderEndCallback(
 	DrawVerticalAxisLabels(cr, width, visleft, visright, ranges, ytop, plotheight, m_gridmap);
 
 	cr->restore();
+}
+
+float AnalogRenderer::PickStepSize(float volts_per_half_span)
+{
+	const float step_sizes[12]=
+	{
+		//mV per div
+		0.001,
+		0.0025,
+		0.005,
+
+		0.01,
+		0.025,
+		0.05,
+
+		0.1,
+		0.25,
+		0.5,
+
+		1,
+		2.5,
+		5
+	};
+
+	const int min_steps = 2;
+	const int max_steps = 4;
+
+	for(int i=0; i<12; i++)
+	{
+		float step = step_sizes[i];
+		float steps_per_half_span = volts_per_half_span / step;
+		if(steps_per_half_span > max_steps)
+			continue;
+		if(steps_per_half_span < min_steps)
+			continue;
+		return step;
+	}
+
+	//if no hits
+	return 1;
 }
 
 void AnalogRenderer::DrawVerticalAxisLabels(

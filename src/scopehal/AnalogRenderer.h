@@ -77,6 +77,8 @@ protected:
 	float volts_to_pixels(float v, bool offset = true);
 
 public:
+	static float PickStepSize(float volts_per_half_span);
+
 	static void DrawVerticalAxisLabels(
 		const Cairo::RefPtr<Cairo::Context>& cr,
 		int width,
