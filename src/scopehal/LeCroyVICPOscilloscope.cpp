@@ -172,8 +172,7 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 	}
 
 	//Desired format for waveform data
-	SendCommand("WAVEFORM_SETUP SP,0,NP,0,FP,0,SN,0");
-	SendCommand("COMM_FORMAT DEF,WORD,BIN");
+	SendCommand("COMM_FORMAT DEF9,WORD,BIN");
 
 	//Clear the state-change register to we get rid of any history we don't care about
 	PollTrigger();
@@ -336,8 +335,6 @@ bool LeCroyVICPOscilloscope::ReadWaveformBlock(string& data)
 	//LogDebug("Expecting %d bytes (%d samples)\n", num_bytes, num_samples);
 
 	//Done with headers, data comes next
-
-	//TODO: update expected times after some long captures are done
 	//TODO: do progress feedback eventually
 	/*
 	float base_progress = i*1.0f / m_analogChannelCount;
@@ -380,71 +377,129 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 	//See how many captures we have (if using sequence mode)
 	SendCommand("SEQUENCE?");
 	string seqinfo = ReadSingleBlockString();
-	int num_sequences = 1;
+	unsigned int num_sequences = 1;
 	if(seqinfo.find("ON") != string::npos)
 	{
 		float max_samples;
-		sscanf(seqinfo.c_str(), "ON,%d,%f", &num_sequences, &max_samples);
+		sscanf(seqinfo.c_str(), "ON,%u,%f", &num_sequences, &max_samples);
 	}
-	if(num_sequences > 1)
-		LogDebug("Capturing %d sequences\n", num_sequences);
+	//if(num_sequences > 1)
+	//	LogDebug("Capturing %u sequences\n", num_sequences);
 
 	for(unsigned int i=0; i<m_analogChannelCount; i++)
 	{
-		progress_callback(i*1.0f / m_analogChannelCount);
-
-		//double start = GetTime();
-
-		//Ask for the wavedesc (in raw binary)
-		string cmd = "C1:WF? 'DESC'";
-		cmd[1] += i;
-		SendCommand(cmd);
-		string wavedesc;
-		if(!ReadWaveformBlock(wavedesc))
-			break;
-
-		//Parse the wavedesc headers
-		//Ref: http://qtwork.tudelft.nl/gitdata/users/guen/qtlabanalysis/analysis_modules/general/lecroy.py
-		unsigned char* pdesc = (unsigned char*)(&wavedesc[0]);
-		float v_gain = *reinterpret_cast<float*>(pdesc + 156);
-		float v_off = *reinterpret_cast<float*>(pdesc + 160);
-		float interval = *reinterpret_cast<float*>(pdesc + 176) * 1e12f;
-		double h_off = *reinterpret_cast<double*>(pdesc + 180);
-		//LogDebug("V: gain=%f off=%f\n", v_gain, v_off);
-		LogDebug("H: off=%lf\n", h_off * interval);
-		//LogDebug("Sample interval: %.2f ps\n", interval);
-
-		//double dt = GetTime() - start;
-		//start = GetTime();
-		//LogDebug("Headers took %.3f ms\n", dt * 1000);
-
 		//Set up the capture we're going to store our data into
 		AnalogCapture* cap = new AnalogCapture;
-		cap->m_timescale = interval;
 
-		//Ask for the actual data (in raw binary)
-		cmd = "C1:WF? 'DAT1'";
-		cmd[1] += i;
-		SendCommand(cmd);
-		string data;
-		if(!ReadWaveformBlock(data))
-			break;
-		//dt = GetTime() - start;
-		//LogDebug("RX took %.3f ms\n", dt * 1000);
+		for(unsigned int j=0; j<num_sequences; j++)
+		{
+			//LogDebug("Channel %u block %u\n", i, j);
 
-		//Decode the samples
-		unsigned int num_samples = data.size()/2;
-		//LogDebug("Got %u samples\n", num_samples);
-		int16_t* wdata = (int16_t*)&data[0];
-		for(unsigned int i=0; i<num_samples; i++)
-			cap->m_samples.push_back(AnalogSample(i, 1, wdata[i] * v_gain + v_off));
+			float fbase = i*1.0f / m_analogChannelCount;
+
+			fbase += (j*1.0f / num_sequences) / m_analogChannelCount;
+			progress_callback(fbase);
+
+			//Ask for the segment of interest
+			string cmd = "WAVEFORM_SETUP SP,0,NP,0,FP,0,SN,";
+			char tmp[128];
+			snprintf(tmp, sizeof(tmp), "%u", j + 1);	//segment 0 = "all", 1 = first part of capture
+			cmd += tmp;
+			SendCommand(cmd);
+
+			//Ask for the wavedesc (in raw binary)
+			cmd = "C1:WF? 'DESC'";
+			cmd[1] += i;
+			SendCommand(cmd);
+			string wavedesc;
+			if(!ReadWaveformBlock(wavedesc))
+				break;
+
+			//Parse the wavedesc headers
+			//Ref: http://qtwork.tudelft.nl/gitdata/users/guen/qtlabanalysis/analysis_modules/general/lecroy.py
+			unsigned char* pdesc = (unsigned char*)(&wavedesc[0]);
+			//uint32_t wavedesc_len = *reinterpret_cast<uint32_t*>(pdesc + 36);
+			//LogDebug("    Wavedesc len: %d\n", wavedesc_len);
+			//uint32_t usertext_len = *reinterpret_cast<uint32_t*>(pdesc + 40);
+			//LogDebug("    Usertext len: %d\n", usertext_len);
+			//uint32_t trigtime_len = *reinterpret_cast<uint32_t*>(pdesc + 48);
+			//LogDebug("    Trigtime len: %d\n", trigtime_len);
+			float v_gain = *reinterpret_cast<float*>(pdesc + 156);
+			float v_off = *reinterpret_cast<float*>(pdesc + 160);
+			float interval = *reinterpret_cast<float*>(pdesc + 176) * 1e12f;
+			//double h_off = *reinterpret_cast<double*>(pdesc + 180);
+			//double trig_time = *reinterpret_cast<double*>(pdesc + 296);
+			//LogDebug("V: gain=%f off=%f\n", v_gain, v_off);
+			//LogDebug("    H: off=%lf\n", h_off * interval);
+			//LogDebug("    Trigger time: %.0f ps\n", trig_time * 1e12f);
+			//LogDebug("Sample interval: %.2f ps\n", interval);
+
+			double trigtime = 0;
+			if( (num_sequences > 1) && (j > 0) )
+			{
+				//If a multi-segment capture, ask for the trigger time data
+				cmd = "C1:WF? 'TIME'";
+				cmd[1] += i;
+				SendCommand(cmd);
+				string wavetime;
+				if(!ReadWaveformBlock(wavetime))
+					break;
+
+				double* ptrigtime = reinterpret_cast<double*>(&wavetime[0]);
+				trigtime = ptrigtime[0];
+				//double trigoff = ptrigtime[1];	//offset to point 0 from trigger time
+			}
+
+			int64_t trigtime_samples = trigtime * 1e12f / interval;
+			//LogDebug("    Trigger time: %.3f sec (%lu samples)\n", trigtime, trigtime_samples);
+
+			//double dt = GetTime() - start;
+			//start = GetTime();
+			//LogDebug("Headers took %.3f ms\n", dt * 1000);
+
+			if(j == 0)
+				cap->m_timescale = interval;
+
+			//Ask for the actual data (in raw binary)
+			cmd = "C1:WF? 'DAT1'";
+			cmd[1] += i;
+			SendCommand(cmd);
+			string data;
+			if(!ReadWaveformBlock(data))
+				break;
+			//dt = GetTime() - start;
+			//LogDebug("RX took %.3f ms\n", dt * 1000);
+
+			//If we have samples already in the capture, stretch the final one to our trigger offset
+			if(cap->m_samples.size())
+			{
+				auto& last_sample = cap->m_samples[cap->m_samples.size()-1];
+				last_sample.m_duration = trigtime_samples - last_sample.m_offset;
+			}
+
+			//Decode the samples
+			unsigned int num_samples = data.size()/2;
+			//LogDebug("Got %u samples\n", num_samples);
+			int16_t* wdata = (int16_t*)&data[0];
+			for(unsigned int i=0; i<num_samples; i++)
+				cap->m_samples.push_back(AnalogSample(i + trigtime_samples, 1, wdata[i] * v_gain + v_off));
+		}
 
 		//Done, update the data
 		m_channels[i]->SetData(cap);
 	}
 
-	if(m_digitalChannelCount > 0)
+	if(num_sequences > 1)
 	{
+		//LeCroy's LA is derpy and doesn't support sequenced capture!
+		for(unsigned int i=0; i<m_digitalChannelCount; i++)
+			m_channels[m_analogChannelCount + i]->SetData(NULL);
+	}
+
+	else if(m_digitalChannelCount > 0)
+	{
+		SendCommand("WAVEFORM_SETUP SP,0,NP,0,FP,0,SN,0");
+
 		//Ask for the waveform. This is a weird XML-y format but I can't find any other way to get it :(
 		string cmd = "Digital1:WF?";
 		SendCommand(cmd);

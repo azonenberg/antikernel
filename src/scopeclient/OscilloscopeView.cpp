@@ -149,7 +149,20 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 			vector<time_range> ranges;
 			MakeTimeRanges(ranges);
 
-			//Draw zigzag lines
+			//All good, draw individual channels
+			//Draw channels in numerical order.
+			//This allows painters-algorithm handling of protocol decoders that wish to be drawn
+			//on top of the original channel.
+			m_timescaleRender->Render(cr, width, 0+xoff, pwidth+xoff, ranges);
+			for(size_t i=0; i<m_scope->GetChannelCount(); i++)
+			{
+				auto chan = m_scope->GetChannel(i);
+				auto r = m_renderers[chan];
+				//TODO: do we always have one for each channel?
+				r->Render(cr, width, 0 + xoff, pwidth + xoff, ranges);
+			}
+
+			//Draw zigzag lines over the channel backgrounds
 			//Don't draw break at end of last range, though
 			for(size_t i=0; i<ranges.size(); i++)
 			{
@@ -182,19 +195,6 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 					cr->stroke();
 
 				cr->restore();
-			}
-
-			//All good, draw individual channels
-			//Draw channels in numerical order.
-			//This allows painters-algorithm handling of protocol decoders that wish to be drawn
-			//on top of the original channel.
-			m_timescaleRender->Render(cr, width, 0+xoff, pwidth+xoff, ranges);
-			for(size_t i=0; i<m_scope->GetChannelCount(); i++)
-			{
-				auto chan = m_scope->GetChannel(i);
-				auto r = m_renderers[chan];
-				//TODO: do we always have one for each channel?
-				r->Render(cr, width, 0 + xoff, pwidth + xoff, ranges);
 			}
 
 			//Figure out time scale for cursor
@@ -534,22 +534,24 @@ void OscilloscopeView::MakeTimeRanges(vector<time_range>& ranges)
 	if(m_renderers.empty())
 		return;
 
-	//First pass through the data
-	//Split into ranges and render broken lines
-	float startpos = 0;
+	bool analog = (dynamic_cast<AnalogCapture*>(capture) != NULL);
+
+	double startpos = 0;
 	time_range current_range;
 	current_range.xstart = 0;
 	current_range.tstart = 0;
-	float tscale = chan->m_timescale * capture->m_timescale;
+	double tscale = chan->m_timescale * capture->m_timescale;
 	for(size_t i=0; i<capture->GetDepth(); i++)
 	{
-		//If it would show up as more than m_maxsamplewidth pixels wide, clip it
-		float sample_width = tscale * capture->GetSampleLen(i);
-		float msw = m_renderers.begin()->second->m_maxsamplewidth;
-		if(sample_width > msw)
+		//If it would show up as more than m_maxsamplewidth pixels wide, clip it.
+		//If the capture is analog, any gaps are segment boundaries. If digital, use width heuristic
+		int64_t len = capture->GetSampleLen(i);
+		double sample_width = tscale * len;
+		double msw = m_renderers.begin()->second->m_maxsamplewidth;
+		if(	( analog && (len > 1) ) || (!analog && (sample_width > msw) ) )
 		{
 			sample_width = msw;
-			float xmid = startpos + sample_width/2;
+			double xmid = startpos + sample_width/2;
 
 			int64_t dt = (sample_width/2)/tscale;
 

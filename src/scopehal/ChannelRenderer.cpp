@@ -317,9 +317,10 @@ void ChannelRenderer::Render(
 			}
 
 			//If this sample has the same value as the next one, treat it as an extension of the next
-			//... but only if they directly abut
+			//... but only if they directly abut, and we don't cross time-range borders
 			if( (i+1) < capture->GetDepth() && (capture->EqualityTest(i, i+1)) &&
-				capture->SamplesAdjacent(i, i+1) )
+				capture->SamplesAdjacent(i, i+1) &&
+				(tend < range->tend) )
 			{
 				extend = true;
 				continue;

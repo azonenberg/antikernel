@@ -43,8 +43,8 @@ class OscilloscopeChannel;
 
 struct time_range
 {
-	float xstart;
-	float xend;
+	double xstart;
+	double xend;
 	int64_t tstart;
 	int64_t tend;
 };
