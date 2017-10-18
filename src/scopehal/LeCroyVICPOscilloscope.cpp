@@ -482,7 +482,7 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 			//LogDebug("Got %u samples\n", num_samples);
 			int16_t* wdata = (int16_t*)&data[0];
 			for(unsigned int i=0; i<num_samples; i++)
-				cap->m_samples.push_back(AnalogSample(i + trigtime_samples, 1, wdata[i] * v_gain + v_off));
+				cap->m_samples.push_back(AnalogSample(i + trigtime_samples, 1, wdata[i] * v_gain - v_off));
 		}
 
 		//Done, update the data
