@@ -250,7 +250,7 @@ void AnalogRenderer::DrawVerticalAxisLabels(
 	{
 		float v = it.first;
 		char tmp[32];
-		if(v < 1)
+		if(fabs(v) < 1)
 			snprintf(tmp, sizeof(tmp), "%.0f mV", v*1000);
 		else
 			snprintf(tmp, sizeof(tmp), "%.2f V", v);
