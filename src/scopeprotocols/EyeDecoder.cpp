@@ -109,6 +109,7 @@ void EyeDecoder::Refresh()
 	EyeCapture* cap = new EyeCapture;
 	m_timescale = m_channels[0]->m_timescale;
 	cap->m_timescale = din->m_timescale;
+	cap->m_sampleCount = din->m_samples.size();
 
 	//Find the min/max voltage of the signal (used to set default bounds for the render).
 	//Additionally, generate a histogram of voltages. We need this to configure the trigger(s) correctly
@@ -179,9 +180,9 @@ void EyeDecoder::Refresh()
 		cap->m_signalLevels.push_back(weighted * 1e-3f / wcount);
 	}
 	sort(cap->m_signalLevels.begin(), cap->m_signalLevels.end());
-	LogDebug("    Signal appears to be using %d-level modulation\n", (int)cap->m_signalLevels.size());
+	/*LogDebug("    Signal appears to be using %d-level modulation\n", (int)cap->m_signalLevels.size());
 	for(auto v : cap->m_signalLevels)
-		LogDebug("        %6.3f V\n", v);
+		LogDebug("        %6.3f V\n", v);*/
 
 	//Figure out decision points (eye centers)
 	for(size_t i=0; i<cap->m_signalLevels.size()-1; i++)
@@ -190,9 +191,9 @@ void EyeDecoder::Refresh()
 		float vhi = cap->m_signalLevels[i+1];
 		cap->m_decisionPoints.push_back(vlo + (vhi-vlo)/2);
 	}
-	LogDebug("    Decision points:\n");
+	/*LogDebug("    Decision points:\n");
 	for(auto v : cap->m_decisionPoints)
-		LogDebug("        %6.3f V\n", v);
+		LogDebug("        %6.3f V\n", v);*/
 
 	//Keep count of how many times we've seen each pixel at a given offset
 	map<int64_t, map<float, int64_t> > pixmap;
@@ -244,13 +245,13 @@ void EyeDecoder::Refresh()
 	}
 
 	int64_t eye_width = max_bin;
-	double baud = 1e6 / (eye_width * cap->m_timescale);
+	/*double baud = 1e6 / (eye_width * cap->m_timescale);
 	LogDebug("Computing symbol rate\n");
 	LogDebug("    UI width (first pass): %ld samples / %.3f ns (%.3lf Mbd)\n",
-		eye_width, eye_width * cap->m_timescale / 1e3, baud);
+		eye_width, eye_width * cap->m_timescale / 1e3, baud);*/
 
 	//Compute a weighted average around the max UI to find the best one
-	int sample_window = 5;
+	int sample_window = 3;
 	int64_t ui_weighted = 0;
 	int64_t ui_count = 0;
 	for(int delta = -sample_window; delta <= sample_window; delta ++)
@@ -292,9 +293,9 @@ void EyeDecoder::Refresh()
 	}
 	*/
 
-	baud = 1e6f / (eye_width * cap->m_timescale);
+	/*baud = 1e6f / (eye_width * cap->m_timescale);
 	LogDebug("    UI width (second pass): %ld samples / %.3f ns (%.3lf Mbd)\n",
-		eye_width, eye_width * cap->m_timescale / 1e3, baud);
+		eye_width, eye_width * cap->m_timescale / 1e3, baud);*/
 	m_uiWidth = eye_width;
 	if(m_uiWidth == 0)
 	{
@@ -324,5 +325,56 @@ void EyeDecoder::Refresh()
 		}
 	}
 
+	//Measure the width of the eye at each decision point
+	//LogDebug("Measuring eye width\n");
+	float row_height = 0.01;				//sample 10 mV above/below the decision point
+	for(auto v : cap->m_decisionPoints)
+	{
+		//Initialize the row
+		vector<int64_t> row;
+		for(int i=0; i<eye_width; i++)
+			row.push_back(0);
+
+		//Search this band and see where we have signal
+		for(auto it : pixmap_merged)
+		{
+			int64_t time = it.first;
+			for(auto jt : it.second)
+			{
+				if(fabs(jt.first - v) > row_height)
+					continue;
+				row[time] += jt.second;
+			}
+		}
+
+		//Start from the middle and look left and right
+		int middle = eye_width/2;
+		int left = middle;
+		int right = middle;
+		for(; left > 0; left--)
+		{
+			if(row[left-1] != 0)
+				break;
+		}
+		for(; right < eye_width-1; right++)
+		{
+			if(row[right+1] != 0)
+				break;
+		}
+
+		int width = right-left;
+		/*
+		LogDebug("    At %.3f V: left=%d, right=%d, width=%d (%.3f ns, %.2f UI)\n",
+			v,
+			left,
+			right,
+			width,
+			width * cap->m_timescale / 1e3,
+			width * 1.0f / eye_width
+			);*/
+		cap->m_eyeWidths.push_back(width);
+	}
+
+	//Done, update the waveform
 	SetData(cap);
 }

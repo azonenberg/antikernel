@@ -146,19 +146,27 @@ void EyeRenderer::Render(
 	float ymid = halfheight + ytop;
 	float xmid = (visright - visleft)/2 + visleft;
 
-	float x_padding = 125;
+	float x_padding = 165;
 	float plot_width = (visright - visleft) - 2*x_padding;
 	float plotleft = xmid - plot_width/2;
 	float plotright = xmid + plot_width/2;
 
+	//Shift a bit so we're close to the voltage scale at right.
+	//This will leave space at our left side for info text.
+	float rshift = 90;
+	plotleft += rshift;
+	plotright += rshift;
+	xmid += rshift;
+
 	RenderStartCallback(cr, width, visleft, visright, ranges);
 	cr->save();
 
+	EyeDecoder* channel = dynamic_cast<EyeDecoder*>(m_channel);
 	EyeCapture* capture = dynamic_cast<EyeCapture*>(m_channel->GetData());
 	if(capture != NULL)
 	{
 		//Save time scales
-		int64_t ui_width = dynamic_cast<EyeDecoder*>(m_channel)->GetUIWidth();
+		int64_t ui_width = channel->GetUIWidth();
 		int row_width = ui_width*2;
 		float pixels_per_ui = plot_width / 2;
 
@@ -169,97 +177,37 @@ void EyeRenderer::Render(
 		//Align midpoint of waveform to midpoint of our plot
 		float yoffset = ((waveheight/2) + capture->m_minVoltage);
 
-		//TODO: Decide what size divisions to use
+		//Decide what size divisions to use
 		float y_grid = AnalogRenderer::PickStepSize(waveheight/2);
 
-		//Center line is solid
+		//Draw the grid and axis labels
 		float yzero = ymid + yscale*yoffset;
-		cr->set_source_rgba(0.7, 0.7, 0.7, 1.0);
-		if( (0 >= capture->m_minVoltage) && (0 <= capture->m_maxVoltage) )
+		float x_gridpitch = 0.125;	//in UIs
+		RenderGrid(
+			cr,
+			xmid,
+			plotleft,
+			plotright,
+			plotheight,
+			visright,
+			pixels_per_ui,
+			yzero,
+			yscale,
+			ytop,
+			ybot,
+			x_gridpitch,
+			y_grid,
+			capture);
+
+		//Draw cyan lines for decision points
+		cr->set_source_rgba(0.0, 1.0, 1.0, 1.0);
+		for(auto v : capture->m_decisionPoints)
 		{
-			cr->move_to(plotleft, yzero);
-			cr->line_to(plotright, yzero);
+			float y = yzero - v*yscale;
+			cr->move_to(plotleft, y);
+			cr->line_to(plotright, y);
 		}
-		cr->move_to(xmid, ybot);
-		cr->line_to(xmid, ytop);
 		cr->stroke();
-
-		//Dotted lines above and below center
-		vector<double> dashes;
-		dashes.push_back(2);
-		dashes.push_back(2);
-		cr->set_dash(dashes, 0);
-
-			map<float, float> gridmap;
-			if( (0 >= capture->m_minVoltage) && (0 <= capture->m_maxVoltage) )
-				gridmap[0] = yzero;
-			for(float dv=y_grid; ; dv += y_grid)
-			{
-				float ypos = yzero - dv*yscale;
-				float yneg = yzero + dv*yscale;
-
-				if(ypos >= ytop)
-				{
-					gridmap[dv] = ypos;
-					cr->move_to(plotleft, ypos);
-					cr->line_to(plotright + 15, ypos);
-				}
-
-				if(yneg <= ybot)
-				{
-					gridmap[-dv] = yneg;
-					cr->move_to(plotleft, yneg);
-					cr->line_to(plotright + 15, yneg);
-				}
-
-				if( (dv > fabs(capture->m_maxVoltage)) && (dv > fabs(capture->m_minVoltage)) )
-					break;
-			}
-
-			//and left/right of center
-			float x_gridpitch = 0.125;	//in UIs
-			for(float dt = 0; dt < 1.1; dt += x_gridpitch)
-			{
-				float dx = dt * pixels_per_ui;
-
-				cr->move_to(xmid - dx, ybot);
-				cr->line_to(xmid - dx, ytop);
-
-				cr->move_to(xmid + dx, ybot);
-				cr->line_to(xmid + dx, ytop);
-			}
-
-			cr->stroke();
-
-		cr->unset_dash();
-
-		//Draw text for the X axis labels
-		char tmp[32];
-		for(float dt = 0; dt < 1.1; dt += x_gridpitch * 2)
-		{
-			float dx = dt * pixels_per_ui;
-
-			cr->move_to(xmid - dx, ybot);
-			cr->line_to(xmid - dx, ybot + 20);
-
-			cr->move_to(xmid + dx, ybot);
-			cr->line_to(xmid + dx, ybot + 20);
-
-			cr->set_source_rgba(0.7, 0.7, 0.7, 1.0);
-			cr->set_dash(dashes, 0);
-			cr->stroke();
-			cr->unset_dash();
-
-			cr->set_source_rgba(1.0, 1.0, 1.0, 1.0);
-			snprintf(tmp, sizeof(tmp), "%.2f UI", dt);
-			DrawString(xmid + dx + 5, ybot + 5, cr, tmp, false);
-
-			if(dt != 0)
-			{
-				snprintf(tmp, sizeof(tmp), "%.2f UI", -dt);
-				DrawString(xmid - dx + 5, ybot + 5, cr, tmp, false);
-			}
-		}
 
 		//Create pixel value histogram
 		int pixel_count = ui_width * m_height;
@@ -346,7 +294,7 @@ void EyeRenderer::Render(
 		//Render the bitmap over our background and grid
 		cr->save();
 			cr->begin_new_path();
-			cr->translate(x_padding + visleft, ytop);
+			cr->translate(plotleft, ytop);
 			cr->scale(plot_width / row_width, 1);
 			cr->set_source(surface, 0.0, 0.0);
 			cr->rectangle(0, 0, row_width, plotheight);
@@ -354,43 +302,37 @@ void EyeRenderer::Render(
 			cr->paint();
 		cr->restore();
 
-		//Draw text for the Y axis labels
-		AnalogRenderer::DrawVerticalAxisLabels(cr, width, visleft, visright, ranges, ytop, plotheight, gridmap);
-
 		//Draw the color ramp at the left of the display
-		Glib::RefPtr< Gdk::Pixbuf > ramp_pixbuf = Gdk::Pixbuf::create_from_data(
-			reinterpret_cast<const unsigned char*>(g_eyeColorScale),
-			Gdk::COLORSPACE_RGB,
-			true,
-			8,
-			1,
-			256,
-			4);
-		Cairo::RefPtr< Cairo::ImageSurface > ramp_surface =
-			Cairo::ImageSurface::create(Cairo::FORMAT_ARGB32, 1, 256);
-		Cairo::RefPtr< Cairo::Context > ramp_context = Cairo::Context::create(ramp_surface);
-		Gdk::Cairo::set_source_pixbuf(ramp_context, ramp_pixbuf, 0.0, 0.0);
-		ramp_context->paint();
+		RenderColorLegend(cr, visleft, ytop, plotheight, maxcount);
 
-		//Render the bitmap over our background and grid
-		for(int i=0; i<20; i++)
+		//Draw text info at the left of the display
+		RenderLeftSideInfobox(cr, visleft, ytop, ui_width, capture);
+
+		//Draw eye opening info at each decision point
+		int swidth;
+		int sheight;
+		char str[512];
+		for(size_t i=0; i < capture->m_eyeWidths.size(); i++)
 		{
-			cr->save();
-				cr->begin_new_path();
-				cr->translate(visleft + 10 + i, ytop + plotheight);
-				cr->scale(1, -plotheight / 256);
-				cr->set_source(ramp_surface, 0.0, 0.0);
-				cr->rectangle(0, 0, 1, 256);
-				cr->clip();
-				cr->paint();
-			cr->restore();
-		}
+			float v = capture->m_decisionPoints[i];
+			int width = capture->m_eyeWidths[i];
 
-		//Render the legend for the color ramp
-		map<float, float> legendmap;
-		for(float f=0; f<=1.1; f+= 0.125)
-			legendmap[maxcount*f] = ytop + plotheight*(1 - f) + 10;
-		AnalogRenderer::DrawVerticalAxisLabels(cr, width, 0, visleft + 95, ranges, ytop, plotheight, legendmap, false);
+			float width_ui = width * 1.0f / ui_width;
+			float width_ns = width * 1e-3f * capture->m_timescale;
+
+			snprintf(str, sizeof(str), "%.2f UI / %.3f ns", width_ui, width_ns);
+			GetStringWidth(cr, str, false, swidth, sheight);
+
+			float x = xmid - swidth/2;
+			float y = VoltsToPixels(v, yzero, yscale);
+
+			cr->set_source_rgba(0, 0, 0, 0.75);
+			cr->rectangle(x, y, swidth, sheight);
+			cr->fill();
+
+			cr->set_source_rgba(1, 1, 1, 1);
+			DrawString(x, y, cr, str, false);
+		}
 
 		delete[] pixels;
 		delete[] histogram;
@@ -398,6 +340,202 @@ void EyeRenderer::Render(
 
 	cr->restore();
 	RenderEndCallback(cr, width, visleft, visright, ranges);
+}
+
+/**
+	@brief Draws the grid on the background of the plot
+ */
+void EyeRenderer::RenderGrid(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		float xmid,
+		float plotleft,
+		float plotright,
+		float plotheight,
+		float visright,
+		float pixels_per_ui,
+		float yzero,
+		float yscale,
+		float ytop,
+		float ybot,
+		float x_gridpitch,
+		float y_grid,
+		EyeCapture* capture)
+{
+	//Solid center lines
+	cr->set_source_rgba(0.7, 0.7, 0.7, 1.0);
+	if( (0 >= capture->m_minVoltage) && (0 <= capture->m_maxVoltage) )
+	{
+		cr->move_to(plotleft, yzero);
+		cr->line_to(plotright, yzero);
+	}
+	cr->move_to(xmid, ybot);
+	cr->line_to(xmid, ytop);
+	cr->stroke();
+
+	//Dotted lines above and below center
+	vector<double> dashes;
+	dashes.push_back(2);
+	dashes.push_back(2);
+	cr->set_dash(dashes, 0);
+
+		map<float, float> gridmap;
+		if( (0 >= capture->m_minVoltage) && (0 <= capture->m_maxVoltage) )
+			gridmap[0] = yzero;
+		for(float dv=y_grid; ; dv += y_grid)
+		{
+			float ypos = VoltsToPixels(dv, yzero, yscale);
+			float yneg = VoltsToPixels(-dv, yzero, yscale);
+
+			if(ypos >= ytop)
+			{
+				gridmap[dv] = ypos;
+				cr->move_to(plotleft, ypos);
+				cr->line_to(plotright + 15, ypos);
+			}
+
+			if(yneg <= ybot)
+			{
+				gridmap[-dv] = yneg;
+				cr->move_to(plotleft, yneg);
+				cr->line_to(plotright + 15, yneg);
+			}
+
+			if( (dv > fabs(capture->m_maxVoltage)) && (dv > fabs(capture->m_minVoltage)) )
+				break;
+		}
+
+		//and left/right of center
+		for(float dt = 0; dt < 1.1; dt += x_gridpitch)
+		{
+			float dx = dt * pixels_per_ui;
+
+			cr->move_to(xmid - dx, ybot);
+			cr->line_to(xmid - dx, ytop);
+
+			cr->move_to(xmid + dx, ybot);
+			cr->line_to(xmid + dx, ytop);
+		}
+
+		cr->stroke();
+
+	cr->unset_dash();
+
+	//Draw text for the X axis labels
+	char tmp[32];
+	for(float dt = 0; dt < 1.1; dt += x_gridpitch * 2)
+	{
+		float dx = dt * pixels_per_ui;
+
+		cr->move_to(xmid - dx, ybot);
+		cr->line_to(xmid - dx, ybot + 20);
+
+		cr->move_to(xmid + dx, ybot);
+		cr->line_to(xmid + dx, ybot + 20);
+
+		cr->set_source_rgba(0.7, 0.7, 0.7, 1.0);
+		cr->set_dash(dashes, 0);
+		cr->stroke();
+		cr->unset_dash();
+
+		cr->set_source_rgba(1.0, 1.0, 1.0, 1.0);
+		snprintf(tmp, sizeof(tmp), "%.2f UI", dt);
+		DrawString(xmid + dx + 5, ybot + 5, cr, tmp, false);
+
+		if(dt != 0)
+		{
+			snprintf(tmp, sizeof(tmp), "%.2f UI", -dt);
+			DrawString(xmid - dx + 5, ybot + 5, cr, tmp, false);
+		}
+	}
+
+	//Draw text for the Y axis labels
+	AnalogRenderer::DrawVerticalAxisLabels(cr, visright, ytop, plotheight, gridmap);
+}
+
+/**
+	@brief Draws the text at the left side of the plot with eye metadata
+ */
+void EyeRenderer::RenderLeftSideInfobox(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		int visleft,
+		float ytop,
+		int64_t ui_width,
+		EyeCapture* capture)
+{
+	float textleft = visleft + 100;
+	int swidth;
+	int sheight;
+	string labels =
+		"Points:\n"
+		"Timebase:\n"
+		"Modulation:\n"
+		"UI width:\n"
+		"Symbol rate:\n";
+	DrawString(textleft, ytop, cr, labels, false);
+	GetStringWidth(cr, labels, false, swidth, sheight);
+
+	char str[512];
+	snprintf(
+		str,
+		sizeof(str),
+		"%ld\n"
+		"%.1f GS/s\n"
+		"%d levels\n"
+		"%.3f ns\n"
+		"%.3f Mbd\n",
+		capture->m_sampleCount,
+		1e3f / capture->m_timescale,
+		(int)capture->m_signalLevels.size(),
+		ui_width * 1e-3f * capture->m_timescale,
+		1e6 / (ui_width * capture->m_timescale)
+		);
+	DrawString(textleft + swidth + 5, ytop, cr, str, false);
+}
+
+/**
+	@brief Draws the color ramp scale at the left side of the plot
+ */
+void EyeRenderer::RenderColorLegend(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		int visleft,
+		float ytop,
+		float plotheight,
+		int64_t maxcount)
+{
+	//Create the pixmap
+	Glib::RefPtr< Gdk::Pixbuf > ramp_pixbuf = Gdk::Pixbuf::create_from_data(
+		reinterpret_cast<const unsigned char*>(g_eyeColorScale),
+		Gdk::COLORSPACE_RGB,
+		true,
+		8,
+		1,
+		256,
+		4);
+	Cairo::RefPtr< Cairo::ImageSurface > ramp_surface =
+		Cairo::ImageSurface::create(Cairo::FORMAT_ARGB32, 1, 256);
+	Cairo::RefPtr< Cairo::Context > ramp_context = Cairo::Context::create(ramp_surface);
+	Gdk::Cairo::set_source_pixbuf(ramp_context, ramp_pixbuf, 0.0, 0.0);
+	ramp_context->paint();
+
+	//Render the bitmap
+	for(int i=0; i<20; i++)
+	{
+		cr->save();
+			cr->begin_new_path();
+			cr->translate(visleft + 10 + i, ytop + plotheight);
+			cr->scale(1, -plotheight / 256);
+			cr->set_source(ramp_surface, 0.0, 0.0);
+			cr->rectangle(0, 0, 1, 256);
+			cr->clip();
+			cr->paint();
+		cr->restore();
+	}
+
+	//and the text labels
+	map<float, float> legendmap;
+	for(float f=0; f<=1.1; f+= 0.125)
+		legendmap[maxcount*f] = ytop + plotheight*(1 - f) + 10;
+	AnalogRenderer::DrawVerticalAxisLabels(cr, visleft + 95, ytop, plotheight, legendmap, false);
 }
 
 void EyeRenderer::RenderSampleCallback(

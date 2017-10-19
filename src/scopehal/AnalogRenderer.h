@@ -81,10 +81,7 @@ public:
 
 	static void DrawVerticalAxisLabels(
 		const Cairo::RefPtr<Cairo::Context>& cr,
-		int width,
-		int visleft,
 		int visright,
-		std::vector<time_range>& ranges,
 		float ytop,
 		float plotheight,
 		std::map<float, float>& gridmap,

@@ -175,10 +175,10 @@ void AnalogRenderer::RenderSampleCallback(
 
 void AnalogRenderer::RenderEndCallback(
 	const Cairo::RefPtr<Cairo::Context>& cr,
-	int width,
-	int visleft,
+	int /*width*/,
+	int /*visleft*/,
 	int visright,
-	vector<time_range>& ranges)
+	vector<time_range>& /*ranges*/)
 {
 	float ytop = m_ypos + m_padding;
 	float plotheight = m_height - 2*m_padding;
@@ -189,7 +189,7 @@ void AnalogRenderer::RenderEndCallback(
 	cr->stroke();
 
 	//and then the text for the Y axis scale
-	DrawVerticalAxisLabels(cr, width, visleft, visright, ranges, ytop, plotheight, m_gridmap);
+	DrawVerticalAxisLabels(cr, visright, ytop, plotheight, m_gridmap);
 
 	cr->restore();
 }
@@ -236,10 +236,7 @@ float AnalogRenderer::PickStepSize(float volts_per_half_span)
 
 void AnalogRenderer::DrawVerticalAxisLabels(
 	const Cairo::RefPtr<Cairo::Context>& cr,
-	int /*width*/,
-	int /*visleft*/,
 	int visright,
-	vector<time_range>& /*ranges*/,
 	float ytop,
 	float plotheight,
 	map<float, float>& gridmap,
@@ -248,8 +245,10 @@ void AnalogRenderer::DrawVerticalAxisLabels(
 	//Draw background for the Y axis labels
 	int lineheight, linewidth;
 	GetStringWidth(cr, "500 mV_x", false, linewidth, lineheight);
+	float lmargin = 5;
+	float textleft = visright - (linewidth + lmargin);
 	cr->set_source_rgba(0, 0, 0, 0.5);
-	cr->rectangle(visright - linewidth, ytop, linewidth, plotheight);
+	cr->rectangle(textleft, ytop, linewidth, plotheight);
 	cr->fill();
 
 	//Draw text for the Y axis labels
@@ -271,7 +270,7 @@ void AnalogRenderer::DrawVerticalAxisLabels(
 			continue;
 		if(y > (ytop + plotheight))
 			continue;
-		DrawString(visright - linewidth, y, cr, tmp, false);
+		DrawString(textleft + lmargin, y, cr, tmp, false);
 	}
 	cr->begin_new_path();
 }

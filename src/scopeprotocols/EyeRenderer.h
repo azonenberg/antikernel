@@ -59,6 +59,9 @@ class EyeCapture : public CaptureChannel<EyePatternPixel>
 {
 public:
 
+	//Number of samples we've measured
+	int64_t m_sampleCount;
+
 	//Extrema of our waveform (highest/lowest voltage ever seen)
 	float m_minVoltage;
 	float m_maxVoltage;
@@ -70,6 +73,10 @@ public:
 	//Decision points (vertical center of each eye)
 	//One entry for NRZ(I), two for MLT-3, three for PAM-4, etc
 	std::vector<float> m_decisionPoints;
+
+	//Width of the eye at each decision point
+	//For now, no BER tolerance (even a single point is enough to reduce the eye width)
+	std::vector<float> m_eyeWidths;
 };
 
 /**
@@ -88,6 +95,40 @@ public:
 		std::vector<time_range>& ranges);
 
 protected:
+
+	void RenderGrid(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		float xmid,
+		float plotleft,
+		float plotright,
+		float plotheight,
+		float visright,
+		float pixels_per_ui,
+		float yzero,
+		float yscale,
+		float ytop,
+		float ybot,
+		float x_gridpitch,
+		float y_grid,
+		EyeCapture* capture);
+
+	void RenderColorLegend(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		int visleft,
+		float ytop,
+		float plotheight,
+		int64_t maxcount);
+
+	void RenderLeftSideInfobox(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		int visleft,
+		float ytop,
+		int64_t ui_width,
+		EyeCapture* capture);
+
+	float VoltsToPixels(float v, float yzero, float yscale)
+	{ return yzero + -v*yscale; }
+
 	//unused
 	virtual void RenderSampleCallback(
 		const Cairo::RefPtr<Cairo::Context>& cr,
