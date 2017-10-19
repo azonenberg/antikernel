@@ -112,7 +112,7 @@ void NRZDecoder::Refresh()
 	}
 	float range = max - min;
 	float midpoint = range/2 + min;
-	LogDebug("NRZDecoder: threshold is %.3f\n", midpoint);
+	LogDebug("NRZDecoder: range is [%.3f, %.3f], threshold is %.3f\n", min, max, midpoint);
 
 	//Threshold all of our samples
 	DigitalCapture* cap = new DigitalCapture;

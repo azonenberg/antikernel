@@ -54,7 +54,13 @@ public:
 };
 
 typedef OscilloscopeSample<EyePatternPixel> EyeSample;
-typedef CaptureChannel<EyePatternPixel> EyeCapture;
+
+class EyeCapture : public CaptureChannel<EyePatternPixel>
+{
+public:
+	float m_minVoltage;		//TODO: bottom/top peaks
+	float m_maxVoltage;
+};
 
 /**
 	@brief Renderer for an eye pattern

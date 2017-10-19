@@ -125,7 +125,7 @@ static const RGBQUAD g_eyeColorScale[256] =
 EyeRenderer::EyeRenderer(OscilloscopeChannel* channel)
 : ChannelRenderer(channel)
 {
-	m_height = 256;
+	m_height = 384;
 	m_padding = 25;
 }
 
@@ -159,19 +159,27 @@ void EyeRenderer::Render(
 	{
 		//Save time scales
 		int64_t ui_width = dynamic_cast<EyeDecoder*>(m_channel)->GetUIWidth();
-		int row_width = ui_width*3;
-		float pixels_per_ui = plot_width / 3;
+		int row_width = ui_width*2;
+		float pixels_per_ui = plot_width / 2;
 
-		float yscale = 0.4 * plotheight;
-		float yoffset = halfheight;
+		//Calculate how high our waveform is
+		float waveheight = capture->m_maxVoltage - capture->m_minVoltage;
+		float yscale = plotheight / waveheight;
+
+		//Align midpoint of waveform to midpoint of our plot
+		float yoffset = ((waveheight/2) + capture->m_minVoltage);
 
 		//TODO: Decide what size divisions to use
-		float y_grid = 0.25;
+		float y_grid = AnalogRenderer::PickStepSize(waveheight/2);
 
 		//Center line is solid
+		float yzero = ymid + yscale*yoffset;
 		cr->set_source_rgba(0.7, 0.7, 0.7, 1.0);
-		cr->move_to(plotleft, ymid);
-		cr->line_to(plotright, ymid);
+		if( (0 >= capture->m_minVoltage) && (0 <= capture->m_maxVoltage) )
+		{
+			cr->move_to(plotleft, yzero);
+			cr->line_to(plotright, yzero);
+		}
 		cr->move_to(xmid, ybot);
 		cr->line_to(xmid, ytop);
 		cr->stroke();
@@ -183,26 +191,34 @@ void EyeRenderer::Render(
 		cr->set_dash(dashes, 0);
 
 			map<float, float> gridmap;
-			gridmap[0] = ymid;
+			if( (0 >= capture->m_minVoltage) && (0 <= capture->m_maxVoltage) )
+				gridmap[0] = yzero;
 			for(float dv=y_grid; ; dv += y_grid)
 			{
-				float dy = dv * yscale;
-				if(dy > halfheight)
+				float ypos = yzero - dv*yscale;
+				float yneg = yzero + dv*yscale;
+
+				if(ypos >= ytop)
+				{
+					gridmap[dv] = ypos;
+					cr->move_to(plotleft, ypos);
+					cr->line_to(plotright + 15, ypos);
+				}
+
+				if(yneg <= ybot)
+				{
+					gridmap[-dv] = yneg;
+					cr->move_to(plotleft, yneg);
+					cr->line_to(plotright + 15, yneg);
+				}
+
+				if( (dv > fabs(capture->m_maxVoltage)) && (dv > fabs(capture->m_minVoltage)) )
 					break;
-
-				gridmap[dv] = ymid - dy;
-				gridmap[-dv] = ymid + dy;
-
-				cr->move_to(plotleft, ymid + dy);
-				cr->line_to(plotright + 15, ymid + dy);
-
-				cr->move_to(plotleft, ymid - dy);
-				cr->line_to(plotright + 15, ymid - dy);
 			}
 
 			//and left/right of center
 			float x_gridpitch = 0.125;	//in UIs
-			for(float dt = 0; dt < 1.55; dt += x_gridpitch)
+			for(float dt = 0; dt < 1.1; dt += x_gridpitch)
 			{
 				float dx = dt * pixels_per_ui;
 
@@ -219,7 +235,7 @@ void EyeRenderer::Render(
 
 		//Draw text for the X axis labels
 		char tmp[32];
-		for(float dt = 0; dt < 1.55; dt += x_gridpitch * 2)
+		for(float dt = 0; dt < 1.1; dt += x_gridpitch * 2)
 		{
 			float dx = dt * pixels_per_ui;
 
@@ -260,7 +276,7 @@ void EyeRenderer::Render(
 				tstart = ui_width-1;
 			auto sample = (*capture)[i];
 
-			int ystart = yscale * sample.m_voltage * -1 + yoffset;
+			int ystart = yscale * (capture->m_maxVoltage - sample.m_voltage);	//vertical flip
 			if(ystart >= m_height)
 				ystart = m_height-1;
 			if(ystart < 0)
@@ -280,14 +296,18 @@ void EyeRenderer::Render(
 		RGBQUAD* pixels = new RGBQUAD[pixel_count * 4];
 		for(int y=0; y<plotheight; y++)
 		{
-			for(int x=0; x<ui_width; x++)
+			for(int x=-ui_width/2; x<=ui_width/2; x++)
 			{
-				int npix = (int)ceil((255.0f * histogram[y*ui_width + x]) / cmax);
+				int x_rotated = x;
+				if(x < 0)
+					x_rotated += ui_width;
+
+				int npix = (int)ceil((255.0f * histogram[y*ui_width + x_rotated]) / cmax);
 				if(npix > 255)
 					npix = 255;
-				pixels[y*row_width + x]					= g_eyeColorScale[npix];
-				pixels[y*row_width + x + ui_width]		= g_eyeColorScale[npix];
-				pixels[y*row_width + x + ui_width*2]	= g_eyeColorScale[npix];
+
+				pixels[y*row_width + x + ui_width/2]	= g_eyeColorScale[npix];
+				pixels[y*row_width + x + ui_width*3/2]	= g_eyeColorScale[npix];
 			}
 		}
 

@@ -110,10 +110,24 @@ void EyeDecoder::Refresh()
 	m_timescale = m_channels[0]->m_timescale;
 	cap->m_timescale = din->m_timescale;
 
+	cap->m_minVoltage = 999;
+	cap->m_maxVoltage = -999;
+	for(size_t i=0; i<din->m_samples.size(); i++)
+	{
+		AnalogSample sin = din->m_samples[i];
+		float f = sin;
+
+		if(f > cap->m_maxVoltage)
+			cap->m_maxVoltage = f;
+		if(f < cap->m_minVoltage)
+			cap->m_minVoltage = f;
+	}
+
 	//Keep count of how many times we've seen each pixel at a given offset
 	//TODO: make trigger level configurable
 	map<int64_t, map<float, int64_t> > pixmap;
-	float trigger_level = 0.5;
+	float trigger_level1 = 0.45;
+	float trigger_level2 = -0.45;
 	float last_sample_value = 0;
 	int64_t tstart = 0;
 	vector<int64_t> ui_widths;
@@ -125,9 +139,19 @@ void EyeDecoder::Refresh()
 		int64_t old_tstart = tstart;
 
 		//Dual-edge trigger, no holdoff
+		/*
 		if( (f > trigger_level) && (last_sample_value < trigger_level) )
 			tstart = sin.m_offset;
 		if( (f < trigger_level) && (last_sample_value > trigger_level) )
+			tstart = sin.m_offset;
+		*/
+		if( (f > trigger_level1) && (last_sample_value < trigger_level1) )
+			tstart = sin.m_offset;
+		if( (f < trigger_level1) && (last_sample_value > trigger_level1) )
+			tstart = sin.m_offset;
+		if( (f > trigger_level2) && (last_sample_value < trigger_level2) )
+			tstart = sin.m_offset;
+		if( (f < trigger_level2) && (last_sample_value > trigger_level2) )
 			tstart = sin.m_offset;
 		last_sample_value = f;
 
@@ -136,13 +160,14 @@ void EyeDecoder::Refresh()
 			ui_widths.push_back(tstart - old_tstart);
 
 		//We know where this sample is within the UI.
-		pixmap[sin.m_offset - tstart][f] ++;
+		//NOTE: first partial UI of the capture doesn't go in the map since we don't know the phase offset!
+		if(tstart != 0)
+			pixmap[sin.m_offset - tstart][f] ++;
 	}
 
 	//Figure out the best guess width of the unit interval
 	//We should never trigger more than once in a UI, but we might have several UIs between triggers
 	//Compute a histogram of the UI widths and pick the highest bin. This is probably one UI.
-	//TODO: it might be a harmonic!
 	map<int, int64_t> hist;
 	for(auto w : ui_widths)
 		hist[w] ++;
@@ -158,9 +183,49 @@ void EyeDecoder::Refresh()
 	}
 
 	int64_t eye_width = max_bin;
-	LogDebug("Calculated UI width: %ld samples / %.3f ns\n",
+	LogDebug("First-pass UI width: %ld samples / %.3f ns (%ld hits)\n",
+		eye_width, eye_width * cap->m_timescale / 1e3, max_count);
+
+	//We might have found a harmonic! Check integer divisions of our initial UI
+	/*
+	for(int div=2; div<10; div++)
+	{
+		int ibin = max_bin / div;
+		int64_t temp_count = 0;
+		int temp_bin = 0;
+		for(int delta=-5; delta<=5; delta ++)
+		{
+			int bin = delta + ibin;
+			if(bin < 0)
+				continue;
+			if(bin > max_bin)
+				continue;
+
+			int64_t count = hist[bin];
+			if(count > temp_count)
+			{
+				temp_count = count;
+				temp_bin = bin;
+			}
+		}
+
+		if(temp_count != 0)
+		{
+			LogDebug("Trying harmonic %d: %d samples / %.3f ns: %ld hits\n",
+				div, temp_bin, temp_bin*cap->m_timescale/1e3, temp_count);
+		}
+	}
+	*/
+
+	LogDebug("Final UI width: %ld samples / %.3f ns\n",
 		eye_width, eye_width * cap->m_timescale / 1e3);
 	m_uiWidth = eye_width;
+	if(m_uiWidth == 0)
+	{
+		LogDebug("No trigger found\n");
+		delete cap;
+		return;
+	}
 
 	//Merge data from adjacent UIs
 	map<int64_t, map<float, int64_t> > pixmap_merged;
