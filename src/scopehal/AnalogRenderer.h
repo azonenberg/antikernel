@@ -87,7 +87,8 @@ public:
 		std::vector<time_range>& ranges,
 		float ytop,
 		float plotheight,
-		std::map<float, float>& gridmap);
+		std::map<float, float>& gridmap,
+		bool show_units = true);
 };
 
 #endif

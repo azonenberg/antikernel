@@ -357,6 +357,41 @@ void EyeRenderer::Render(
 		//Draw text for the Y axis labels
 		AnalogRenderer::DrawVerticalAxisLabels(cr, width, visleft, visright, ranges, ytop, plotheight, gridmap);
 
+		//Draw the color ramp at the left of the display
+		Glib::RefPtr< Gdk::Pixbuf > ramp_pixbuf = Gdk::Pixbuf::create_from_data(
+			reinterpret_cast<const unsigned char*>(g_eyeColorScale),
+			Gdk::COLORSPACE_RGB,
+			true,
+			8,
+			1,
+			256,
+			4);
+		Cairo::RefPtr< Cairo::ImageSurface > ramp_surface =
+			Cairo::ImageSurface::create(Cairo::FORMAT_ARGB32, 1, 256);
+		Cairo::RefPtr< Cairo::Context > ramp_context = Cairo::Context::create(ramp_surface);
+		Gdk::Cairo::set_source_pixbuf(ramp_context, ramp_pixbuf, 0.0, 0.0);
+		ramp_context->paint();
+
+		//Render the bitmap over our background and grid
+		for(int i=0; i<20; i++)
+		{
+			cr->save();
+				cr->begin_new_path();
+				cr->translate(visleft + 10 + i, ytop + plotheight);
+				cr->scale(1, -plotheight / 256);
+				cr->set_source(ramp_surface, 0.0, 0.0);
+				cr->rectangle(0, 0, 1, 256);
+				cr->clip();
+				cr->paint();
+			cr->restore();
+		}
+
+		//Render the legend for the color ramp
+		map<float, float> legendmap;
+		for(float f=0; f<=1.1; f+= 0.125)
+			legendmap[maxcount*f] = ytop + plotheight*(1 - f) + 10;
+		AnalogRenderer::DrawVerticalAxisLabels(cr, width, 0, visleft + 95, ranges, ytop, plotheight, legendmap, false);
+
 		delete[] pixels;
 		delete[] histogram;
 	}

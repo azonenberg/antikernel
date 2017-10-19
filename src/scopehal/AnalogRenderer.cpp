@@ -242,7 +242,8 @@ void AnalogRenderer::DrawVerticalAxisLabels(
 	vector<time_range>& /*ranges*/,
 	float ytop,
 	float plotheight,
-	map<float, float>& gridmap)
+	map<float, float>& gridmap,
+	bool show_units)
 {
 	//Draw background for the Y axis labels
 	int lineheight, linewidth;
@@ -257,7 +258,10 @@ void AnalogRenderer::DrawVerticalAxisLabels(
 	{
 		float v = it.first;
 		char tmp[32];
-		if(fabs(v) < 1)
+
+		if(!show_units)
+			snprintf(tmp, sizeof(tmp), "%.0f", v);
+		else if(fabs(v) < 1)
 			snprintf(tmp, sizeof(tmp), "%.0f mV", v*1000);
 		else
 			snprintf(tmp, sizeof(tmp), "%.2f V", v);
