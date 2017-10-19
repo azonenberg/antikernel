@@ -58,8 +58,18 @@ typedef OscilloscopeSample<EyePatternPixel> EyeSample;
 class EyeCapture : public CaptureChannel<EyePatternPixel>
 {
 public:
-	float m_minVoltage;		//TODO: bottom/top peaks
+
+	//Extrema of our waveform (highest/lowest voltage ever seen)
+	float m_minVoltage;
 	float m_maxVoltage;
+
+	//Nominal levels of our signal.
+	//Two entries for NRZ(I), three for MLT-3, four for PAM-4, etc
+	std::vector<float> m_signalLevels;
+
+	//Decision points (vertical center of each eye)
+	//One entry for NRZ(I), two for MLT-3, three for PAM-4, etc
+	std::vector<float> m_decisionPoints;
 };
 
 /**

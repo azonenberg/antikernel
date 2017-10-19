@@ -110,12 +110,18 @@ void EyeDecoder::Refresh()
 	m_timescale = m_channels[0]->m_timescale;
 	cap->m_timescale = din->m_timescale;
 
+	//Find the min/max voltage of the signal (used to set default bounds for the render).
+	//Additionally, generate a histogram of voltages. We need this to configure the trigger(s) correctly
+	//and do measurements on the eye opening(s) - since MLT-3, PAM-4, etc have multiple openings.
 	cap->m_minVoltage = 999;
 	cap->m_maxVoltage = -999;
+	map<int, int64_t> vhist;							//1 mV bins
 	for(size_t i=0; i<din->m_samples.size(); i++)
 	{
 		AnalogSample sin = din->m_samples[i];
 		float f = sin;
+
+		vhist[f * 1000] ++;
 
 		if(f > cap->m_maxVoltage)
 			cap->m_maxVoltage = f;
@@ -123,11 +129,73 @@ void EyeDecoder::Refresh()
 			cap->m_minVoltage = f;
 	}
 
+	//Crunch the histogram to find the number of signal levels in use.
+	//We're looking for peaks of significant height (10% of maximum or more) and not too close to another peak.
+	int neighborhood = 60;
+	int64_t maxpeak = 0;
+	for(auto it : vhist)
+	{
+		if(it.second > maxpeak)
+			maxpeak = it.second;
+	}
+	int64_t peakthresh = maxpeak/10;
+	for(auto it : vhist)
+	{
+		//Skip peaks that aren't tall enough
+		int64_t count = it.second;
+		if(count < peakthresh)
+			continue;
+
+		//If we're pretty close to a taller peak (within neighborhood mV) then don't do anything
+		int mv = it.first;
+		bool bigger = false;
+		for(int v=mv-neighborhood; v<=mv+neighborhood; v++)
+		{
+			auto jt = vhist.find(v);
+			if(jt == vhist.end())
+				continue;
+			if(jt->second > count)
+			{
+				bigger = true;
+				continue;
+			}
+		}
+		if(bigger)
+			continue;
+
+		//Search the neighborhood around us and do a weighted average to find the center of the bin
+		int64_t weighted = 0;
+		int64_t wcount = 0;
+		for(int v=mv-neighborhood; v<=mv+neighborhood; v++)
+		{
+			auto jt = vhist.find(v);
+			if(jt == vhist.end())
+				continue;
+
+			int64_t c = jt->second;
+			wcount += c;
+			weighted += c*v;
+		}
+		cap->m_signalLevels.push_back(weighted * 1e-3f / wcount);
+	}
+	sort(cap->m_signalLevels.begin(), cap->m_signalLevels.end());
+	LogDebug("    Signal appears to be using %d-level modulation\n", (int)cap->m_signalLevels.size());
+	for(auto v : cap->m_signalLevels)
+		LogDebug("        %6.3f V\n", v);
+
+	//Figure out decision points (eye centers)
+	for(size_t i=0; i<cap->m_signalLevels.size()-1; i++)
+	{
+		float vlo = cap->m_signalLevels[i];
+		float vhi = cap->m_signalLevels[i+1];
+		cap->m_decisionPoints.push_back(vlo + (vhi-vlo)/2);
+	}
+	LogDebug("    Decision points:\n");
+	for(auto v : cap->m_decisionPoints)
+		LogDebug("        %6.3f V\n", v);
+
 	//Keep count of how many times we've seen each pixel at a given offset
-	//TODO: make trigger level configurable
 	map<int64_t, map<float, int64_t> > pixmap;
-	float trigger_level1 = 0.45;
-	float trigger_level2 = -0.45;
 	float last_sample_value = 0;
 	int64_t tstart = 0;
 	vector<int64_t> ui_widths;
@@ -139,25 +207,18 @@ void EyeDecoder::Refresh()
 		int64_t old_tstart = tstart;
 
 		//Dual-edge trigger, no holdoff
-		/*
-		if( (f > trigger_level) && (last_sample_value < trigger_level) )
-			tstart = sin.m_offset;
-		if( (f < trigger_level) && (last_sample_value > trigger_level) )
-			tstart = sin.m_offset;
-		*/
-		if( (f > trigger_level1) && (last_sample_value < trigger_level1) )
-			tstart = sin.m_offset;
-		if( (f < trigger_level1) && (last_sample_value > trigger_level1) )
-			tstart = sin.m_offset;
-		if( (f > trigger_level2) && (last_sample_value < trigger_level2) )
-			tstart = sin.m_offset;
-		if( (f < trigger_level2) && (last_sample_value > trigger_level2) )
-			tstart = sin.m_offset;
+		for(auto v : cap->m_decisionPoints)
+		{
+			if( (f > v) && (last_sample_value < v) )
+				tstart = sin.m_offset;
+			if( (f < v) && (last_sample_value > v) )
+				tstart = sin.m_offset;
+		}
 		last_sample_value = f;
 
 		//If we triggered this cycle, add the delta
 		if(tstart != old_tstart)
-			ui_widths.push_back(tstart - old_tstart);
+			ui_widths.push_back(tstart - (1 + old_tstart));
 
 		//We know where this sample is within the UI.
 		//NOTE: first partial UI of the capture doesn't go in the map since we don't know the phase offset!
@@ -183,8 +244,22 @@ void EyeDecoder::Refresh()
 	}
 
 	int64_t eye_width = max_bin;
-	LogDebug("First-pass UI width: %ld samples / %.3f ns (%ld hits)\n",
-		eye_width, eye_width * cap->m_timescale / 1e3, max_count);
+	double baud = 1e6 / (eye_width * cap->m_timescale);
+	LogDebug("Computing symbol rate\n");
+	LogDebug("    UI width (first pass): %ld samples / %.3f ns (%.3lf Mbd)\n",
+		eye_width, eye_width * cap->m_timescale / 1e3, baud);
+
+	//Compute a weighted average around the max UI to find the best one
+	int sample_window = 5;
+	int64_t ui_weighted = 0;
+	int64_t ui_count = 0;
+	for(int delta = -sample_window; delta <= sample_window; delta ++)
+	{
+		int w = eye_width + delta;
+		ui_weighted += hist[w] * w;
+		ui_count += hist[w];
+	}
+	eye_width = round(ui_weighted * 1.0 / ui_count);
 
 	//We might have found a harmonic! Check integer divisions of our initial UI
 	/*
@@ -217,8 +292,9 @@ void EyeDecoder::Refresh()
 	}
 	*/
 
-	LogDebug("Final UI width: %ld samples / %.3f ns\n",
-		eye_width, eye_width * cap->m_timescale / 1e3);
+	baud = 1e6f / (eye_width * cap->m_timescale);
+	LogDebug("    UI width (second pass): %ld samples / %.3f ns (%.3lf Mbd)\n",
+		eye_width, eye_width * cap->m_timescale / 1e3, baud);
 	m_uiWidth = eye_width;
 	if(m_uiWidth == 0)
 	{

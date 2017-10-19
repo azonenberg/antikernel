@@ -269,6 +269,8 @@ void AnalogRenderer::DrawVerticalAxisLabels(
 		float y = it.second - lineheight/2;
 		if(y < ytop)
 			continue;
+		if(y > (ytop + plotheight))
+			continue;
 		DrawString(visright - linewidth, y, cr, tmp, false);
 	}
 	cr->begin_new_path();
