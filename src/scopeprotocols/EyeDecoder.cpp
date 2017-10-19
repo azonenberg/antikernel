@@ -327,7 +327,7 @@ void EyeDecoder::Refresh()
 
 	//Measure the width of the eye at each decision point
 	//LogDebug("Measuring eye width\n");
-	float row_height = 0.01;				//sample 10 mV above/below the decision point
+	float row_height = 0.01;				//sample +/- 10 mV around the decision point
 	for(auto v : cap->m_decisionPoints)
 	{
 		//Initialize the row
@@ -373,6 +373,54 @@ void EyeDecoder::Refresh()
 			width * 1.0f / eye_width
 			);*/
 		cap->m_eyeWidths.push_back(width);
+	}
+
+	//Find where we have signal right around the middle of the eye
+	int64_t col_width = 1;					//sample +/- 1 sample around the center of the opening
+	//LogDebug("Measuring eye height\n");
+	map<int, int64_t> colmap;
+	vector<int> voltages;
+	int64_t target = eye_width/2;
+	for(auto it : pixmap_merged)
+	{
+		int64_t time = it.first;
+		if( ( (time - target) > col_width ) || ( (time - target) < -col_width ) )
+			continue;
+
+		for(auto jt : it.second)
+		{
+			float mv = jt.first * 1000;
+			voltages.push_back(mv);
+			colmap[mv] = jt.second;
+		}
+	}
+	sort(voltages.begin(), voltages.end());
+	//for(auto y : voltages)
+	//	LogDebug("    %.3f: %lu\n", y*0.001f, colmap[y]);
+
+	//Search around each eye opening and find the available space
+	for(auto middle : cap->m_decisionPoints)
+	{
+		float vmin = -999;
+		float vmax = 999;
+
+		for(auto v : voltages)
+		{
+			float fv = v * 0.001f;
+
+			if(fv < middle)
+			{
+				if(fv > vmin)
+					vmin = fv;
+			}
+			else if(fv < vmax)
+				vmax = fv;
+		}
+		float height = vmax - vmin;
+		cap->m_eyeHeights.push_back(height);
+
+		/*LogDebug("    At %.3f V: [%.3f, %.3f], height = %.3f\n",
+			middle, vmin, vmax, height);*/
 	}
 
 	//Done, update the waveform

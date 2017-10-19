@@ -74,9 +74,12 @@ public:
 	//One entry for NRZ(I), two for MLT-3, three for PAM-4, etc
 	std::vector<float> m_decisionPoints;
 
-	//Width of the eye at each decision point
+	//Width of the eye, in samples, at each decision point
 	//For now, no BER tolerance (even a single point is enough to reduce the eye width)
-	std::vector<float> m_eyeWidths;
+	std::vector<int> m_eyeWidths;
+
+	//Height of the eye at the center of each opening
+	std::vector<float> m_eyeHeights;
 };
 
 /**

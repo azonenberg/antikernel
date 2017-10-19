@@ -320,11 +320,14 @@ void EyeRenderer::Render(
 			float width_ui = width * 1.0f / ui_width;
 			float width_ns = width * 1e-3f * capture->m_timescale;
 
-			snprintf(str, sizeof(str), "%.2f UI / %.3f ns", width_ui, width_ns);
+			snprintf(str, sizeof(str), "%.2f UI / %.3f ns\n%.1f mV",
+				width_ui,
+				width_ns,
+				capture->m_eyeHeights[i]*1000);
 			GetStringWidth(cr, str, false, swidth, sheight);
 
 			float x = xmid - swidth/2;
-			float y = VoltsToPixels(v, yzero, yscale);
+			float y = VoltsToPixels(v, yzero, yscale) - sheight/2;
 
 			cr->set_source_rgba(0, 0, 0, 0.75);
 			cr->rectangle(x, y, swidth, sheight);
