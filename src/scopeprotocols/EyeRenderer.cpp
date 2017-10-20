@@ -167,7 +167,6 @@ void EyeRenderer::Render(
 	{
 		//Save time scales
 		int64_t ui_width = channel->GetUIWidth();
-		int row_width = ui_width*2;
 		float pixels_per_ui = plot_width / 2;
 
 		//Calculate how high our waveform is
@@ -199,150 +198,222 @@ void EyeRenderer::Render(
 			y_grid,
 			capture);
 
-		//Draw cyan lines for decision points
-		cr->set_source_rgba(0.0, 1.0, 1.0, 1.0);
-		for(auto v : capture->m_decisionPoints)
-		{
-			float y = yzero - v*yscale;
-			cr->move_to(plotleft, y);
-			cr->line_to(plotright, y);
-		}
-		cr->stroke();
+		//Draw the decision thresholds
+		RenderDecisionThresholds(cr, yzero, yscale, plotleft, plotright, capture);
 
-		//Create pixel value histogram
-		int pixel_count = ui_width * m_height;
-		int64_t* histogram = new int64_t[pixel_count];
-		for(int i=0; i<pixel_count; i++)
-			histogram[i] = 0;
-
-		//Compute the histogram
+		//Draw the actual eye pattern
 		int64_t maxcount = 0;
-		for(size_t i=0; i<capture->GetDepth(); i++)
-		{
-			int64_t tstart = capture->GetSampleStart(i);
-			if(tstart >= ui_width)
-				tstart = ui_width-1;
-			auto sample = (*capture)[i];
-
-			int ystart = yscale * (capture->m_maxVoltage - sample.m_voltage);	//vertical flip
-			if(ystart >= m_height)
-				ystart = m_height-1;
-			if(ystart < 0)
-				ystart = 0;
-
-			int64_t& pix = histogram[tstart + ystart*ui_width];
-			pix += sample.m_count;
-			if(pix > maxcount)
-				maxcount = pix;
-		}
-
-		//Scale things to that we get a better coverage of the color range
-		float saturation = 0.5;
-		float cmax = maxcount * saturation;
-
-		//Convert to RGB values
-		RGBQUAD* pixels = new RGBQUAD[pixel_count * 4];
-		for(int y=0; y<plotheight; y++)
-		{
-			for(int x=-ui_width/2; x<=ui_width/2; x++)
-			{
-				int x_rotated = x;
-				if(x < 0)
-					x_rotated += ui_width;
-
-				int npix = (int)ceil((255.0f * histogram[y*ui_width + x_rotated]) / cmax);
-				if(npix > 255)
-					npix = 255;
-
-				pixels[y*row_width + x + ui_width/2]	= g_eyeColorScale[npix];
-				pixels[y*row_width + x + ui_width*3/2]	= g_eyeColorScale[npix];
-			}
-		}
-
-		//Fill empty rows with the row above
-		for(int y=1; y<plotheight; y++)
-		{
-			bool empty = true;
-			for(int x=0; x<ui_width; x++)
-			{
-				if(histogram[y*ui_width + x] != 0)
-				{
-					empty = false;
-					break;
-				}
-			}
-
-			if(empty)
-				memcpy(pixels + y*row_width, pixels + (y-1)*row_width, row_width*sizeof(RGBQUAD));
-		}
-
-		//Create the actual pixmap
-		Glib::RefPtr< Gdk::Pixbuf > pixbuf = Gdk::Pixbuf::create_from_data(
-			reinterpret_cast<unsigned char*>(pixels),
-			Gdk::COLORSPACE_RGB,
-			true,
-			8,
-			row_width,
-			plotheight,
-			row_width * 4);
-		Cairo::RefPtr< Cairo::ImageSurface > surface =
-			Cairo::ImageSurface::create(Cairo::FORMAT_ARGB32, row_width, plotheight);
-		Cairo::RefPtr< Cairo::Context > context = Cairo::Context::create(surface);
-		Gdk::Cairo::set_source_pixbuf(context, pixbuf, 0.0, 0.0);
-		context->paint();
-
-		//Render the bitmap over our background and grid
-		cr->save();
-			cr->begin_new_path();
-			cr->translate(plotleft, ytop);
-			cr->scale(plot_width / row_width, 1);
-			cr->set_source(surface, 0.0, 0.0);
-			cr->rectangle(0, 0, row_width, plotheight);
-			cr->clip();
-			cr->paint();
-		cr->restore();
+		float saturation = 0.4;
+		RenderEyeBitmap(cr, plot_width, plotleft, plotheight, yscale, ytop, ui_width, maxcount, saturation, capture);
 
 		//Draw the color ramp at the left of the display
-		RenderColorLegend(cr, visleft, ytop, plotheight, maxcount);
+		RenderColorLegend(cr, visleft, ytop, plotheight, maxcount, saturation);
 
 		//Draw text info at the left of the display
-		RenderLeftSideInfobox(cr, visleft, ytop, ui_width, capture);
+		RenderLeftSideInfobox(cr, visleft, ytop, channel->GetUIWidthFractional(), capture);
 
 		//Draw eye opening info at each decision point
-		int swidth;
-		int sheight;
-		char str[512];
-		for(size_t i=0; i < capture->m_eyeWidths.size(); i++)
-		{
-			float v = capture->m_decisionPoints[i];
-			int width = capture->m_eyeWidths[i];
-
-			float width_ui = width * 1.0f / ui_width;
-			float width_ns = width * 1e-3f * capture->m_timescale;
-
-			snprintf(str, sizeof(str), "%.2f UI / %.3f ns\n%.1f mV",
-				width_ui,
-				width_ns,
-				capture->m_eyeHeights[i]*1000);
-			GetStringWidth(cr, str, false, swidth, sheight);
-
-			float x = xmid - swidth/2;
-			float y = VoltsToPixels(v, yzero, yscale) - sheight/2;
-
-			cr->set_source_rgba(0, 0, 0, 0.75);
-			cr->rectangle(x, y, swidth, sheight);
-			cr->fill();
-
-			cr->set_source_rgba(1, 1, 1, 1);
-			DrawString(x, y, cr, str, false);
-		}
-
-		delete[] pixels;
-		delete[] histogram;
+		RenderEyeOpenings(cr, xmid, yzero, yscale, ui_width, capture);
 	}
 
 	cr->restore();
 	RenderEndCallback(cr, width, visleft, visright, ranges);
+}
+
+/**
+	@brief Draw the labels for the eye opening markings
+ */
+void EyeRenderer::RenderEyeOpenings(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		float xmid,
+		float yzero,
+		float yscale,
+		float ui_width,
+		EyeCapture* capture)
+{
+	int swidth;
+	int sheight;
+	char str[512];
+	for(size_t i=0; i < capture->m_eyeWidths.size(); i++)
+	{
+		float v = capture->m_decisionPoints[i];
+		int width = capture->m_eyeWidths[i];
+
+		float width_ui = width * 1.0f / ui_width;
+		float width_ns = width * 1e-3f * capture->m_timescale;
+
+		snprintf(str, sizeof(str), "W = %.2f UI / %.3f ns\nH = %.1f mV",
+			width_ui,
+			width_ns,
+			capture->m_eyeHeights[i]*1000);
+		GetStringWidth(cr, str, false, swidth, sheight);
+
+		float x = xmid - swidth/2;
+		float y = VoltsToPixels(v, yzero, yscale) - sheight/2;
+
+		cr->set_source_rgba(0, 0, 0, 0.75);
+		cr->rectangle(x, y, swidth, sheight);
+		cr->fill();
+
+		cr->set_source_rgba(1, 1, 1, 1);
+		DrawString(x, y, cr, str, false);
+	}
+}
+
+/**
+	@brief Draw the cyan lines for the threshold levels
+ */
+void EyeRenderer::RenderDecisionThresholds(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		float yzero,
+		float yscale,
+		float plotleft,
+		float plotright,
+		EyeCapture* capture)
+{
+	char str[256];
+	int swidth;
+	int sheight;
+	for(auto v : capture->m_decisionPoints)
+	{
+		float y = yzero - v*yscale;
+
+		//Draw the line
+		cr->set_source_rgba(0.0, 1.0, 1.0, 1.0);
+		cr->move_to(plotleft, y);
+		cr->line_to(plotright, y);
+		cr->stroke();
+
+		//Draw the label
+		snprintf(str, sizeof(str), "%.1f mV", v*1000);
+		GetStringWidth(cr, str, false, swidth, sheight);
+
+		float tx = plotright - swidth;
+		float ty = y - sheight/2;
+
+		cr->set_source_rgba(0, 0, 0, 0.75);
+		cr->rectangle(tx, ty, swidth, sheight);
+		cr->fill();
+
+		cr->set_source_rgba(1, 1, 1, 1);
+		DrawString(tx, ty, cr, str, false);
+	}
+}
+
+/**
+	@brief Draw the main bitmap of the eye diagram
+ */
+void EyeRenderer::RenderEyeBitmap(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		float plot_width,
+		float plotleft,
+		float plotheight,
+		float yscale,
+		float ytop,
+		int64_t ui_width,
+		int64_t& maxcount,
+		float saturation,
+		EyeCapture* capture)
+{
+	int row_width = ui_width*2;
+
+	//Create pixel value histogram
+	int pixel_count = ui_width * m_height;
+	int64_t* histogram = new int64_t[pixel_count];
+	for(int i=0; i<pixel_count; i++)
+		histogram[i] = 0;
+
+	//Compute the histogram
+	for(size_t i=0; i<capture->GetDepth(); i++)
+	{
+		int64_t tstart = capture->GetSampleStart(i);
+		auto sample = (*capture)[i];
+
+		int ystart = yscale * (capture->m_maxVoltage - sample.m_voltage);	//vertical flip
+		if(ystart >= m_height)
+			ystart = m_height-1;
+		if(ystart < 0)
+			ystart = 0;
+
+		int64_t& pix = histogram[tstart + ystart*ui_width];
+		pix += sample.m_count;
+		if(pix > maxcount)
+			maxcount = pix;
+	}
+	if(maxcount == 0)
+	{
+		LogError("No pixels\n");
+		delete[] histogram;
+		return;
+	}
+
+	//Scale things to that we get a better coverage of the color range
+	float cmax = maxcount * saturation;
+
+	//Convert to RGB values
+	RGBQUAD* pixels = new RGBQUAD[pixel_count * 4];
+	for(int y=0; y<plotheight; y++)
+	{
+		for(int x=-ui_width/2; x<=ui_width/2; x++)
+		{
+			int x_rotated = x;
+			if(x < 0)
+				x_rotated += ui_width;
+
+			int npix = (int)ceil((255.0f * histogram[y*ui_width + x_rotated]) / cmax);
+			if(npix > 255)
+				npix = 255;
+
+			pixels[y*row_width + x + ui_width/2]	= g_eyeColorScale[npix];
+			pixels[y*row_width + x + ui_width*3/2]	= g_eyeColorScale[npix];
+		}
+	}
+
+	//Fill empty rows with the row above
+	for(int y=1; y<plotheight; y++)
+	{
+		bool empty = true;
+		for(int x=0; x<ui_width; x++)
+		{
+			if(histogram[y*ui_width + x] != 0)
+			{
+				empty = false;
+				break;
+			}
+		}
+
+		if(empty)
+			memcpy(pixels + y*row_width, pixels + (y-1)*row_width, row_width*sizeof(RGBQUAD));
+	}
+
+	//Create the actual pixmap
+	Glib::RefPtr< Gdk::Pixbuf > pixbuf = Gdk::Pixbuf::create_from_data(
+		reinterpret_cast<unsigned char*>(pixels),
+		Gdk::COLORSPACE_RGB,
+		true,
+		8,
+		row_width,
+		plotheight,
+		row_width * 4);
+	Cairo::RefPtr< Cairo::ImageSurface > surface =
+		Cairo::ImageSurface::create(Cairo::FORMAT_ARGB32, row_width, plotheight);
+	Cairo::RefPtr< Cairo::Context > context = Cairo::Context::create(surface);
+	Gdk::Cairo::set_source_pixbuf(context, pixbuf, 0.0, 0.0);
+	context->paint();
+
+	//Render the bitmap over our background and grid
+	cr->save();
+		cr->begin_new_path();
+		cr->translate(plotleft, ytop);
+		cr->scale(plot_width / row_width, 1);
+		cr->set_source(surface, 0.0, 0.0);
+		cr->rectangle(0, 0, row_width, plotheight);
+		cr->clip();
+		cr->paint();
+	cr->restore();
+
+	delete[] pixels;
+	delete[] histogram;
 }
 
 /**
@@ -462,37 +533,69 @@ void EyeRenderer::RenderLeftSideInfobox(
 		const Cairo::RefPtr<Cairo::Context>& cr,
 		int visleft,
 		float ytop,
-		int64_t ui_width,
+		double ui_width,
 		EyeCapture* capture)
 {
-	float textleft = visleft + 100;
+	float y = ytop;
 	int swidth;
 	int sheight;
-	string labels =
-		"Points:\n"
-		"Timebase:\n"
-		"Modulation:\n"
-		"UI width:\n"
-		"Symbol rate:\n";
-	DrawString(textleft, ytop, cr, labels, false);
-	GetStringWidth(cr, labels, false, swidth, sheight);
-
 	char str[512];
-	snprintf(
-		str,
-		sizeof(str),
-		"%ld\n"
-		"%.1f GS/s\n"
-		"%d levels\n"
-		"%.3f ns\n"
-		"%.3f Mbd\n",
-		capture->m_sampleCount,
-		1e3f / capture->m_timescale,
-		(int)capture->m_signalLevels.size(),
-		ui_width * 1e-3f * capture->m_timescale,
-		1e6 / (ui_width * capture->m_timescale)
-		);
-	DrawString(textleft + swidth + 5, ytop, cr, str, false);
+
+	//Text positioning
+	float textleft = visleft + 100;
+	float numleft = textleft + 75;
+	float rowspacing = 2;
+
+	//Number of points in the capture
+	string label = "Points:";
+	snprintf(str, sizeof(str), "%ld", capture->m_sampleCount);
+	GetStringWidth(cr, label, false, swidth, sheight);
+	DrawString(textleft, y, cr, label, false);
+	DrawString(numleft, y, cr, str, false);
+	y += sheight + rowspacing;
+
+	//Sample rate
+	label = "Timebase:";
+	snprintf(str, sizeof(str), "%.1f GS/s", 1e3f / capture->m_timescale);
+	GetStringWidth(cr, label, false, swidth, sheight);
+	DrawString(textleft, y, cr, label, false);
+	DrawString(numleft, y, cr, str, false);
+	y += sheight + rowspacing;
+
+	//Modulation
+	label = "Modulation:";
+	snprintf(str, sizeof(str), "%d levels", (int)capture->m_signalLevels.size());
+	GetStringWidth(cr, label, false, swidth, sheight);
+	DrawString(textleft, y, cr, label, false);
+	DrawString(numleft, y, cr, str, false);
+	y += sheight + rowspacing;
+
+	//Voltage levels (right aligned)
+	for(int i = capture->m_signalLevels.size()-1; i >= 0; i--)
+	{
+		float v = capture->m_signalLevels[i];
+
+		snprintf(str, sizeof(str), "%6.1f mV", v*1000);
+		GetStringWidth(cr, str, false, swidth, sheight);
+		DrawString(numleft + 70 - swidth, y, cr, str, false);
+		y += sheight + rowspacing;
+	}
+
+	//UI width
+	label = "UI width:";
+	snprintf(str, sizeof(str), "%.3f ns", ui_width * 1e-3 * capture->m_timescale);
+	GetStringWidth(cr, label, false, swidth, sheight);
+	DrawString(textleft, y, cr, label, false);
+	DrawString(numleft, y, cr, str, false);
+	y += sheight + rowspacing;
+
+	//Symbol rate
+	label = "Symbol rate:";
+	snprintf(str, sizeof(str), "%.3f Mbd", 1e6 / (ui_width * capture->m_timescale));
+	GetStringWidth(cr, label, false, swidth, sheight);
+	DrawString(textleft, y, cr, label, false);
+	DrawString(numleft, y, cr, str, false);
+	y += sheight + rowspacing;
 }
 
 /**
@@ -503,7 +606,8 @@ void EyeRenderer::RenderColorLegend(
 		int visleft,
 		float ytop,
 		float plotheight,
-		int64_t maxcount)
+		int64_t maxcount,
+		float saturation)
 {
 	//Create the pixmap
 	Glib::RefPtr< Gdk::Pixbuf > ramp_pixbuf = Gdk::Pixbuf::create_from_data(
@@ -537,7 +641,7 @@ void EyeRenderer::RenderColorLegend(
 	//and the text labels
 	map<float, float> legendmap;
 	for(float f=0; f<=1.1; f+= 0.125)
-		legendmap[maxcount*f] = ytop + plotheight*(1 - f) + 10;
+		legendmap[maxcount*f*saturation] = ytop + plotheight*(1 - f) + 10;
 	AnalogRenderer::DrawVerticalAxisLabels(cr, visleft + 95, ytop, plotheight, legendmap, false);
 }
 

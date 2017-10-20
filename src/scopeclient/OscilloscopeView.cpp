@@ -157,9 +157,13 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 			for(size_t i=0; i<m_scope->GetChannelCount(); i++)
 			{
 				auto chan = m_scope->GetChannel(i);
-				auto r = m_renderers[chan];
-				//TODO: do we always have one for each channel?
-				r->Render(cr, width, 0 + xoff, pwidth + xoff, ranges);
+				auto it = m_renderers.find(chan);
+				if(it == m_renderers.end())
+				{
+					LogWarning("Channel \"%s\" has no renderer\n", chan->m_displayname.c_str());
+					continue;
+				}
+				it->second->Render(cr, width, 0 + xoff, pwidth + xoff, ranges);
 			}
 
 			//Draw zigzag lines over the channel backgrounds

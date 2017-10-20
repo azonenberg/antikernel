@@ -37,6 +37,8 @@
 
 #include "../scopehal/ProtocolDecoder.h"
 
+class EyeCapture;
+
 class EyeDecoder : public ProtocolDecoder
 {
 public:
@@ -55,10 +57,17 @@ public:
 	int64_t GetUIWidth()
 	{ return m_uiWidth; }
 
+	double GetUIWidthFractional()
+	{ return m_uiWidthFractional; }
+
 	PROTOCOL_DECODER_INITPROC(EyeDecoder)
 
 protected:
-	int64_t m_uiWidth;
+	int64_t m_uiWidth;				//integer samples
+	double m_uiWidthFractional;		//fractional samples, for more precision over long captures
+
+	bool DetectModulationLevels(AnalogCapture* din, EyeCapture* cap);
+	bool CalculateUIWidth(AnalogCapture* din, EyeCapture* cap);
 };
 
 #endif

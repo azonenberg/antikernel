@@ -458,7 +458,7 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 			//LogDebug("Headers took %.3f ms\n", dt * 1000);
 
 			if(j == 0)
-				cap->m_timescale = interval;
+				cap->m_timescale = round(interval);
 
 			//Ask for the actual data (in raw binary)
 			cmd = "C1:WF? 'DAT1'";

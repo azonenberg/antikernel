@@ -115,18 +115,47 @@ protected:
 		float y_grid,
 		EyeCapture* capture);
 
+	void RenderEyeOpenings(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		float xmid,
+		float yzero,
+		float yscale,
+		float ui_width,
+		EyeCapture* capture);
+
+	void RenderDecisionThresholds(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		float yzero,
+		float yscale,
+		float plotleft,
+		float plotright,
+		EyeCapture* capture);
+
+	void RenderEyeBitmap(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		float plot_width,
+		float plotleft,
+		float plotheight,
+		float yscale,
+		float ytop,
+		int64_t ui_width,
+		int64_t& maxcount,
+		float saturation,
+		EyeCapture* capture);
+
 	void RenderColorLegend(
 		const Cairo::RefPtr<Cairo::Context>& cr,
 		int visleft,
 		float ytop,
 		float plotheight,
-		int64_t maxcount);
+		int64_t maxcount,
+		float saturation);
 
 	void RenderLeftSideInfobox(
 		const Cairo::RefPtr<Cairo::Context>& cr,
 		int visleft,
 		float ytop,
-		int64_t ui_width,
+		double ui_width,
 		EyeCapture* capture);
 
 	float VoltsToPixels(float v, float yzero, float yscale)

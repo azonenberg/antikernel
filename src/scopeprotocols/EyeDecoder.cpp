@@ -83,34 +83,8 @@ bool EyeDecoder::NeedsConfig()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Actual decoder logic
 
-void EyeDecoder::Refresh()
+bool EyeDecoder::DetectModulationLevels(AnalogCapture* din, EyeCapture* cap)
 {
-	//Get the input data
-	if(m_channels[0] == NULL)
-	{
-		SetData(NULL);
-		return;
-	}
-	AnalogCapture* din = dynamic_cast<AnalogCapture*>(m_channels[0]->GetData());
-	if(din == NULL)
-	{
-		SetData(NULL);
-		return;
-	}
-
-	//Can't do much if we have no samples to work with
-	if(din->GetDepth() == 0)
-	{
-		SetData(NULL);
-		return;
-	}
-
-	//Initialize the capture
-	EyeCapture* cap = new EyeCapture;
-	m_timescale = m_channels[0]->m_timescale;
-	cap->m_timescale = din->m_timescale;
-	cap->m_sampleCount = din->m_samples.size();
-
 	//Find the min/max voltage of the signal (used to set default bounds for the render).
 	//Additionally, generate a histogram of voltages. We need this to configure the trigger(s) correctly
 	//and do measurements on the eye opening(s) - since MLT-3, PAM-4, etc have multiple openings.
@@ -195,16 +169,26 @@ void EyeDecoder::Refresh()
 	for(auto v : cap->m_decisionPoints)
 		LogDebug("        %6.3f V\n", v);*/
 
-	//Keep count of how many times we've seen each pixel at a given offset
-	map<int64_t, map<float, int64_t> > pixmap;
+	//Sanity check
+	if(cap->m_signalLevels.size() < 2)
+	{
+		LogDebug("Couldn't find at least two distinct symbol voltages\n");
+		delete cap;
+		return false;
+	}
+
+	return true;
+}
+
+bool EyeDecoder::CalculateUIWidth(AnalogCapture* din, EyeCapture* cap)
+{
+	//Calculate an initial guess of the UI by triggering at the start of every bit
 	float last_sample_value = 0;
 	int64_t tstart = 0;
 	vector<int64_t> ui_widths;
-	for(size_t i=0; i<din->m_samples.size(); i++)
+	for(auto sin : din->m_samples)
 	{
-		AnalogSample sin = din->m_samples[i];
 		float f = sin;
-
 		int64_t old_tstart = tstart;
 
 		//Dual-edge trigger, no holdoff
@@ -218,13 +202,9 @@ void EyeDecoder::Refresh()
 		last_sample_value = f;
 
 		//If we triggered this cycle, add the delta
-		if(tstart != old_tstart)
-			ui_widths.push_back(tstart - (1 + old_tstart));
-
-		//We know where this sample is within the UI.
-		//NOTE: first partial UI of the capture doesn't go in the map since we don't know the phase offset!
-		if(tstart != 0)
-			pixmap[sin.m_offset - tstart][f] ++;
+		//Don't count the first partial UI
+		if( (tstart != old_tstart) && (old_tstart != 0) )
+			ui_widths.push_back(tstart - old_tstart);
 	}
 
 	//Figure out the best guess width of the unit interval
@@ -250,70 +230,170 @@ void EyeDecoder::Refresh()
 	LogDebug("    UI width (first pass): %ld samples / %.3f ns (%.3lf Mbd)\n",
 		eye_width, eye_width * cap->m_timescale / 1e3, baud);*/
 
-	//Compute a weighted average around the max UI to find the best one
-	int sample_window = 3;
-	int64_t ui_weighted = 0;
-	int64_t ui_count = 0;
-	for(int delta = -sample_window; delta <= sample_window; delta ++)
+	//Second pass: compute the sum of UIs across the entire signal and average.
+	//If the delta is significantly off from our first-guess UI, call it two!
+	last_sample_value = 0;
+	tstart = 0;
+	int64_t ui_width_sum = 0;
+	int64_t ui_width_count = 0;
+	for(auto sin : din->m_samples)
 	{
-		int w = eye_width + delta;
-		ui_weighted += hist[w] * w;
-		ui_count += hist[w];
-	}
-	eye_width = round(ui_weighted * 1.0 / ui_count);
+		float f = sin;
+		int64_t old_tstart = tstart;
 
-	//We might have found a harmonic! Check integer divisions of our initial UI
-	/*
-	for(int div=2; div<10; div++)
-	{
-		int ibin = max_bin / div;
-		int64_t temp_count = 0;
-		int temp_bin = 0;
-		for(int delta=-5; delta<=5; delta ++)
+		//Dual-edge trigger, no holdoff
+		for(auto v : cap->m_decisionPoints)
 		{
-			int bin = delta + ibin;
-			if(bin < 0)
-				continue;
-			if(bin > max_bin)
+			if( (f > v) && (last_sample_value < v) )
+				tstart = sin.m_offset;
+			if( (f < v) && (last_sample_value > v) )
+				tstart = sin.m_offset;
+		}
+		last_sample_value = f;
+
+		//If we triggered this cycle, add the delta
+		//Don't count the first partial UI
+		if( (tstart != old_tstart) && (old_tstart != 0) )
+		{
+			int64_t w = tstart - old_tstart;
+
+			//Skip runt pulses (glitch?)
+			if(w < eye_width/2)
 				continue;
 
-			int64_t count = hist[bin];
-			if(count > temp_count)
+			//If it's more than 1.5x the first-guess UI, estimate the width and add it
+			if(w > eye_width * 1.5f)
 			{
-				temp_count = count;
-				temp_bin = bin;
+				//Don't try guessing runs more than 6 UIs long, too inaccurate.
+				//Within each guess allow +/- 25% variance for the actual edge location.
+				for(int guess=2; guess<=6; guess++)
+				{
+					float center = guess * eye_width;
+					float low = center - eye_width*0.25;
+					float high = center + eye_width*0.25;
+					if( (w > low) && (w < high) )
+					{
+						ui_width_sum += w;
+						ui_width_count += guess;
+						break;
+					}
+				}
+				continue;
 			}
-		}
 
-		if(temp_count != 0)
-		{
-			LogDebug("Trying harmonic %d: %d samples / %.3f ns: %ld hits\n",
-				div, temp_bin, temp_bin*cap->m_timescale/1e3, temp_count);
+			//It looks like a single UI! Count it
+			ui_width_sum += w;
+			ui_width_count ++;
 		}
 	}
-	*/
+	double average_width = ui_width_sum * 1.0 / ui_width_count;
+	//LogDebug("    Average UI width (second pass): %.3lf samples\n", average_width);
+	m_uiWidth = round(average_width);
+	m_uiWidthFractional = average_width;
 
 	/*baud = 1e6f / (eye_width * cap->m_timescale);
 	LogDebug("    UI width (second pass): %ld samples / %.3f ns (%.3lf Mbd)\n",
 		eye_width, eye_width * cap->m_timescale / 1e3, baud);*/
-	m_uiWidth = eye_width;
-	if(m_uiWidth == 0)
+
+	//Sanity check
+	if(eye_width == 0)
 	{
 		LogDebug("No trigger found\n");
 		delete cap;
+		return false;
+	}
+
+	return true;
+}
+
+void EyeDecoder::Refresh()
+{
+	//Get the input data
+	if(m_channels[0] == NULL)
+	{
+		SetData(NULL);
+		return;
+	}
+	AnalogCapture* din = dynamic_cast<AnalogCapture*>(m_channels[0]->GetData());
+	if(din == NULL)
+	{
+		SetData(NULL);
 		return;
 	}
 
-	//Merge data from adjacent UIs
-	map<int64_t, map<float, int64_t> > pixmap_merged;
-	for(auto it : pixmap)
+	//Can't do much if we have no samples to work with
+	if(din->GetDepth() == 0)
 	{
-		for(auto jt : it.second)
-			pixmap_merged[it.first % eye_width][jt.first] += jt.second;
+		SetData(NULL);
+		return;
+	}
+
+	//Initialize the capture
+	EyeCapture* cap = new EyeCapture;
+	m_timescale = m_channels[0]->m_timescale;
+	cap->m_timescale = din->m_timescale;
+	cap->m_sampleCount = din->m_samples.size();
+
+	//Figure out what modulation is in use and what the levels are
+	if(!DetectModulationLevels(din, cap))
+		return;
+
+	//Once we have decision thresholds, we can find bit boundaries and calculate the symbol rate
+	if(!CalculateUIWidth(din, cap))
+		return;
+
+	//Generate the final pixel map
+	map<int64_t, map<float, int64_t> > pixmap;
+	bool first = true;
+	float last_sample_value = 0;
+	int64_t tstart = 0;
+	int64_t uis_per_trigger = 16;
+	for(auto sin : din->m_samples)
+	{
+		float f = sin;
+
+		//If we haven't triggered, wait for the signal to cross a decision threshold
+		//so we can phase align to the data clock.
+		if(tstart == 0)
+		{
+			if(!first)
+			{
+				for(auto v : cap->m_decisionPoints)
+				{
+					if( (f > v) && (last_sample_value < v) )
+						tstart = sin.m_offset;
+					if( (f < v) && (last_sample_value > v) )
+						tstart = sin.m_offset;
+				}
+			}
+			else
+				first = false;
+
+			last_sample_value = f;
+			continue;
+		}
+
+		//If we get here, we've triggered. Chop the signal at UI boundaries
+		double doff = sin.m_offset - tstart;
+		int64_t offset = round(fmod(doff, m_uiWidthFractional));
+		if(offset >= m_uiWidth)
+			offset = 0;
+
+		//and add to the histogram
+		pixmap[offset][f] ++;
+
+		//Re-trigger every uis_per_trigger UIs to compensate for clock skew between our guesstimated clock
+		//and the actual line rate
+		double num_uis = doff / m_uiWidthFractional;
+		if(num_uis > uis_per_trigger)
+		{
+			tstart = 0;
+			first = true;
+		}
 	}
 
 	//Generate the samples
-	for(auto it : pixmap_merged)
+	for(auto it : pixmap)
 	{
 		for(auto jt : it.second)
 		{
@@ -332,11 +412,11 @@ void EyeDecoder::Refresh()
 	{
 		//Initialize the row
 		vector<int64_t> row;
-		for(int i=0; i<eye_width; i++)
+		for(int i=0; i<m_uiWidth; i++)
 			row.push_back(0);
 
 		//Search this band and see where we have signal
-		for(auto it : pixmap_merged)
+		for(auto it : pixmap)
 		{
 			int64_t time = it.first;
 			for(auto jt : it.second)
@@ -348,7 +428,7 @@ void EyeDecoder::Refresh()
 		}
 
 		//Start from the middle and look left and right
-		int middle = eye_width/2;
+		int middle = m_uiWidth/2;
 		int left = middle;
 		int right = middle;
 		for(; left > 0; left--)
@@ -356,7 +436,7 @@ void EyeDecoder::Refresh()
 			if(row[left-1] != 0)
 				break;
 		}
-		for(; right < eye_width-1; right++)
+		for(; right < m_uiWidth-1; right++)
 		{
 			if(row[right+1] != 0)
 				break;
@@ -380,8 +460,8 @@ void EyeDecoder::Refresh()
 	//LogDebug("Measuring eye height\n");
 	map<int, int64_t> colmap;
 	vector<int> voltages;
-	int64_t target = eye_width/2;
-	for(auto it : pixmap_merged)
+	int64_t target = m_uiWidth/2;
+	for(auto it : pixmap)
 	{
 		int64_t time = it.first;
 		if( ( (time - target) > col_width ) || ( (time - target) < -col_width ) )
