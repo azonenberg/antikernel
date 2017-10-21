@@ -47,10 +47,19 @@ public:
 
 	virtual unsigned int GetMeasurementTypes() =0;
 
+	//Channel info
+	virtual int GetMeterChannelCount() =0;
+	virtual std::string GetMeterChannelName(int chan) =0;
+	virtual int GetCurrentMeterChannel() =0;
+	virtual void SetCurrentMeterChannel(int chan) =0;
+
+	//Meter operating mode
+	virtual MeasurementTypes GetMeterMode() =0;
+	virtual void SetMeterMode(MeasurementTypes type) =0;
+
 	//Get readings
-	virtual double GetDCVoltage() =0;
-	virtual double GetDCRMSAmplitude() =0;
-	virtual double GetACRMSAmplitude() =0;
+	virtual double GetVoltage() =0;
+	virtual double GetPeakToPeak() =0;
 	virtual double GetFrequency() =0;
 };
 

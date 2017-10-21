@@ -335,7 +335,7 @@ string LeCroyVICPOscilloscope::GetSerial()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DMM mode
 
-double LeCroyVICPOscilloscope::GetDCVoltage()
+double LeCroyVICPOscilloscope::GetVoltage()
 {
 	SendCommand("VBS? 'return = app.acquisition.DVM.Voltage'");
 	string str = ReadSingleBlockString();
@@ -344,22 +344,103 @@ double LeCroyVICPOscilloscope::GetDCVoltage()
 	return ret;
 }
 
-double LeCroyVICPOscilloscope::GetDCRMSAmplitude()
+double LeCroyVICPOscilloscope::GetPeakToPeak()
 {
-	LogError("GetDCRMSAmplitude not implemented\n");
-	return 0;
-}
-
-double LeCroyVICPOscilloscope::GetACRMSAmplitude()
-{
-	LogError("GetACRMSAmplitude not implemented\n");
-	return 0;
+	SendCommand("VBS? 'return = app.acquisition.DVM.Amplitude'");
+	string str = ReadSingleBlockString();
+	double ret;
+	sscanf(str.c_str(), "%lf", &ret);
+	return ret;
 }
 
 double LeCroyVICPOscilloscope::GetFrequency()
 {
-	LogError("GetFrequency not implemented\n");
-	return 0;
+	SendCommand("VBS? 'return = app.acquisition.DVM.Frequency'");
+	string str = ReadSingleBlockString();
+	double ret;
+	sscanf(str.c_str(), "%lf", &ret);
+	return ret;
+}
+
+int LeCroyVICPOscilloscope::GetMeterChannelCount()
+{
+	return m_analogChannelCount;
+}
+
+string LeCroyVICPOscilloscope::GetMeterChannelName(int chan)
+{
+	return m_channels[chan]->m_displayname;
+}
+
+int LeCroyVICPOscilloscope::GetCurrentMeterChannel()
+{
+	SendCommand("VBS? 'return = app.acquisition.DVM.DvmSource'");
+	string str = ReadSingleBlockString();
+	int i;
+	sscanf(str.c_str(), "C%d", &i);
+	return i - 1;	//scope channels are 1 based
+}
+
+void LeCroyVICPOscilloscope::SetCurrentMeterChannel(int chan)
+{
+	char cmd[128];
+	snprintf(
+		cmd,
+		sizeof(cmd),
+		"VBS 'app.acquisition.DVM.DvmSource = \"C%d\"",
+		chan + 1);	//scope channels are 1 based
+	SendCommand(cmd);
+}
+
+Multimeter::MeasurementTypes LeCroyVICPOscilloscope::GetMeterMode()
+{
+	SendCommand("VBS? 'return = app.acquisition.DVM.DvmMode'");
+	string str = ReadSingleBlockString();
+
+	//trim off trailing whitespace
+	while(isspace(str[str.length()-1]))
+		str.resize(str.length() - 1);
+
+	if(str == "DC")
+		return Multimeter::DC_VOLTAGE;
+	else if(str == "DC RMS")
+		return Multimeter::DC_RMS_AMPLITUDE;
+	else if(str == "ACRMS")
+		return Multimeter::AC_RMS_AMPLITUDE;
+	else if(str == "Frequency")
+		return Multimeter::FREQUENCY;
+	else
+	{
+		LogError("Invalid meter mode \"%s\"\n", str.c_str());
+		return Multimeter::DC_VOLTAGE;
+	}
+}
+
+void LeCroyVICPOscilloscope::SetMeterMode(Multimeter::MeasurementTypes type)
+{
+	string stype;
+	switch(type)
+	{
+		case Multimeter::DC_VOLTAGE:
+			stype = "DC";
+			break;
+
+		case Multimeter::DC_RMS_AMPLITUDE:
+			stype = "DC RMS";
+			break;
+
+		case Multimeter::AC_RMS_AMPLITUDE:
+			stype = "ACRMS";
+			break;
+
+		case Multimeter::FREQUENCY:
+			stype = "Frequency";
+			break;
+	}
+
+	char cmd[128];
+	snprintf(cmd, sizeof(cmd), "VBS 'app.acquisition.DVM.DvmMode = \"%s\"'", stype.c_str());
+	SendCommand(cmd);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

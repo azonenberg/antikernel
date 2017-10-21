@@ -95,7 +95,11 @@ void DMMWindow::CreateWidgets()
 					m_signalSourceLabel.set_text("Input");
 					m_signalSourceLabel.set_size_request(50, -1);
 				m_signalSourceBox.pack_start(m_signalSourceSelector, Gtk::PACK_SHRINK);
-					m_signalSourceSelector.append("FIXME");
+					int count = m_meter->GetMeterChannelCount();
+					for(int i=0; i<count; i++)
+						m_signalSourceSelector.append(m_meter->GetMeterChannelName(i));
+					int cur_chan = m_meter->GetCurrentMeterChannel();
+					m_signalSourceSelector.set_active_text(m_meter->GetMeterChannelName(cur_chan));
 			m_vbox.pack_start(m_measurementTypeBox, Gtk::PACK_SHRINK);
 				m_measurementTypeBox.pack_start(m_measurementTypeLabel, Gtk::PACK_SHRINK);
 					m_measurementTypeLabel.set_text("Mode");
@@ -110,29 +114,106 @@ void DMMWindow::CreateWidgets()
 						m_measurementTypeSelector.append("RMS (AC couple)");
 					if(type & Multimeter::FREQUENCY)
 						m_measurementTypeSelector.append("Frequency");
-		m_hbox.pack_start(m_voltageLabel, Gtk::PACK_EXPAND_WIDGET);
-			m_voltageLabel.override_font(Pango::FontDescription("sans bold 32"));
+					switch(m_meter->GetMeterMode())
+					{
+						case Multimeter::DC_VOLTAGE:
+							m_measurementTypeSelector.set_active_text("Voltage");
+							break;
 
-	//TODO: populate signal source box
+						case Multimeter::DC_RMS_AMPLITUDE:
+							m_measurementTypeSelector.set_active_text("RMS (DC couple)");
+							break;
+
+						case Multimeter::AC_RMS_AMPLITUDE:
+							m_measurementTypeSelector.set_active_text("RMS (AC couple)");
+							break;
+
+						case Multimeter::FREQUENCY:
+							m_measurementTypeSelector.set_active_text("Frequency");
+							break;
+					}
+		m_hbox.pack_start(m_measurementBox, Gtk::PACK_EXPAND_WIDGET);
+			m_measurementBox.pack_start(m_voltageLabel, Gtk::PACK_EXPAND_WIDGET);
+				m_voltageLabel.override_font(Pango::FontDescription("monospace bold 32"));
+				m_voltageLabel.set_alignment(0, 0.5);
+				m_voltageLabel.set_size_request(500, -1);
+			m_measurementBox.pack_start(m_vppLabel, Gtk::PACK_EXPAND_WIDGET);
+				m_vppLabel.override_font(Pango::FontDescription("monospace bold 32"));
+				m_vppLabel.set_alignment(0, 0.5);
+				m_vppLabel.set_size_request(500, -1);
+			m_measurementBox.pack_start(m_frequencyLabel, Gtk::PACK_EXPAND_WIDGET);
+				m_frequencyLabel.override_font(Pango::FontDescription("monospace bold 32"));
+				m_frequencyLabel.set_alignment(0, 0.5);
+				m_frequencyLabel.set_size_request(500, -1);
+
+	//Event handlers
+	m_signalSourceSelector.signal_changed().connect(sigc::mem_fun(*this, &DMMWindow::OnSignalSourceChanged));
+	m_measurementTypeSelector.signal_changed().connect(sigc::mem_fun(*this, &DMMWindow::OnMeasurementTypeChanged));
+
+	//TODO: autorange checkbox
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Message handlers
 
+void DMMWindow::OnSignalSourceChanged()
+{
+	//This awkwardness ensures correct behavior even if the channel names got tweaked
+	string cname = m_signalSourceSelector.get_active_text();
+	for(int i=0; i<m_meter->GetMeterChannelCount(); i++)
+	{
+		if(cname == m_meter->GetMeterChannelName(i))
+		{
+			m_meter->SetCurrentMeterChannel(i);
+			return;
+		}
+	}
+}
+
+void DMMWindow::OnMeasurementTypeChanged()
+{
+	string ctype = m_measurementTypeSelector.get_active_text();
+
+	if(ctype == "Voltage")
+		m_meter->SetMeterMode(Multimeter::DC_VOLTAGE);
+	if(ctype == "RMS (DC couple)")
+		m_meter->SetMeterMode(Multimeter::DC_RMS_AMPLITUDE);
+	if(ctype == "RMS (AC couple)")
+		m_meter->SetMeterMode(Multimeter::AC_RMS_AMPLITUDE);
+	if(ctype == "Frequency")
+		m_meter->SetMeterMode(Multimeter::FREQUENCY);
+}
+
 bool DMMWindow::OnTimer(int /*timer*/)
 {
 	try
 	{
-		double v = m_meter->GetDCVoltage();
-		//LogDebug("%f\n", v);
-
+		//Voltage
+		double v = m_meter->GetVoltage();
 		char tmp[128];
 		if(fabs(v) < 1)
-			snprintf(tmp, sizeof(tmp), "%.5f mV", v * 1000);
+			snprintf(tmp, sizeof(tmp), "%7.2f  mV", v * 1000);
 		else
-			snprintf(tmp, sizeof(tmp), "%.5f V", v);
-
+			snprintf(tmp, sizeof(tmp), "%10.5f  V", v);
 		m_voltageLabel.set_text(tmp);
+
+		//Peak-to-peak voltage
+		double vpp = m_meter->GetPeakToPeak();
+		if(fabs(vpp) < 1)
+			snprintf(tmp, sizeof(tmp), "%7.2f  mVpp", vpp * 1000);
+		else
+			snprintf(tmp, sizeof(tmp), "%8.3f  Vpp", vpp);
+		m_vppLabel.set_text(tmp);
+
+		//Frequency
+		double f = m_meter->GetFrequency();
+		if(f > 1000000)
+			snprintf(tmp, sizeof(tmp), "%8.3f MHz", f / 1000000);
+		else if(f > 1000)
+			snprintf(tmp, sizeof(tmp), "%8.3f kHz", f / 1000);
+		else
+			snprintf(tmp, sizeof(tmp), "%8.3f  Hz", f);
+		m_frequencyLabel.set_text(tmp);
 	}
 
 	catch(const JtagException& ex)

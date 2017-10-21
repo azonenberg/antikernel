@@ -58,13 +58,20 @@ protected:
 			Gtk::HBox m_measurementTypeBox;
 				Gtk::Label m_measurementTypeLabel;
 				Gtk::ComboBoxText m_measurementTypeSelector;
-		Gtk::Label m_voltageLabel;
+		Gtk::VBox m_measurementBox;
+			Gtk::Label m_voltageLabel;
+			Gtk::Label m_vppLabel;
+			Gtk::Label m_frequencyLabel;
 
 	//Our instrument connection
 	Multimeter* m_meter;
 
 	//Status polling
 	bool OnTimer(int timer);
+
+	//UI handlers
+	void OnSignalSourceChanged();
+	void OnMeasurementTypeChanged();
 };
 
 

@@ -74,10 +74,18 @@ public:
 	};
 
 	//DMM acquisition
-	virtual double GetDCVoltage();
-	virtual double GetDCRMSAmplitude();
-	virtual double GetACRMSAmplitude();
+	virtual double GetVoltage();
+	virtual double GetPeakToPeak();
 	virtual double GetFrequency();
+
+	//DMM configuration
+	virtual int GetMeterChannelCount();
+	virtual std::string GetMeterChannelName(int chan);
+	virtual int GetCurrentMeterChannel();
+	virtual void SetCurrentMeterChannel(int chan);
+
+	virtual Multimeter::MeasurementTypes GetMeterMode();
+	virtual void SetMeterMode(Multimeter::MeasurementTypes type);
 
 protected:
 	Socket m_socket;
