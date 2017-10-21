@@ -35,6 +35,7 @@
 
 #include "scopeclient.h"
 #include "OscilloscopeWindow.h"
+#include "DMMWindow.h"
 #include "ScopeConnectionDialog.h"
 //#include "../scopehal/NetworkedOscilloscope.h"
 #include "../scopehal/RedTinLogicAnalyzer.h"
@@ -46,12 +47,12 @@ using namespace std;
 class InstrumentInfo
 {
 public:
-	Oscilloscope* m_scope;
+	Instrument* m_inst;
 	string m_server;
 	unsigned short m_port;
 
-	InstrumentInfo(Oscilloscope* o, string s, unsigned short p)
-		: m_scope(o)
+	InstrumentInfo(Instrument* o, string s, unsigned short p)
+		: m_inst(o)
 		, m_server(s)
 		, m_port(p)
 	{}
@@ -87,7 +88,7 @@ ScopeApp::~ScopeApp()
 	for(auto w : m_windows)
 		delete w;
 	for(auto i : m_instruments)
-		delete i.m_scope;
+		delete i.m_inst;
 }
 
 /**
@@ -97,12 +98,12 @@ void ScopeApp::on_activate()
 {
 	for(auto i : m_instruments)
 	{
-		auto features = i.m_scope->GetInstrumentTypes();
+		auto features = i.m_inst->GetInstrumentTypes();
 
 		//Add UI for the oscilloscope
 		if(features & Instrument::INST_OSCILLOSCOPE)
 		{
-			auto w = new OscilloscopeWindow(i.m_scope, i.m_server, i.m_port);
+			auto w = new OscilloscopeWindow(dynamic_cast<Oscilloscope*>(i.m_inst), i.m_server, i.m_port);
 			m_windows.push_back(w);
 			add_window(*w);
 			w->present();
@@ -111,7 +112,10 @@ void ScopeApp::on_activate()
 		//Add UI for the DMM
 		if(features & Instrument::INST_DMM)
 		{
-			LogDebug("DMM UI not implemented\n");
+			auto w = new DMMWindow(dynamic_cast<Multimeter*>(i.m_inst), i.m_server, i.m_port);
+			m_windows.push_back(w);
+			add_window(*w);
+			w->present();
 		}
 	}
 }

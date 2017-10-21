@@ -34,8 +34,7 @@
  */
 
 #include "scopeclient.h"
-#include "../scopehal/Instrument.h"
-#include "OscilloscopeWindow.h"
+#include "DMMWindow.h"
 //#include "../scopehal/AnalogRenderer.h"
 #include "ProtocolDecoderDialog.h"
 
@@ -47,14 +46,12 @@ using namespace std;
 /**
 	@brief Initializes the main window
  */
-OscilloscopeWindow::OscilloscopeWindow(Oscilloscope* scope, std::string host, int port)
-	: m_btnStart(Gtk::Stock::YES)
-	, m_view(scope, this)
-	, m_scope(scope)
+DMMWindow::DMMWindow(Multimeter* scope, std::string host, int port)
+	: m_meter(scope)
 {
 	//Set title
 	char title[256];
-	snprintf(title, sizeof(title), "Oscilloscope: %s:%d (%s %s, serial %s)",
+	snprintf(title, sizeof(title), "Multimeter: %s:%d (%s %s, serial %s)",
 		host.c_str(),
 		port,
 		scope->GetVendor().c_str(),
@@ -63,6 +60,7 @@ OscilloscopeWindow::OscilloscopeWindow(Oscilloscope* scope, std::string host, in
 		);
 	set_title(title);
 
+	/*
 	//Initial setup
 	set_reallocate_redraws(true);
 	set_default_size(1280, 800);
@@ -74,30 +72,32 @@ OscilloscopeWindow::OscilloscopeWindow(Oscilloscope* scope, std::string host, in
 	show_all();
 
 	//Set the update timer
-	sigc::slot<bool> slot = sigc::bind(sigc::mem_fun(*this, &OscilloscopeWindow::OnTimer), 1);
+	sigc::slot<bool> slot = sigc::bind(sigc::mem_fun(*this, &DMMWindow::OnTimer), 1);
 	sigc::connection conn = Glib::signal_timeout().connect(slot, 250);
 
 	//Set up display time scale
 	m_timescale = 0;
 	m_waiting = false;
+	*/
 }
 
 /**
 	@brief Application cleanup
  */
-OscilloscopeWindow::~OscilloscopeWindow()
+DMMWindow::~DMMWindow()
 {
 }
 
 /**
 	@brief Helper function for creating widgets and setting up signal handlers
  */
-void OscilloscopeWindow::CreateWidgets()
+void DMMWindow::CreateWidgets()
 {
+	/*
 	//Set up window hierarchy
 	add(m_vbox);
 		m_vbox.pack_start(m_toolbar, Gtk::PACK_SHRINK);
-			m_toolbar.append(m_btnStart, sigc::mem_fun(*this, &OscilloscopeWindow::OnStart));
+			m_toolbar.append(m_btnStart, sigc::mem_fun(*this, &DMMWindow::OnStart));
 				m_btnStart.set_tooltip_text("Start capture");
 		m_vbox.pack_start(m_viewscroller);
 			m_viewscroller.add(m_view);
@@ -112,19 +112,20 @@ void OscilloscopeWindow::CreateWidgets()
 	m_viewscroller.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 
 	//Set up message handlers
-	//m_viewscroller.get_hadjustment()->signal_value_changed().connect(sigc::mem_fun(*this, &OscilloscopeWindow::OnScopeScroll));
-	//m_viewscroller.get_vadjustment()->signal_value_changed().connect(sigc::mem_fun(*this, &OscilloscopeWindow::OnScopeScroll));
+	//m_viewscroller.get_hadjustment()->signal_value_changed().connect(sigc::mem_fun(*this, &DMMWindow::OnScopeScroll));
+	//m_viewscroller.get_vadjustment()->signal_value_changed().connect(sigc::mem_fun(*this, &DMMWindow::OnScopeScroll));
 	m_viewscroller.get_hadjustment()->set_step_increment(50);
 
 	//Refresh the views
 	//Need to refresh main view first so we have renderers to reference in the channel list
 	m_view.Refresh();
+	*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Message handlers
-
-bool OscilloscopeWindow::OnTimer(int /*timer*/)
+/*
+bool DMMWindow::OnTimer(int timer)
 {
 	try
 	{
@@ -143,21 +144,21 @@ bool OscilloscopeWindow::OnTimer(int /*timer*/)
 			m_statprogress.set_text(str);
 
 			//Poll the trigger status of the scope
-			Oscilloscope::TriggerMode status = m_scope->PollTrigger();
-			if(status > Oscilloscope::TRIGGER_MODE_COUNT)
+			Multimeter::TriggerMode status = m_meter->PollTrigger();
+			if(status > Multimeter::TRIGGER_MODE_COUNT)
 			{
 				//Invalid value, skip it
 				return true;
 			}
 
 			//If not TRIGGERED, do nothing
-			if(status != Oscilloscope::TRIGGER_MODE_TRIGGERED)
+			if(status != Multimeter::TRIGGER_MODE_TRIGGERED)
 				return true;
 
 			m_statprogress.set_text("Triggered");
 
 			//Triggered - get the data from each channel
-			m_scope->AcquireData(sigc::mem_fun(*this, &OscilloscopeWindow::OnCaptureProgressUpdate));
+			m_meter->AcquireData(sigc::mem_fun(*this, &DMMWindow::OnCaptureProgressUpdate));
 
 			//Set to a sane zoom if this is our first capture
 			//otherwise keep time scale unchanged
@@ -183,7 +184,7 @@ bool OscilloscopeWindow::OnTimer(int /*timer*/)
 	return true;
 }
 
-void OscilloscopeWindow::OnZoomOut()
+void DMMWindow::OnZoomOut()
 {
 	//Get center of current view
 	float fract = m_viewscroller.get_hadjustment()->get_value() / m_viewscroller.get_hadjustment()->get_upper();
@@ -200,7 +201,7 @@ void OscilloscopeWindow::OnZoomOut()
 	m_viewscroller.get_hadjustment()->set_value(fract * m_viewscroller.get_hadjustment()->get_upper());
 }
 
-void OscilloscopeWindow::OnZoomIn()
+void DMMWindow::OnZoomIn()
 {
 	//Get center of current view
 	float fract = m_viewscroller.get_hadjustment()->get_value() / m_viewscroller.get_hadjustment()->get_upper();
@@ -217,11 +218,11 @@ void OscilloscopeWindow::OnZoomIn()
 	m_viewscroller.get_hadjustment()->set_value(fract * m_viewscroller.get_hadjustment()->get_upper());
 }
 
-void OscilloscopeWindow::OnZoomFit()
+void DMMWindow::OnZoomFit()
 {
-	if( (m_scope->GetChannelCount() != 0) && (m_scope->GetChannel(0) != NULL) && (m_scope->GetChannel(0)->GetData() != NULL))
+	if( (m_meter->GetChannelCount() != 0) && (m_meter->GetChannel(0) != NULL) && (m_meter->GetChannel(0)->GetData() != NULL))
 	{
-		CaptureChannelBase* capture = m_scope->GetChannel(0)->GetData();
+		CaptureChannelBase* capture = m_meter->GetChannel(0)->GetData();
 		int64_t capture_len = capture->m_timescale * capture->GetEndTime();
 		m_timescale = static_cast<float>(m_viewscroller.get_width()) / capture_len;
 	}
@@ -229,16 +230,16 @@ void OscilloscopeWindow::OnZoomFit()
 	OnZoomChanged();
 }
 
-void OscilloscopeWindow::OnZoomChanged()
+void DMMWindow::OnZoomChanged()
 {
-	for(size_t i=0; i<m_scope->GetChannelCount(); i++)
-		m_scope->GetChannel(i)->m_timescale = m_timescale;
+	for(size_t i=0; i<m_meter->GetChannelCount(); i++)
+		m_meter->GetChannel(i)->m_timescale = m_timescale;
 
 	m_view.SetSizeDirty();
 	m_view.queue_draw();
 }
 
-int OscilloscopeWindow::OnCaptureProgressUpdate(float progress)
+int DMMWindow::OnCaptureProgressUpdate(float progress)
 {
 	m_statprogress.set_fraction(progress);
 
@@ -249,7 +250,7 @@ int OscilloscopeWindow::OnCaptureProgressUpdate(float progress)
 	return 0;
 }
 
-void OscilloscopeWindow::OnStart()
+void DMMWindow::OnStart()
 {
 	try
 	{
@@ -258,7 +259,7 @@ void OscilloscopeWindow::OnStart()
 		//m_channelview.UpdateTriggers();
 
 		//Start the capture
-		m_scope->StartSingleTrigger();
+		m_meter->StartSingleTrigger();
 		m_waiting = true;
 
 		//Print to stdout so scripts know we're ready
@@ -268,164 +269,6 @@ void OscilloscopeWindow::OnStart()
 	catch(const JtagException& ex)
 	{
 		LogError("%s\n", ex.GetDescription().c_str());
-	}
-}
-
-/*
-void ChannelListView::UpdateTriggers()
-{
-	//Clear out old triggers
-	m_parent->GetScope()->ResetTriggerConditions();
-
-	//Loop over our child nodes
-	Gtk::TreeNodeChildren children = m_model->children();
-	for(Gtk::TreeNodeChildren::iterator it=children.begin(); it != children.end(); ++it)
-	{
-		//std::string name = it->get_value(m_columns.name);
-		OscilloscopeChannel* chan = it->get_value(m_columns.chan);
-		std::string val = it->get_value(m_columns.value);
-
-		//Protocol decoders are evaluated host side and can't be used for triggering - skip them
-		//if(dynamic_cast<ProtocolDecoder*>(chan) != NULL)
-		//	continue;
-
-		//Should be a digital channel (analog stuff not supported yet)
-		if(chan->GetType() == OscilloscopeChannel::CHANNEL_TYPE_DIGITAL)
-		{
-			//Initialize trigger vector
-
-			//If string is empty, mark as don't care
-			std::vector<Oscilloscope::TriggerType> triggerbits;
-			if(val == "")
-			{
-				for(int i=0; i<chan->GetWidth(); i++)
-					triggerbits.push_back(Oscilloscope::TRIGGER_TYPE_DONTCARE);
-			}
-
-			//otherwise parse Verilog-format values
-			else
-			{
-				//Default high bits to low
-				for(int i=0; i<chan->GetWidth(); i++)
-					triggerbits.push_back(Oscilloscope::TRIGGER_TYPE_LOW);
-
-				const char* vstr = val.c_str();
-				const char* quote = strstr(vstr, "'");
-				char valbuf[64] = {0};
-
-				int base = 10;
-
-				//Ignore the length, just use the base
-				if(quote != NULL)
-				{
-					//Parse it
-					char cbase;
-					sscanf(quote, "'%c%63s", &cbase, valbuf);
-					vstr = valbuf;
-
-					if(cbase == 'h')
-						base = 16;
-					else if(cbase == 'b')
-						base = 2;
-					//default to decimal
-				}
-
-				//Parse it
-				switch(base)
-				{
-					//decimal
-					case 10:
-					{
-						if(chan->GetWidth() > 32)
-						{
-							throw JtagExceptionWrapper(
-								"Decimal values for channels >32 bits not supported",
-								"");
-						}
-
-						unsigned int val = atoi(vstr);
-						for(int i=0; i<chan->GetWidth(); i++)
-						{
-							triggerbits[chan->GetWidth() - 1 - i] =
-								(val & 1) ? Oscilloscope::TRIGGER_TYPE_HIGH : Oscilloscope::TRIGGER_TYPE_LOW;
-							val >>= 1;
-						}
-					}
-					break;
-
-					//hex
-					case 16:
-					{
-						//Go right to left
-						int w = chan->GetWidth();
-						int nbit = w-1;
-						for(int i=strlen(vstr)-1; i>=0; i--, nbit -= 4)
-						{
-							if(nbit <= 0)
-								break;
-
-							//Is it an X? Don't care
-							if(tolower(vstr[i]) == 'x')
-							{
-								if(nbit > 2)
-									triggerbits[nbit-3] = Oscilloscope::TRIGGER_TYPE_DONTCARE;
-								if(nbit > 1)
-									triggerbits[nbit-2] = Oscilloscope::TRIGGER_TYPE_DONTCARE;
-								if(nbit > 0)
-									triggerbits[nbit-1] = Oscilloscope::TRIGGER_TYPE_DONTCARE;
-								triggerbits[nbit] = Oscilloscope::TRIGGER_TYPE_DONTCARE;
-							}
-
-							//No, hex - convert this character to binary
-							else
-							{
-								int x;
-								char cbuf[2] = {vstr[i], 0};
-								sscanf(cbuf, "%1x", &x);
-								if(nbit > 2)
-									triggerbits[nbit - 3] = (x & 8) ? Oscilloscope::TRIGGER_TYPE_HIGH : Oscilloscope::TRIGGER_TYPE_LOW;
-								if(nbit > 1)
-									triggerbits[nbit - 2] = (x & 4) ? Oscilloscope::TRIGGER_TYPE_HIGH : Oscilloscope::TRIGGER_TYPE_LOW;
-								if(nbit > 0)
-									triggerbits[nbit - 1] = (x & 2) ? Oscilloscope::TRIGGER_TYPE_HIGH : Oscilloscope::TRIGGER_TYPE_LOW;
-								triggerbits[nbit] = (x & 1) ? Oscilloscope::TRIGGER_TYPE_HIGH : Oscilloscope::TRIGGER_TYPE_LOW;
-							}
-						}
-					}
-					break;
-
-					//binary
-					case 2:
-					{
-						//Right to left, one bit at a time
-						int w = chan->GetWidth();
-						int nbit = w-1;
-						for(int i=strlen(vstr)-1; i>=0; i--, nbit --)
-						{
-							if(nbit <= 0)
-								break;
-
-							if(tolower(vstr[i]) == 'x')
-								triggerbits[nbit] = Oscilloscope::TRIGGER_TYPE_DONTCARE;
-							else if(vstr[i] == '1')
-								triggerbits[nbit] = Oscilloscope::TRIGGER_TYPE_HIGH;
-							else
-								triggerbits[nbit] = Oscilloscope::TRIGGER_TYPE_LOW;
-						}
-					}
-					break;
-				}
-			}
-
-			//Feed to the scope
-			m_parent->GetScope()->SetTriggerForChannel(chan, triggerbits);
-		}
-
-		//Unknown channel type
-		else
-		{
-			LogError("Unknown channel type - maybe analog? Not supported\n");
-		}
 	}
 }
 */

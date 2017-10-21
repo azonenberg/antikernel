@@ -45,6 +45,7 @@
 #include <stdint.h>
 
 #include "Instrument.h"
+#include "Multimeter.h"
 #include "Oscilloscope.h"
 #include "OscilloscopeChannel.h"
 

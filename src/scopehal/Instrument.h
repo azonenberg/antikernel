@@ -60,6 +60,11 @@ public:
 	};
 
 	virtual unsigned int GetInstrumentTypes() =0;
+
+	//Device information
+	virtual std::string GetName() =0;
+	virtual std::string GetVendor() =0;
+	virtual std::string GetSerial() =0;
 };
 
 #endif

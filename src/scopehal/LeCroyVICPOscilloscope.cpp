@@ -287,11 +287,27 @@ string LeCroyVICPOscilloscope::ReadData()
 // Device information
 
 /**
+	@brief See what measurement capabilities we have
+ */
+unsigned int LeCroyVICPOscilloscope::GetMeasurementTypes()
+{
+	unsigned int type = 0;
+	if(m_hasDVM)
+	{
+		type |= DC_VOLTAGE;
+		type |= DC_RMS_AMPLITUDE;
+		type |= AC_RMS_AMPLITUDE;
+		type |= FREQUENCY;
+	}
+	return type;
+}
+
+/**
 	@brief See what features we have
  */
 unsigned int LeCroyVICPOscilloscope::GetInstrumentTypes()
 {
-	int type = INST_OSCILLOSCOPE;
+	unsigned int type = INST_OSCILLOSCOPE;
 	if(m_hasDVM)
 		type |= INST_DMM;
 	return type;

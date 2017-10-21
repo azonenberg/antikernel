@@ -27,7 +27,10 @@
 *                                                                                                                      *
 ***********************************************************************************************************************/
 
+#include "scopehal.h"
 #include "Instrument.h"
+
+using namespace std;
 
 Instrument::~Instrument()
 {

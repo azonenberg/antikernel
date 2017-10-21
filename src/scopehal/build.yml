@@ -44,6 +44,7 @@ scopehal:
         - DigitalRenderer.cpp
         - Instrument.cpp
         - LeCroyVICPOscilloscope.cpp
+        - Multimeter.cpp
         - Oscilloscope.cpp
         - OscilloscopeChannel.cpp
         - ProtocolDecoder.cpp

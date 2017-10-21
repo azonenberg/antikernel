@@ -33,6 +33,8 @@
 	@brief Implementation of ProtocolDecoderDialog
  */
 #include "scopeclient.h"
+#include "../scopehal/Instrument.h"
+#include "../scopehal/Multimeter.h"
 #include "ProtocolDecoderDialog.h"
 
 /*

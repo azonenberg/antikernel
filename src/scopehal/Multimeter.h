@@ -26,96 +26,26 @@
 * POSSIBILITY OF SUCH DAMAGE.                                                                                          *
 *                                                                                                                      *
 ***********************************************************************************************************************/
+#ifndef Multimeter_h
+#define Multimeter_h
 
-/**
-	@file
-	@author Andrew D. Zonenberg
-	@brief Declaration of Oscilloscope
- */
-
-#ifndef Oscilloscope_h
-#define Oscilloscope_h
-
-class Instrument;
-class OscilloscopeChannel;
-
-/**
-	@brief Generic representation of an oscilloscope or logic analyzer.
-
-	An Oscilloscope contains triggering logic and one or more ChannelSource's.
- */
-class Oscilloscope : public virtual Instrument
+class Multimeter : public virtual Instrument
 {
 public:
-	//Construction / destruction
-	Oscilloscope();
-	virtual ~Oscilloscope();
+	Multimeter();
+	virtual ~Multimeter();
 
-	//Device enumeration
-	static int GetDeviceCount();
-	static Oscilloscope* CreateDevice(int ndev);
-
-	//Channel information
-	size_t GetChannelCount();
-	OscilloscopeChannel* GetChannel(size_t i);
-	OscilloscopeChannel* GetChannel(std::string name, bool bThrowOnFailure = true);
-
-	void AddChannel(OscilloscopeChannel* chan);
-
-	//Triggering
-	enum TriggerMode
+	enum MeasurementTypes
 	{
-		///Active, waiting for a trigger event
-		TRIGGER_MODE_RUN,
+		DC_VOLTAGE			= 1,
+		DC_RMS_AMPLITUDE	= 2,
+		AC_RMS_AMPLITUDE	= 4,
+		FREQUENCY			= 8
 
-		///Triggered once, but not recently
-		TRIGGER_MODE_STOP,
-
-		///Just got triggered
-		TRIGGER_MODE_TRIGGERED,
-
-		///WAIT - waiting for something (not sure what this means, Rigol scopes use it)
-		TRIGGER_MODE_WAIT,
-
-		///Auto trigger - waiting for auto-trigger
-		TRIGGER_MODE_AUTO,
-
-		///Placeholder
-		TRIGGER_MODE_COUNT
-	};
-	virtual Oscilloscope::TriggerMode PollTrigger() =0;
-	bool WaitForTrigger(int timeout, bool exception_on_timeout = true);
-
-	/**
-		@brief Clear out all existing trigger conditions
-	 */
-	virtual void ResetTriggerConditions() =0;
-
-	enum TriggerType
-	{
-		TRIGGER_TYPE_LOW		= 0,
-		TRIGGER_TYPE_HIGH 		= 1,
-		TRIGGER_TYPE_FALLING	= 2,
-		TRIGGER_TYPE_RISING		= 3,
-		TRIGGER_TYPE_CHANGE		= 4,
-		TRIGGER_TYPE_DONTCARE	= 5
+		//TODO: other types
 	};
 
-	/**
-		@brief Sets the trigger condition for a single channel
-	 */
-	virtual void SetTriggerForChannel(OscilloscopeChannel* channel, std::vector<TriggerType> triggerbits)=0;
-
-	virtual bool AcquireData(sigc::slot1<int, float> progress_callback) =0;
-
-	virtual void Start() =0;
-	virtual void StartSingleTrigger() =0;
-	virtual void Stop() =0;
-
-protected:
-
-	///The channels
-	std::vector<OscilloscopeChannel*> m_channels;
+	virtual unsigned int GetMeasurementTypes() =0;
 };
 
 #endif

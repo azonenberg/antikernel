@@ -40,7 +40,7 @@
 #include "OscilloscopeView.h"
 
 /**
-	@brief Main application window class
+	@brief Main application window class for an oscilloscope
  */
 class OscilloscopeWindow	: public Gtk::Window
 {

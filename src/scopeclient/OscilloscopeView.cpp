@@ -35,6 +35,7 @@
 
 #include "scopeclient.h"
 #include "OscilloscopeWindow.h"
+#include "../scopehal/Instrument.h"
 #include "../scopehal/Oscilloscope.h"
 #include "../scopehal/ProtocolDecoder.h"
 #include "../scopehal/TimescaleRenderer.h"

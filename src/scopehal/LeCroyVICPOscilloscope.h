@@ -37,7 +37,9 @@
 
 	Protocol layer is based on LeCroy's released VICPClient.h, but rewritten and modernized heavily
  */
-class LeCroyVICPOscilloscope : public Oscilloscope
+class LeCroyVICPOscilloscope
+	: public virtual Oscilloscope
+	, public virtual Multimeter
 {
 public:
 	LeCroyVICPOscilloscope(std::string hostname, unsigned short port);
@@ -48,6 +50,7 @@ public:
 	virtual std::string GetVendor();
 	virtual std::string GetSerial();
 	virtual unsigned int GetInstrumentTypes();
+	virtual unsigned int GetMeasurementTypes();
 
 	//Triggering
 	virtual void ResetTriggerConditions();

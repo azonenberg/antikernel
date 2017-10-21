@@ -36,6 +36,8 @@
 #define scopeclient_h
 
 #include "../scopehal/scopehal.h"
+#include "../scopehal/Instrument.h"
+#include "../scopehal/Multimeter.h"
 #include "../scopehal/OscilloscopeChannel.h"
 
 #include <giomm.h>
