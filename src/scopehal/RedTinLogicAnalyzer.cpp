@@ -132,6 +132,11 @@ RedTinLogicAnalyzer::~RedTinLogicAnalyzer()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Information queries
 
+unsigned int RedTinLogicAnalyzer::GetInstrumentTypes()
+{
+	return INST_OSCILLOSCOPE;
+}
+
 string RedTinLogicAnalyzer::GetName()
 {
 	return m_laname;

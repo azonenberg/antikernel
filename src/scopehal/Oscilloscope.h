@@ -43,7 +43,7 @@ class OscilloscopeChannel;
 
 	An Oscilloscope contains triggering logic and one or more ChannelSource's.
  */
-class Oscilloscope
+class Oscilloscope : public Instrument
 {
 public:
 	//Construction / destruction

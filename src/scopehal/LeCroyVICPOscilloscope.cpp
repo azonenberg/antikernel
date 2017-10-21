@@ -43,6 +43,8 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 	, m_port(port)
 	, m_nextSequence(1)
 	, m_lastSequence(1)
+	, m_hasLA(false)
+	, m_hasDVM(false)
 {
 	LogDebug("Connecting to VICP oscilloscope at %s:%d\n", hostname.c_str(), port);
 
@@ -137,7 +139,7 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 				opt = "";
 			}
 
-			else
+			else if(reply[i] != '\n')
 				opt += reply[i];
 		}
 		if(opt != "")
@@ -152,6 +154,7 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 			//If we have the LA module installed, add the digital channels
 			if(o == "MSXX")
 			{
+				m_hasLA = true;
 				LogDebug("* MSXX (logic analyzer)\n");
 				m_digitalChannelCount = 16;
 
@@ -166,6 +169,15 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 						1));
 				}
 			}
+
+			//If we have the voltmeter installed, make a note of that
+			else if(o == "DVM")
+			{
+				m_hasDVM = true;
+				LogDebug("* DVM (digital voltmeter / frequency counter)\n");
+			}
+
+			//No idea what it is
 			else
 				LogDebug("* %s (not yet implemented)\n", o.c_str());
 		}
@@ -273,6 +285,17 @@ string LeCroyVICPOscilloscope::ReadData()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Device information
+
+/**
+	@brief See what features we have
+ */
+unsigned int LeCroyVICPOscilloscope::GetInstrumentTypes()
+{
+	int type = INST_OSCILLOSCOPE;
+	if(m_hasDVM)
+		type |= INST_DMM;
+	return type;
+}
 
 string LeCroyVICPOscilloscope::GetName()
 {

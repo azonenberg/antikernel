@@ -30,31 +30,36 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Main library include file
+	@brief Declaration of Instrument
  */
 
-#ifndef scopehal_h
-#define scopehal_h
+#ifndef Instrument_h
+#define Instrument_h
 
-#include "../jtaghal/jtaghal.h"
+/**
+	@brief An arbitrary lab instrument. Oscilloscope, LA, PSU, DMM, etc
+ */
+class Instrument
+{
+public:
+	virtual ~Instrument();
 
-#include <sigc++/sigc++.h>
+	/*
+		@brief Types of instrument.
 
-#include <vector>
-#include <string>
-#include <stdint.h>
+		Note that we can't use RTTI for this because of software options.
+		For example, some WaveSurfer 3000 devices have the function generator option and others don't.
+	 */
+	enum InstrumentTypes
+	{
+		//An oscilloscope or logic analyzer
+		INST_OSCILLOSCOPE 		= 1,
 
-#include "Instrument.h"
-#include "Oscilloscope.h"
-#include "OscilloscopeChannel.h"
+		//A multimeter (query to see what measurements it supports)
+		INST_DMM 				= 2
+	};
 
-#include <cairomm/context.h>
-
-void DrawString(float x, float y, const Cairo::RefPtr<Cairo::Context>& cr, std::string str, bool bBig);
-void GetStringWidth(const Cairo::RefPtr<Cairo::Context>& cr, std::string str, bool bBig, int& width, int& height);
-
-uint64_t ConvertVectorSignalToScalar(std::vector<bool> bits);
-
-std::string GetDefaultChannelColor(int i);
+	virtual unsigned int GetInstrumentTypes() =0;
+};
 
 #endif

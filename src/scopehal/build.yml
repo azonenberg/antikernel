@@ -42,6 +42,7 @@ scopehal:
         - AsciiRenderer.cpp
         - ChannelRenderer.cpp
         - DigitalRenderer.cpp
+        - Instrument.cpp
         - LeCroyVICPOscilloscope.cpp
         - Oscilloscope.cpp
         - OscilloscopeChannel.cpp

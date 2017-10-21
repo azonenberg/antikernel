@@ -47,6 +47,7 @@ public:
 	virtual std::string GetName();
 	virtual std::string GetVendor();
 	virtual std::string GetSerial();
+	virtual unsigned int GetInstrumentTypes();
 
 	//Triggering
 	virtual void ResetTriggerConditions();
@@ -94,6 +95,10 @@ protected:
 	std::string m_model;
 	std::string m_serial;
 	std::string m_fwVersion;
+
+	//set of SW/HW options we have
+	bool m_hasLA;
+	bool m_hasDVM;
 };
 
 #endif

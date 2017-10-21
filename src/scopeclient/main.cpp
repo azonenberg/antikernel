@@ -77,7 +77,7 @@ public:
 	vector<InstrumentInfo> m_instruments;
 
 protected:
-	vector<OscilloscopeWindow*> m_windows;
+	vector<Gtk::Window*> m_windows;
 
 	virtual void on_activate();
 };
@@ -97,10 +97,22 @@ void ScopeApp::on_activate()
 {
 	for(auto i : m_instruments)
 	{
-		auto w = new OscilloscopeWindow(i.m_scope, i.m_server, i.m_port);
-		m_windows.push_back(w);
-		add_window(*w);
-		w->present();
+		auto features = i.m_scope->GetInstrumentTypes();
+
+		//Add UI for the oscilloscope
+		if(features & Instrument::INST_OSCILLOSCOPE)
+		{
+			auto w = new OscilloscopeWindow(i.m_scope, i.m_server, i.m_port);
+			m_windows.push_back(w);
+			add_window(*w);
+			w->present();
+		}
+
+		//Add UI for the DMM
+		if(features & Instrument::INST_DMM)
+		{
+			LogDebug("DMM UI not implemented\n");
+		}
 	}
 }
 

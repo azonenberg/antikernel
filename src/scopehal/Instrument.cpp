@@ -27,34 +27,8 @@
 *                                                                                                                      *
 ***********************************************************************************************************************/
 
-/**
-	@file
-	@author Andrew D. Zonenberg
-	@brief Main library include file
- */
-
-#ifndef scopehal_h
-#define scopehal_h
-
-#include "../jtaghal/jtaghal.h"
-
-#include <sigc++/sigc++.h>
-
-#include <vector>
-#include <string>
-#include <stdint.h>
-
 #include "Instrument.h"
-#include "Oscilloscope.h"
-#include "OscilloscopeChannel.h"
 
-#include <cairomm/context.h>
-
-void DrawString(float x, float y, const Cairo::RefPtr<Cairo::Context>& cr, std::string str, bool bBig);
-void GetStringWidth(const Cairo::RefPtr<Cairo::Context>& cr, std::string str, bool bBig, int& width, int& height);
-
-uint64_t ConvertVectorSignalToScalar(std::vector<bool> bits);
-
-std::string GetDefaultChannelColor(int i);
-
-#endif
+Instrument::~Instrument()
+{
+}
