@@ -176,9 +176,7 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 				m_hasDVM = true;
 				LogDebug("* DVM (digital voltmeter / frequency counter)\n");
 
-				//Enable the DVM, turn off auto ranging
-				SendCommand("VBS 'app.acquisition.DVM.AutoRange = 0'");
-				SendCommand("VBS 'app.acquisition.DVM.DvmEnable = 1'");
+				SetMeterAutoRange(false);
 			}
 
 			//No idea what it is
@@ -334,6 +332,33 @@ string LeCroyVICPOscilloscope::GetSerial()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DMM mode
+
+bool LeCroyVICPOscilloscope::GetMeterAutoRange()
+{
+	SendCommand("VBS? 'return = app.acquisition.DVM.AutoRange'");
+	string str = ReadSingleBlockString();
+	int ret;
+	sscanf(str.c_str(), "%d", &ret);
+	return ret ? true : false;
+}
+
+void LeCroyVICPOscilloscope::SetMeterAutoRange(bool enable)
+{
+	if(enable)
+		SendCommand("VBS 'app.acquisition.DVM.AutoRange = 1'");
+	else
+		SendCommand("VBS 'app.acquisition.DVM.AutoRange = 0'");
+}
+
+void LeCroyVICPOscilloscope::StartMeter()
+{
+	SendCommand("VBS 'app.acquisition.DVM.DvmEnable = 1'");
+}
+
+void LeCroyVICPOscilloscope::StopMeter()
+{
+	SendCommand("VBS 'app.acquisition.DVM.DvmEnable = 0'");
+}
 
 double LeCroyVICPOscilloscope::GetVoltage()
 {
@@ -526,7 +551,7 @@ bool LeCroyVICPOscilloscope::ReadWaveformBlock(string& data)
 
 bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callback)
 {
-	LogDebug("Acquire data\n");
+	//LogDebug("Acquire data\n");
 
 	//See how many captures we have (if using sequence mode)
 	SendCommand("SEQUENCE?");
@@ -742,7 +767,7 @@ void LeCroyVICPOscilloscope::Start()
 
 void LeCroyVICPOscilloscope::StartSingleTrigger()
 {
-	LogDebug("Start single trigger\n");
+	//LogDebug("Start single trigger\n");
 	SendCommand("TRIG_MODE SINGLE");
 }
 

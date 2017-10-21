@@ -80,6 +80,10 @@ OscilloscopeWindow::OscilloscopeWindow(Oscilloscope* scope, std::string host, in
 	//Set up display time scale
 	m_timescale = 0;
 	m_waiting = false;
+
+	//Try triggering immediately. This lets us download an initial waveform right away.
+	//It's also necessary to do this to initialize some other subsystems like the DMM.
+	OnStart();
 }
 
 /**

@@ -54,9 +54,12 @@ public:
 	OscilloscopeView& GetScopeView()
 	{ return m_view; }
 
+	//Message handlers (also called by OscilloscopeView)
 	void OnZoomOut();
 	void OnZoomIn();
 	void OnZoomFit();
+
+	void OnStart();
 
 protected:
 
@@ -77,9 +80,6 @@ protected:
 
 	//Status polling
 	bool OnTimer(int timer);
-
-	//Message handlers
-	void OnStart();
 
 	int OnCaptureProgressUpdate(float progress);
 

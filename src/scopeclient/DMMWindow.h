@@ -58,6 +58,9 @@ protected:
 			Gtk::HBox m_measurementTypeBox;
 				Gtk::Label m_measurementTypeLabel;
 				Gtk::ComboBoxText m_measurementTypeSelector;
+			Gtk::HBox m_autoRangeBox;
+				Gtk::Label m_autoRangeLabel;
+				Gtk::CheckButton m_autoRangeSelector;
 		Gtk::VBox m_measurementBox;
 			Gtk::Label m_voltageLabel;
 			Gtk::Label m_vppLabel;
@@ -72,6 +75,10 @@ protected:
 	//UI handlers
 	void OnSignalSourceChanged();
 	void OnMeasurementTypeChanged();
+	void OnAutoRangeChanged();
+
+	virtual void on_show();
+	virtual void on_hide();
 };
 
 

@@ -83,6 +83,10 @@ public:
 	virtual std::string GetMeterChannelName(int chan);
 	virtual int GetCurrentMeterChannel();
 	virtual void SetCurrentMeterChannel(int chan);
+	virtual void StartMeter();
+	virtual void StopMeter();
+	virtual void SetMeterAutoRange(bool enable);
+	virtual bool GetMeterAutoRange();
 
 	virtual Multimeter::MeasurementTypes GetMeterMode();
 	virtual void SetMeterMode(Multimeter::MeasurementTypes type);

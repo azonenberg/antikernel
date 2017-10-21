@@ -57,6 +57,12 @@ public:
 	virtual MeasurementTypes GetMeterMode() =0;
 	virtual void SetMeterMode(MeasurementTypes type) =0;
 
+	//Control
+	virtual void SetMeterAutoRange(bool enable) =0;
+	virtual bool GetMeterAutoRange() =0;
+	virtual void StartMeter() =0;
+	virtual void StopMeter() =0;
+
 	//Get readings
 	virtual double GetVoltage() =0;
 	virtual double GetPeakToPeak() =0;

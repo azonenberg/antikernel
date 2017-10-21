@@ -90,10 +90,11 @@ void DMMWindow::CreateWidgets()
 	//Set up window hierarchy
 	add(m_hbox);
 		m_hbox.pack_start(m_vbox, Gtk::PACK_SHRINK);
+			int labelWidth = 75;
 			m_vbox.pack_start(m_signalSourceBox, Gtk::PACK_SHRINK);
 				m_signalSourceBox.pack_start(m_signalSourceLabel, Gtk::PACK_SHRINK);
 					m_signalSourceLabel.set_text("Input");
-					m_signalSourceLabel.set_size_request(50, -1);
+					m_signalSourceLabel.set_size_request(labelWidth, -1);
 				m_signalSourceBox.pack_start(m_signalSourceSelector, Gtk::PACK_SHRINK);
 					int count = m_meter->GetMeterChannelCount();
 					for(int i=0; i<count; i++)
@@ -103,7 +104,7 @@ void DMMWindow::CreateWidgets()
 			m_vbox.pack_start(m_measurementTypeBox, Gtk::PACK_SHRINK);
 				m_measurementTypeBox.pack_start(m_measurementTypeLabel, Gtk::PACK_SHRINK);
 					m_measurementTypeLabel.set_text("Mode");
-					m_measurementTypeLabel.set_size_request(50, -1);
+					m_measurementTypeLabel.set_size_request(labelWidth, -1);
 				m_measurementTypeBox.pack_start(m_measurementTypeSelector, Gtk::PACK_SHRINK);
 					unsigned int type = m_meter->GetMeasurementTypes();
 					if(type & Multimeter::DC_VOLTAGE)
@@ -132,6 +133,12 @@ void DMMWindow::CreateWidgets()
 							m_measurementTypeSelector.set_active_text("Frequency");
 							break;
 					}
+			m_vbox.pack_start(m_autoRangeBox, Gtk::PACK_SHRINK);
+				m_autoRangeBox.pack_start(m_autoRangeLabel, Gtk::PACK_SHRINK);
+					m_autoRangeLabel.set_text("Auto-range");
+					m_autoRangeLabel.set_size_request(labelWidth, -1);
+				m_autoRangeBox.pack_start(m_autoRangeSelector, Gtk::PACK_SHRINK);
+					m_autoRangeSelector.set_active(m_meter->GetMeterAutoRange());
 		m_hbox.pack_start(m_measurementBox, Gtk::PACK_EXPAND_WIDGET);
 			m_measurementBox.pack_start(m_voltageLabel, Gtk::PACK_EXPAND_WIDGET);
 				m_voltageLabel.override_font(Pango::FontDescription("monospace bold 32"));
@@ -149,12 +156,34 @@ void DMMWindow::CreateWidgets()
 	//Event handlers
 	m_signalSourceSelector.signal_changed().connect(sigc::mem_fun(*this, &DMMWindow::OnSignalSourceChanged));
 	m_measurementTypeSelector.signal_changed().connect(sigc::mem_fun(*this, &DMMWindow::OnMeasurementTypeChanged));
+	m_autoRangeSelector.signal_toggled().connect(sigc::mem_fun(*this, &DMMWindow::OnAutoRangeChanged));
 
 	//TODO: autorange checkbox
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Message handlers
+
+void DMMWindow::OnAutoRangeChanged()
+{
+	m_meter->SetMeterAutoRange(m_autoRangeSelector.get_active());
+}
+
+void DMMWindow::on_show()
+{
+	Gtk::Window::on_show();
+
+	//Start measuring
+	m_meter->StartMeter();
+}
+
+void DMMWindow::on_hide()
+{
+	//Done measuring
+	m_meter->StopMeter();
+
+	Gtk::Window::on_hide();
+}
 
 void DMMWindow::OnSignalSourceChanged()
 {
@@ -192,7 +221,7 @@ bool DMMWindow::OnTimer(int /*timer*/)
 		double v = m_meter->GetVoltage();
 		char tmp[128];
 		if(fabs(v) < 1)
-			snprintf(tmp, sizeof(tmp), "%7.2f  mV", v * 1000);
+			snprintf(tmp, sizeof(tmp), "%7.2f     mV", v * 1000);
 		else
 			snprintf(tmp, sizeof(tmp), "%10.5f  V", v);
 		m_voltageLabel.set_text(tmp);
@@ -200,7 +229,7 @@ bool DMMWindow::OnTimer(int /*timer*/)
 		//Peak-to-peak voltage
 		double vpp = m_meter->GetPeakToPeak();
 		if(fabs(vpp) < 1)
-			snprintf(tmp, sizeof(tmp), "%7.2f  mVpp", vpp * 1000);
+			snprintf(tmp, sizeof(tmp), "%7.2f     mVpp", vpp * 1000);
 		else
 			snprintf(tmp, sizeof(tmp), "%8.3f  Vpp", vpp);
 		m_vppLabel.set_text(tmp);
@@ -208,11 +237,11 @@ bool DMMWindow::OnTimer(int /*timer*/)
 		//Frequency
 		double f = m_meter->GetFrequency();
 		if(f > 1000000)
-			snprintf(tmp, sizeof(tmp), "%8.3f MHz", f / 1000000);
+			snprintf(tmp, sizeof(tmp), "%8.3f   MHz", f / 1000000);
 		else if(f > 1000)
-			snprintf(tmp, sizeof(tmp), "%8.3f kHz", f / 1000);
+			snprintf(tmp, sizeof(tmp), "%8.3f   kHz", f / 1000);
 		else
-			snprintf(tmp, sizeof(tmp), "%8.3f  Hz", f);
+			snprintf(tmp, sizeof(tmp), "%8.3f    Hz", f);
 		m_frequencyLabel.set_text(tmp);
 	}
 
