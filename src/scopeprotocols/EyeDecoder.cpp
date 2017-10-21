@@ -306,105 +306,8 @@ bool EyeDecoder::CalculateUIWidth(AnalogCapture* din, EyeCapture* cap)
 	return true;
 }
 
-void EyeDecoder::Refresh()
+bool EyeDecoder::MeasureEyeOpenings(AnalogCapture* din, EyeCapture* cap, map<int64_t, map<float, int64_t> >& pixmap)
 {
-	//Get the input data
-	if(m_channels[0] == NULL)
-	{
-		SetData(NULL);
-		return;
-	}
-	AnalogCapture* din = dynamic_cast<AnalogCapture*>(m_channels[0]->GetData());
-	if(din == NULL)
-	{
-		SetData(NULL);
-		return;
-	}
-
-	//Can't do much if we have no samples to work with
-	if(din->GetDepth() == 0)
-	{
-		SetData(NULL);
-		return;
-	}
-
-	//Initialize the capture
-	EyeCapture* cap = new EyeCapture;
-	m_timescale = m_channels[0]->m_timescale;
-	cap->m_timescale = din->m_timescale;
-	cap->m_sampleCount = din->m_samples.size();
-
-	//Figure out what modulation is in use and what the levels are
-	if(!DetectModulationLevels(din, cap))
-		return;
-
-	//Once we have decision thresholds, we can find bit boundaries and calculate the symbol rate
-	if(!CalculateUIWidth(din, cap))
-		return;
-
-	//Generate the final pixel map
-	map<int64_t, map<float, int64_t> > pixmap;
-	bool first = true;
-	float last_sample_value = 0;
-	int64_t tstart = 0;
-	int64_t uis_per_trigger = 16;		//TODO: allow changing this?
-	for(auto sin : din->m_samples)
-	{
-		float f = sin;
-
-		//If we haven't triggered, wait for the signal to cross a decision threshold
-		//so we can phase align to the data clock.
-		if(tstart == 0)
-		{
-			if(!first)
-			{
-				for(auto v : cap->m_decisionPoints)
-				{
-					if( (f > v) && (last_sample_value < v) )
-						tstart = sin.m_offset;
-					if( (f < v) && (last_sample_value > v) )
-						tstart = sin.m_offset;
-				}
-			}
-			else
-				first = false;
-
-			last_sample_value = f;
-			continue;
-		}
-
-		//If we get here, we've triggered. Chop the signal at UI boundaries
-		double doff = sin.m_offset - tstart;
-		int64_t offset = round(fmod(doff, m_uiWidthFractional));
-		if(offset >= m_uiWidth)
-			offset = 0;
-
-		//and add to the histogram
-		pixmap[offset][f] ++;
-
-		//Re-trigger every uis_per_trigger UIs to compensate for clock skew between our guesstimated clock
-		//and the actual line rate
-		double num_uis = doff / m_uiWidthFractional;
-		if(num_uis > uis_per_trigger)
-		{
-			tstart = 0;
-			first = true;
-		}
-	}
-
-	//Generate the samples
-	for(auto it : pixmap)
-	{
-		for(auto jt : it.second)
-		{
-			//For now just add a sample for it
-			EyePatternPixel pix;
-			pix.m_voltage = jt.first;
-			pix.m_count = jt.second;
-			cap->m_samples.push_back(EyeSample(it.first, 1, pix));
-		}
-	}
-
 	//Measure the width of the eye at each decision point
 	//LogDebug("Measuring eye width\n");
 	float row_height = 0.01;				//sample +/- 10 mV around the decision point
@@ -502,6 +405,121 @@ void EyeDecoder::Refresh()
 		/*LogDebug("    At %.3f V: [%.3f, %.3f], height = %.3f\n",
 			middle, vmin, vmax, height);*/
 	}
+
+	return true;
+}
+
+bool EyeDecoder::GenerateEyeData(AnalogCapture* din, EyeCapture* cap, map<int64_t, map<float, int64_t> >& pixmap)
+{
+	//Generate the final pixel map
+	bool first = true;
+	float last_sample_value = 0;
+	int64_t tstart = 0;
+	int64_t uis_per_trigger = 16;		//TODO: allow changing this?
+	for(auto sin : din->m_samples)
+	{
+		float f = sin;
+
+		//If we haven't triggered, wait for the signal to cross a decision threshold
+		//so we can phase align to the data clock.
+		if(tstart == 0)
+		{
+			if(!first)
+			{
+				for(auto v : cap->m_decisionPoints)
+				{
+					if( (f > v) && (last_sample_value < v) )
+						tstart = sin.m_offset;
+					if( (f < v) && (last_sample_value > v) )
+						tstart = sin.m_offset;
+				}
+			}
+			else
+				first = false;
+
+			last_sample_value = f;
+			continue;
+		}
+
+		//If we get here, we've triggered. Chop the signal at UI boundaries
+		double doff = sin.m_offset - tstart;
+		int64_t offset = round(fmod(doff, m_uiWidthFractional));
+		if(offset >= m_uiWidth)
+			offset = 0;
+
+		//and add to the histogram
+		pixmap[offset][f] ++;
+
+		//Re-trigger every uis_per_trigger UIs to compensate for clock skew between our guesstimated clock
+		//and the actual line rate
+		double num_uis = doff / m_uiWidthFractional;
+		if(num_uis > uis_per_trigger)
+		{
+			tstart = 0;
+			first = true;
+		}
+	}
+
+	//Generate the samples
+	for(auto it : pixmap)
+	{
+		for(auto jt : it.second)
+		{
+			//For now just add a sample for it
+			EyePatternPixel pix;
+			pix.m_voltage = jt.first;
+			pix.m_count = jt.second;
+			cap->m_samples.push_back(EyeSample(it.first, 1, pix));
+		}
+	}
+
+	return true;
+}
+
+void EyeDecoder::Refresh()
+{
+	//Get the input data
+	if(m_channels[0] == NULL)
+	{
+		SetData(NULL);
+		return;
+	}
+	AnalogCapture* din = dynamic_cast<AnalogCapture*>(m_channels[0]->GetData());
+	if(din == NULL)
+	{
+		SetData(NULL);
+		return;
+	}
+
+	//Can't do much if we have no samples to work with
+	if(din->GetDepth() == 0)
+	{
+		SetData(NULL);
+		return;
+	}
+
+	//Initialize the capture
+	EyeCapture* cap = new EyeCapture;
+	m_timescale = m_channels[0]->m_timescale;
+	cap->m_timescale = din->m_timescale;
+	cap->m_sampleCount = din->m_samples.size();
+
+	//Figure out what modulation is in use and what the levels are
+	if(!DetectModulationLevels(din, cap))
+		return;
+
+	//Once we have decision thresholds, we can find bit boundaries and calculate the symbol rate
+	if(!CalculateUIWidth(din, cap))
+		return;
+
+	//Create the actual 2D eye render
+	map<int64_t, map<float, int64_t> > pixmap;
+	if(!GenerateEyeData(din, cap, pixmap))
+		return;
+
+	//Find the X/Y size of each eye opening
+	if(!MeasureEyeOpenings(din, cap, pixmap))
+		return;
 
 	//Done, update the waveform
 	SetData(cap);
