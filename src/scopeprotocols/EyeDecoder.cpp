@@ -347,7 +347,7 @@ void EyeDecoder::Refresh()
 	bool first = true;
 	float last_sample_value = 0;
 	int64_t tstart = 0;
-	int64_t uis_per_trigger = 16;
+	int64_t uis_per_trigger = 16;		//TODO: allow changing this?
 	for(auto sin : din->m_samples)
 	{
 		float f = sin;

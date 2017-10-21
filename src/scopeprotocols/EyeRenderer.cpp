@@ -177,7 +177,7 @@ void EyeRenderer::Render(
 		float yoffset = ((waveheight/2) + capture->m_minVoltage);
 
 		//Decide what size divisions to use
-		float y_grid = AnalogRenderer::PickStepSize(waveheight/2);
+		float y_grid = AnalogRenderer::PickStepSize(waveheight/2, 3, 5);
 
 		//Draw the grid and axis labels
 		float yzero = ymid + yscale*yoffset;

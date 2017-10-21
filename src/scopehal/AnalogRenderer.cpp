@@ -194,7 +194,7 @@ void AnalogRenderer::RenderEndCallback(
 	cr->restore();
 }
 
-float AnalogRenderer::PickStepSize(float volts_per_half_span)
+float AnalogRenderer::PickStepSize(float volts_per_half_span, int min_steps, int max_steps)
 {
 	const float step_sizes[12]=
 	{
@@ -215,9 +215,6 @@ float AnalogRenderer::PickStepSize(float volts_per_half_span)
 		2.5,
 		5
 	};
-
-	const int min_steps = 2;
-	const int max_steps = 4;
 
 	for(int i=0; i<12; i++)
 	{

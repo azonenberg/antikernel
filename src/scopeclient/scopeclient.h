@@ -38,25 +38,7 @@
 #include "../scopehal/scopehal.h"
 #include "../scopehal/OscilloscopeChannel.h"
 
-#include <gtkmm/box.h>
-#include <gtkmm/comboboxtext.h>
-#include <gtkmm/dialog.h>
-#include <gtkmm/frame.h>
-#include <gtkmm/layout.h>
-#include <gtkmm/listviewtext.h>
-#include <gtkmm/main.h>
-#include <gtkmm/messagedialog.h>
-#include <gtkmm/notebook.h>
-#include <gtkmm/paned.h>
-#include <gtkmm/progressbar.h>
-#include <gtkmm/scrolledwindow.h>
-#include <gtkmm/separator.h>
-#include <gtkmm/separatortoolitem.h>
-#include <gtkmm/statusbar.h>
-#include <gtkmm/stock.h>
-#include <gtkmm/toolbar.h>
-#include <gtkmm/treestore.h>
-#include <gtkmm/treeview.h>
-#include <gtkmm/window.h>
+#include <giomm.h>
+#include <gtkmm.h>
 
 #endif

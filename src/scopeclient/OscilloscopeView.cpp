@@ -34,7 +34,7 @@
  */
 
 #include "scopeclient.h"
-#include "MainWindow.h"
+#include "OscilloscopeWindow.h"
 #include "../scopehal/Oscilloscope.h"
 #include "../scopehal/ProtocolDecoder.h"
 #include "../scopehal/TimescaleRenderer.h"
@@ -46,7 +46,7 @@ using namespace std;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Construction / destruction
 
-OscilloscopeView::OscilloscopeView(Oscilloscope* scope, MainWindow* parent)
+OscilloscopeView::OscilloscopeView(Oscilloscope* scope, OscilloscopeWindow* parent)
 	: m_scope(scope)
 	, m_parent(parent)
 	, m_selectedChannel(NULL)

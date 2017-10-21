@@ -40,7 +40,7 @@
 #include "../scopehal/TimescaleRenderer.h"
 
 class Oscilloscope;
-class MainWindow;
+class OscilloscopeWindow;
 
 /**
 	@brief Viewer for oscilloscope signals
@@ -48,7 +48,7 @@ class MainWindow;
 class OscilloscopeView : public Gtk::Layout
 {
 public:
-	OscilloscopeView(Oscilloscope* scope, MainWindow* parent);
+	OscilloscopeView(Oscilloscope* scope, OscilloscopeWindow* parent);
 	virtual ~OscilloscopeView();
 
 	typedef std::map<OscilloscopeChannel*, ChannelRenderer*> ChannelMap;
@@ -78,7 +78,7 @@ protected:
 	bool m_sizeDirty;
 
 	Oscilloscope* m_scope;
-	MainWindow* m_parent;
+	OscilloscopeWindow* m_parent;
 
 	void MakeTimeRanges(std::vector<time_range>& ranges);
 

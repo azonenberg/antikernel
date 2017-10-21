@@ -34,7 +34,7 @@
  */
 
 #include "scopeclient.h"
-#include "MainWindow.h"
+#include "OscilloscopeWindow.h"
 #include "ScopeConnectionDialog.h"
 //#include "../scopehal/NetworkedOscilloscope.h"
 #include "../scopehal/RedTinLogicAnalyzer.h"
@@ -43,12 +43,73 @@
 
 using namespace std;
 
+class InstrumentInfo
+{
+public:
+	Oscilloscope* m_scope;
+	string m_server;
+	unsigned short m_port;
+
+	InstrumentInfo(Oscilloscope* o, string s, unsigned short p)
+		: m_scope(o)
+		, m_server(s)
+		, m_port(p)
+	{}
+};
+
+/**
+	@brief The main application class
+ */
+class ScopeApp : public Gtk::Application
+{
+public:
+	ScopeApp()
+	 : Gtk::Application()
+	{}
+
+	virtual ~ScopeApp();
+
+	static Glib::RefPtr<ScopeApp> create()
+	{
+		return Glib::RefPtr<ScopeApp>(new ScopeApp);
+	}
+
+	vector<InstrumentInfo> m_instruments;
+
+protected:
+	vector<OscilloscopeWindow*> m_windows;
+
+	virtual void on_activate();
+};
+
+ScopeApp::~ScopeApp()
+{
+	for(auto w : m_windows)
+		delete w;
+	for(auto i : m_instruments)
+		delete i.m_scope;
+}
+
+/**
+	@brief Create windows for each instrument
+ */
+void ScopeApp::on_activate()
+{
+	for(auto i : m_instruments)
+	{
+		auto w = new OscilloscopeWindow(i.m_scope, i.m_server, i.m_port);
+		m_windows.push_back(w);
+		add_window(*w);
+		w->present();
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	int exit_code = 0;
 	try
 	{
-		Gtk::Main kit(argc, argv);
+		auto app = ScopeApp::create();
 
 		//Global settings
 		unsigned short port = 0;
@@ -106,8 +167,6 @@ int main(int argc, char* argv[])
 		ScopeProtocolStaticInit();
 
 		//Connect to the server
-		Oscilloscope* scope = NULL;
-		//NameServer* namesrvr = NULL;
 		/*if(api == "scoped")
 			scope = new NetworkedOscilloscope(server, port);
 		else if(api == "redtin")
@@ -131,16 +190,14 @@ int main(int argc, char* argv[])
 			}
 		}*/
 		if(api == "redtin_uart")
-		{
-			//TODO
-			scope = new RedTinLogicAnalyzer(tty, 115200);
-		}
+			app->m_instruments.push_back(InstrumentInfo(new RedTinLogicAnalyzer(tty, 115200), server, port));
 		else if(api == "lecroy_vicp")
 		{
 			//default port if not specified
 			if(port == 0)
 				port = 1861;
-			scope = new LeCroyVICPOscilloscope(server, port);
+
+			app->m_instruments.push_back(InstrumentInfo(new LeCroyVICPOscilloscope(server, port), server, port));
 		}
 		else
 		{
@@ -149,12 +206,7 @@ int main(int argc, char* argv[])
 		}
 
 		//and run the app
-		MainWindow wnd(scope, server, port/*, namesrvr*/);
-		kit.run(wnd);
-
-		//if(namesrvr)
-		//	delete namesrvr;
-		delete scope;
+		app->run();
 	}
 	catch(const JtagException& ex)
 	{

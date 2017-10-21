@@ -30,11 +30,11 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Main application window class
+	@brief A top-level window containing an OscilloscopeView
  */
 
-#ifndef MainWindow_h
-#define MainWindow_h
+#ifndef OscilloscopeWindow_h
+#define OscilloscopeWindow_h
 
 #include "../scopehal/Oscilloscope.h"
 #include "OscilloscopeView.h"
@@ -42,11 +42,11 @@
 /**
 	@brief Main application window class
  */
-class MainWindow	: public Gtk::Window
+class OscilloscopeWindow	: public Gtk::Window
 {
 public:
-	MainWindow(Oscilloscope* scope, std::string host, int port);
-	~MainWindow();
+	OscilloscopeWindow(Oscilloscope* scope, std::string host, int port);
+	~OscilloscopeWindow();
 
 	Oscilloscope* GetScope()
 	{ return m_scope; }

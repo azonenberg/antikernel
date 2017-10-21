@@ -34,7 +34,7 @@
  */
 
 #include "scopeclient.h"
-#include "MainWindow.h"
+#include "OscilloscopeWindow.h"
 //#include "../scopehal/AnalogRenderer.h"
 #include "ProtocolDecoderDialog.h"
 
@@ -46,14 +46,14 @@ using namespace std;
 /**
 	@brief Initializes the main window
  */
-MainWindow::MainWindow(Oscilloscope* scope, std::string host, int port)
+OscilloscopeWindow::OscilloscopeWindow(Oscilloscope* scope, std::string host, int port)
 	: m_btnStart(Gtk::Stock::YES)
 	, m_view(scope, this)
 	, m_scope(scope)
 {
 	//Set title
 	char title[256];
-	snprintf(title, sizeof(title), "%s:%d (%s %s, serial %s)",
+	snprintf(title, sizeof(title), "Oscilloscope: %s:%d (%s %s, serial %s)",
 		host.c_str(),
 		port,
 		scope->GetVendor().c_str(),
@@ -73,7 +73,7 @@ MainWindow::MainWindow(Oscilloscope* scope, std::string host, int port)
 	show_all();
 
 	//Set the update timer
-	sigc::slot<bool> slot = sigc::bind(sigc::mem_fun(*this, &MainWindow::OnTimer), 1);
+	sigc::slot<bool> slot = sigc::bind(sigc::mem_fun(*this, &OscilloscopeWindow::OnTimer), 1);
 	sigc::connection conn = Glib::signal_timeout().connect(slot, 250);
 
 	//Set up display time scale
@@ -84,19 +84,19 @@ MainWindow::MainWindow(Oscilloscope* scope, std::string host, int port)
 /**
 	@brief Application cleanup
  */
-MainWindow::~MainWindow()
+OscilloscopeWindow::~OscilloscopeWindow()
 {
 }
 
 /**
 	@brief Helper function for creating widgets and setting up signal handlers
  */
-void MainWindow::CreateWidgets()
+void OscilloscopeWindow::CreateWidgets()
 {
 	//Set up window hierarchy
 	add(m_vbox);
 		m_vbox.pack_start(m_toolbar, Gtk::PACK_SHRINK);
-			m_toolbar.append(m_btnStart, sigc::mem_fun(*this, &MainWindow::OnStart));
+			m_toolbar.append(m_btnStart, sigc::mem_fun(*this, &OscilloscopeWindow::OnStart));
 				m_btnStart.set_tooltip_text("Start capture");
 		m_vbox.pack_start(m_viewscroller);
 			m_viewscroller.add(m_view);
@@ -111,8 +111,8 @@ void MainWindow::CreateWidgets()
 	m_viewscroller.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 
 	//Set up message handlers
-	//m_viewscroller.get_hadjustment()->signal_value_changed().connect(sigc::mem_fun(*this, &MainWindow::OnScopeScroll));
-	//m_viewscroller.get_vadjustment()->signal_value_changed().connect(sigc::mem_fun(*this, &MainWindow::OnScopeScroll));
+	//m_viewscroller.get_hadjustment()->signal_value_changed().connect(sigc::mem_fun(*this, &OscilloscopeWindow::OnScopeScroll));
+	//m_viewscroller.get_vadjustment()->signal_value_changed().connect(sigc::mem_fun(*this, &OscilloscopeWindow::OnScopeScroll));
 	m_viewscroller.get_hadjustment()->set_step_increment(50);
 
 	//Refresh the views
@@ -123,7 +123,7 @@ void MainWindow::CreateWidgets()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Message handlers
 
-bool MainWindow::OnTimer(int /*timer*/)
+bool OscilloscopeWindow::OnTimer(int /*timer*/)
 {
 	try
 	{
@@ -156,7 +156,7 @@ bool MainWindow::OnTimer(int /*timer*/)
 			m_statprogress.set_text("Triggered");
 
 			//Triggered - get the data from each channel
-			m_scope->AcquireData(sigc::mem_fun(*this, &MainWindow::OnCaptureProgressUpdate));
+			m_scope->AcquireData(sigc::mem_fun(*this, &OscilloscopeWindow::OnCaptureProgressUpdate));
 
 			//Set to a sane zoom if this is our first capture
 			//otherwise keep time scale unchanged
@@ -182,7 +182,7 @@ bool MainWindow::OnTimer(int /*timer*/)
 	return true;
 }
 
-void MainWindow::OnZoomOut()
+void OscilloscopeWindow::OnZoomOut()
 {
 	//Get center of current view
 	float fract = m_viewscroller.get_hadjustment()->get_value() / m_viewscroller.get_hadjustment()->get_upper();
@@ -199,7 +199,7 @@ void MainWindow::OnZoomOut()
 	m_viewscroller.get_hadjustment()->set_value(fract * m_viewscroller.get_hadjustment()->get_upper());
 }
 
-void MainWindow::OnZoomIn()
+void OscilloscopeWindow::OnZoomIn()
 {
 	//Get center of current view
 	float fract = m_viewscroller.get_hadjustment()->get_value() / m_viewscroller.get_hadjustment()->get_upper();
@@ -216,7 +216,7 @@ void MainWindow::OnZoomIn()
 	m_viewscroller.get_hadjustment()->set_value(fract * m_viewscroller.get_hadjustment()->get_upper());
 }
 
-void MainWindow::OnZoomFit()
+void OscilloscopeWindow::OnZoomFit()
 {
 	if( (m_scope->GetChannelCount() != 0) && (m_scope->GetChannel(0) != NULL) && (m_scope->GetChannel(0)->GetData() != NULL))
 	{
@@ -228,7 +228,7 @@ void MainWindow::OnZoomFit()
 	OnZoomChanged();
 }
 
-void MainWindow::OnZoomChanged()
+void OscilloscopeWindow::OnZoomChanged()
 {
 	for(size_t i=0; i<m_scope->GetChannelCount(); i++)
 		m_scope->GetChannel(i)->m_timescale = m_timescale;
@@ -237,7 +237,7 @@ void MainWindow::OnZoomChanged()
 	m_view.queue_draw();
 }
 
-int MainWindow::OnCaptureProgressUpdate(float progress)
+int OscilloscopeWindow::OnCaptureProgressUpdate(float progress)
 {
 	m_statprogress.set_fraction(progress);
 
@@ -248,7 +248,7 @@ int MainWindow::OnCaptureProgressUpdate(float progress)
 	return 0;
 }
 
-void MainWindow::OnStart()
+void OscilloscopeWindow::OnStart()
 {
 	try
 	{
