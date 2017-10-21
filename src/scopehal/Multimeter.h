@@ -46,6 +46,12 @@ public:
 	};
 
 	virtual unsigned int GetMeasurementTypes() =0;
+
+	//Get readings
+	virtual double GetDCVoltage() =0;
+	virtual double GetDCRMSAmplitude() =0;
+	virtual double GetACRMSAmplitude() =0;
+	virtual double GetFrequency() =0;
 };
 
 #endif

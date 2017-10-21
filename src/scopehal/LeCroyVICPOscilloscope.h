@@ -73,6 +73,12 @@ public:
 		OP_EOI		= 0x1
 	};
 
+	//DMM acquisition
+	virtual double GetDCVoltage();
+	virtual double GetDCRMSAmplitude();
+	virtual double GetACRMSAmplitude();
+	virtual double GetFrequency();
+
 protected:
 	Socket m_socket;
 

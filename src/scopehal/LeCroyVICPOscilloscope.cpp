@@ -175,6 +175,10 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 			{
 				m_hasDVM = true;
 				LogDebug("* DVM (digital voltmeter / frequency counter)\n");
+
+				//Enable the DVM, turn off auto ranging
+				SendCommand("VBS 'app.acquisition.DVM.AutoRange = 0'");
+				SendCommand("VBS 'app.acquisition.DVM.DvmEnable = 1'");
 			}
 
 			//No idea what it is
@@ -326,6 +330,36 @@ string LeCroyVICPOscilloscope::GetVendor()
 string LeCroyVICPOscilloscope::GetSerial()
 {
 	return m_serial;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// DMM mode
+
+double LeCroyVICPOscilloscope::GetDCVoltage()
+{
+	SendCommand("VBS? 'return = app.acquisition.DVM.Voltage'");
+	string str = ReadSingleBlockString();
+	double ret;
+	sscanf(str.c_str(), "%lf", &ret);
+	return ret;
+}
+
+double LeCroyVICPOscilloscope::GetDCRMSAmplitude()
+{
+	LogError("GetDCRMSAmplitude not implemented\n");
+	return 0;
+}
+
+double LeCroyVICPOscilloscope::GetACRMSAmplitude()
+{
+	LogError("GetACRMSAmplitude not implemented\n");
+	return 0;
+}
+
+double LeCroyVICPOscilloscope::GetFrequency()
+{
+	LogError("GetFrequency not implemented\n");
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

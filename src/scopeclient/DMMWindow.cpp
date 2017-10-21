@@ -46,24 +46,23 @@ using namespace std;
 /**
 	@brief Initializes the main window
  */
-DMMWindow::DMMWindow(Multimeter* scope, std::string host, int port)
-	: m_meter(scope)
+DMMWindow::DMMWindow(Multimeter* meter, std::string host, int port)
+	: m_meter(meter)
 {
 	//Set title
 	char title[256];
 	snprintf(title, sizeof(title), "Multimeter: %s:%d (%s %s, serial %s)",
 		host.c_str(),
 		port,
-		scope->GetVendor().c_str(),
-		scope->GetName().c_str(),
-		scope->GetSerial().c_str()
+		meter->GetVendor().c_str(),
+		meter->GetName().c_str(),
+		meter->GetSerial().c_str()
 		);
 	set_title(title);
 
-	/*
 	//Initial setup
 	set_reallocate_redraws(true);
-	set_default_size(1280, 800);
+	set_default_size(640, 240);
 
 	//Add widgets
 	CreateWidgets();
@@ -73,12 +72,7 @@ DMMWindow::DMMWindow(Multimeter* scope, std::string host, int port)
 
 	//Set the update timer
 	sigc::slot<bool> slot = sigc::bind(sigc::mem_fun(*this, &DMMWindow::OnTimer), 1);
-	sigc::connection conn = Glib::signal_timeout().connect(slot, 250);
-
-	//Set up display time scale
-	m_timescale = 0;
-	m_waiting = false;
-	*/
+	sigc::connection conn = Glib::signal_timeout().connect(slot, 1000);
 }
 
 /**
@@ -93,86 +87,52 @@ DMMWindow::~DMMWindow()
  */
 void DMMWindow::CreateWidgets()
 {
-	/*
 	//Set up window hierarchy
-	add(m_vbox);
-		m_vbox.pack_start(m_toolbar, Gtk::PACK_SHRINK);
-			m_toolbar.append(m_btnStart, sigc::mem_fun(*this, &DMMWindow::OnStart));
-				m_btnStart.set_tooltip_text("Start capture");
-		m_vbox.pack_start(m_viewscroller);
-			m_viewscroller.add(m_view);
-		m_vbox.pack_start(m_statusbar, Gtk::PACK_SHRINK);
-			m_statusbar.set_size_request(-1,16);
-			m_statusbar.pack_start(m_statprogress, Gtk::PACK_SHRINK);
-			m_statprogress.set_size_request(200, -1);
-			m_statprogress.set_fraction(0);
-			m_statprogress.set_show_text();
+	add(m_hbox);
+		m_hbox.pack_start(m_vbox, Gtk::PACK_SHRINK);
+			m_vbox.pack_start(m_signalSourceBox, Gtk::PACK_SHRINK);
+				m_signalSourceBox.pack_start(m_signalSourceLabel, Gtk::PACK_SHRINK);
+					m_signalSourceLabel.set_text("Input");
+					m_signalSourceLabel.set_size_request(50, -1);
+				m_signalSourceBox.pack_start(m_signalSourceSelector, Gtk::PACK_SHRINK);
+					m_signalSourceSelector.append("FIXME");
+			m_vbox.pack_start(m_measurementTypeBox, Gtk::PACK_SHRINK);
+				m_measurementTypeBox.pack_start(m_measurementTypeLabel, Gtk::PACK_SHRINK);
+					m_measurementTypeLabel.set_text("Mode");
+					m_measurementTypeLabel.set_size_request(50, -1);
+				m_measurementTypeBox.pack_start(m_measurementTypeSelector, Gtk::PACK_SHRINK);
+					unsigned int type = m_meter->GetMeasurementTypes();
+					if(type & Multimeter::DC_VOLTAGE)
+						m_measurementTypeSelector.append("Voltage");
+					if(type & Multimeter::DC_RMS_AMPLITUDE)
+						m_measurementTypeSelector.append("RMS (DC couple)");
+					if(type & Multimeter::AC_RMS_AMPLITUDE)
+						m_measurementTypeSelector.append("RMS (AC couple)");
+					if(type & Multimeter::FREQUENCY)
+						m_measurementTypeSelector.append("Frequency");
+		m_hbox.pack_start(m_voltageLabel, Gtk::PACK_EXPAND_WIDGET);
+			m_voltageLabel.override_font(Pango::FontDescription("sans bold 32"));
 
-	//Set dimensions
-	m_viewscroller.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
-
-	//Set up message handlers
-	//m_viewscroller.get_hadjustment()->signal_value_changed().connect(sigc::mem_fun(*this, &DMMWindow::OnScopeScroll));
-	//m_viewscroller.get_vadjustment()->signal_value_changed().connect(sigc::mem_fun(*this, &DMMWindow::OnScopeScroll));
-	m_viewscroller.get_hadjustment()->set_step_increment(50);
-
-	//Refresh the views
-	//Need to refresh main view first so we have renderers to reference in the channel list
-	m_view.Refresh();
-	*/
+	//TODO: populate signal source box
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Message handlers
-/*
-bool DMMWindow::OnTimer(int timer)
+
+bool DMMWindow::OnTimer(int /*timer*/)
 {
 	try
 	{
-		m_statprogress.set_fraction(0);
+		double v = m_meter->GetDCVoltage();
+		//LogDebug("%f\n", v);
 
-		static int i = 0;
-		i ++;
-		i %= 10;
-
-		if(m_waiting)
-		{
-			//m_statprogress.set_text("Ready");
-			string str = "Ready";
-			for(int j=0; j<i; j++)
-				str += ".";
-			m_statprogress.set_text(str);
-
-			//Poll the trigger status of the scope
-			Multimeter::TriggerMode status = m_meter->PollTrigger();
-			if(status > Multimeter::TRIGGER_MODE_COUNT)
-			{
-				//Invalid value, skip it
-				return true;
-			}
-
-			//If not TRIGGERED, do nothing
-			if(status != Multimeter::TRIGGER_MODE_TRIGGERED)
-				return true;
-
-			m_statprogress.set_text("Triggered");
-
-			//Triggered - get the data from each channel
-			m_meter->AcquireData(sigc::mem_fun(*this, &DMMWindow::OnCaptureProgressUpdate));
-
-			//Set to a sane zoom if this is our first capture
-			//otherwise keep time scale unchanged
-			if(m_timescale == 0)
-				OnZoomFit();
-
-			//Refresh display
-			m_view.SetSizeDirty();
-			m_view.queue_draw();
-
-			m_waiting = false;
-		}
+		char tmp[128];
+		if(fabs(v) < 1)
+			snprintf(tmp, sizeof(tmp), "%.5f mV", v * 1000);
 		else
-			m_statprogress.set_text("Stopped");
+			snprintf(tmp, sizeof(tmp), "%.5f V", v);
+
+		m_voltageLabel.set_text(tmp);
 	}
 
 	catch(const JtagException& ex)
@@ -183,92 +143,3 @@ bool DMMWindow::OnTimer(int timer)
 	//false to stop timer
 	return true;
 }
-
-void DMMWindow::OnZoomOut()
-{
-	//Get center of current view
-	float fract = m_viewscroller.get_hadjustment()->get_value() / m_viewscroller.get_hadjustment()->get_upper();
-
-	//Change zoom
-	m_timescale /= 1.5;
-	OnZoomChanged();
-
-	//Dispatch the draw events
-	while(Gtk::Main::events_pending())
-		Gtk::Main::iteration();
-
-	//Re-scroll
-	m_viewscroller.get_hadjustment()->set_value(fract * m_viewscroller.get_hadjustment()->get_upper());
-}
-
-void DMMWindow::OnZoomIn()
-{
-	//Get center of current view
-	float fract = m_viewscroller.get_hadjustment()->get_value() / m_viewscroller.get_hadjustment()->get_upper();
-
-	//Change zoom
-	m_timescale *= 1.5;
-	OnZoomChanged();
-
-	//Dispatch the draw events
-	while(Gtk::Main::events_pending())
-		Gtk::Main::iteration();
-
-	//Re-scroll
-	m_viewscroller.get_hadjustment()->set_value(fract * m_viewscroller.get_hadjustment()->get_upper());
-}
-
-void DMMWindow::OnZoomFit()
-{
-	if( (m_meter->GetChannelCount() != 0) && (m_meter->GetChannel(0) != NULL) && (m_meter->GetChannel(0)->GetData() != NULL))
-	{
-		CaptureChannelBase* capture = m_meter->GetChannel(0)->GetData();
-		int64_t capture_len = capture->m_timescale * capture->GetEndTime();
-		m_timescale = static_cast<float>(m_viewscroller.get_width()) / capture_len;
-	}
-
-	OnZoomChanged();
-}
-
-void DMMWindow::OnZoomChanged()
-{
-	for(size_t i=0; i<m_meter->GetChannelCount(); i++)
-		m_meter->GetChannel(i)->m_timescale = m_timescale;
-
-	m_view.SetSizeDirty();
-	m_view.queue_draw();
-}
-
-int DMMWindow::OnCaptureProgressUpdate(float progress)
-{
-	m_statprogress.set_fraction(progress);
-
-	//Dispatch pending gtk events (such as draw calls)
-	while(Gtk::Main::events_pending())
-		Gtk::Main::iteration();
-
-	return 0;
-}
-
-void DMMWindow::OnStart()
-{
-	try
-	{
-		//TODO: get triggers
-		//Load trigger conditions from sidebar
-		//m_channelview.UpdateTriggers();
-
-		//Start the capture
-		m_meter->StartSingleTrigger();
-		m_waiting = true;
-
-		//Print to stdout so scripts know we're ready
-		LogDebug("Ready\n");
-		fflush(stdout);
-	}
-	catch(const JtagException& ex)
-	{
-		LogError("%s\n", ex.GetDescription().c_str());
-	}
-}
-*/

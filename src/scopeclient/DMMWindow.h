@@ -41,7 +41,7 @@
 class DMMWindow	: public Gtk::Window
 {
 public:
-	DMMWindow(Multimeter* scope, std::string host, int port);
+	DMMWindow(Multimeter* meter, std::string host, int port);
 	~DMMWindow();
 
 protected:
@@ -49,35 +49,22 @@ protected:
 	//Initialization
 	void CreateWidgets();
 
-	/*
 	//Widgets
-	Gtk::VBox m_vbox;
-		Gtk::Toolbar m_toolbar;
-			Gtk::ToolButton m_btnStart;
-		Gtk::ScrolledWindow m_viewscroller;
-			DMMView m_view;
-		Gtk::Statusbar m_statusbar;
-			Gtk::ProgressBar m_statprogress;
-			*/
+	Gtk::HBox m_hbox;
+		Gtk::VBox m_vbox;
+			Gtk::HBox m_signalSourceBox;
+				Gtk::Label m_signalSourceLabel;
+				Gtk::ComboBoxText m_signalSourceSelector;
+			Gtk::HBox m_measurementTypeBox;
+				Gtk::Label m_measurementTypeLabel;
+				Gtk::ComboBoxText m_measurementTypeSelector;
+		Gtk::Label m_voltageLabel;
 
 	//Our instrument connection
 	Multimeter* m_meter;
 
-	/*
 	//Status polling
 	bool OnTimer(int timer);
-
-	//Message handlers
-	void OnStart();
-
-	int OnCaptureProgressUpdate(float progress);
-
-	float m_timescale;
-
-	void OnZoomChanged();
-
-	bool m_waiting;
-	*/
 };
 
 
