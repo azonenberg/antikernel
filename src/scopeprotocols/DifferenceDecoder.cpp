@@ -27,36 +27,100 @@
 *                                                                                                                      *
 ***********************************************************************************************************************/
 
-/**
-	@file
-	@author Andrew D. Zonenberg
-	@brief Scope protocol initialization
- */
+#include "../scopehal/scopehal.h"
+#include "DifferenceDecoder.h"
+#include "../scopehal/AnalogRenderer.h"
 
-#include "scopeprotocols.h"
+using namespace std;
 
-#define AddDecoderClass(T) ProtocolDecoder::AddDecoderClass(T::GetProtocolName(), T::CreateInstance)
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Construction / destruction
 
-/**
-	@brief Static initialization for protocol list
- */
-void ScopeProtocolStaticInit()
+DifferenceDecoder::DifferenceDecoder(
+	std::string hwname, std::string color)
+	: ProtocolDecoder(hwname, OscilloscopeChannel::CHANNEL_TYPE_ANALOG, color)
 {
-	AddDecoderClass(DifferenceDecoder);
-	AddDecoderClass(Ethernet10BaseTDecoder);
-	AddDecoderClass(Ethernet100BaseTDecoder);
-	AddDecoderClass(EthernetAutonegotiationDecoder);
-	AddDecoderClass(EyeDecoder);
-	AddDecoderClass(NRZDecoder);
-	AddDecoderClass(UARTDecoder);
-	
-	/*
-	AddDecoderClass(DigitalToAnalogDecoder);
-	AddDecoderClass(DMADecoder);
-	AddDecoderClass(RPCDecoder);
-	AddDecoderClass(RPCNameserverDecoder);
-	AddDecoderClass(SchmittTriggerDecoder);
-	AddDecoderClass(SPIDecoder);
-	AddDecoderClass(StateDecoder);
-	*/
+	//Set up channels
+	m_signalNames.push_back("din_p");
+	m_signalNames.push_back("din_n");
+	m_channels.push_back(NULL);
+	m_channels.push_back(NULL);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Factory methods
+
+ChannelRenderer* DifferenceDecoder::CreateRenderer()
+{
+	return new AnalogRenderer(this);
+}
+
+bool DifferenceDecoder::ValidateChannel(size_t i, OscilloscopeChannel* channel)
+{
+	if( (i == 0) && (channel->GetType() == OscilloscopeChannel::CHANNEL_TYPE_ANALOG) )
+		return true;
+	if( (i == 1) && (channel->GetType() == OscilloscopeChannel::CHANNEL_TYPE_ANALOG) )
+		return true;
+	return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Accessors
+
+string DifferenceDecoder::GetProtocolName()
+{
+	return "Difference";
+}
+
+bool DifferenceDecoder::IsOverlay()
+{
+	//we create a new analog channel
+	return false;
+}
+
+bool DifferenceDecoder::NeedsConfig()
+{
+	//we auto-select the midpoint as our threshold
+	return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Actual decoder logic
+
+void DifferenceDecoder::Refresh()
+{
+	//Get the input data
+	if(m_channels[0] == NULL)
+	{
+		SetData(NULL);
+		return;
+	}
+	AnalogCapture* din_p = dynamic_cast<AnalogCapture*>(m_channels[0]->GetData());
+	AnalogCapture* din_n = dynamic_cast<AnalogCapture*>(m_channels[1]->GetData());
+	if( (din_p == NULL) || (din_n == NULL) )
+	{
+		SetData(NULL);
+		return;
+	}
+
+	//We need meaningful data
+	if(din_p->GetDepth() == 0)
+	{
+		SetData(NULL);
+		return;
+	}
+
+	//Subtract all of our samples
+	AnalogCapture* cap = new AnalogCapture;
+	for(size_t i=0; i<din_p->m_samples.size(); i++)
+	{
+		AnalogSample sin_p = din_p->m_samples[i];
+		AnalogSample sin_n = din_n->m_samples[i];
+		cap->m_samples.push_back(AnalogSample(sin_p.m_offset, sin_p.m_duration, sin_p.m_sample - sin_n.m_sample));
+	}
+	SetData(cap);
+
+	//Copy our time scales from the input
+	m_timescale = m_channels[0]->m_timescale;
+	cap->m_timescale = din_p->m_timescale;
 }

@@ -33,6 +33,7 @@ scopeprotocols:
 
     sources:
         - scopeprotocols.cpp
+        - DifferenceDecoder.cpp
         - Ethernet10BaseTDecoder.cpp
         - Ethernet100BaseTDecoder.cpp
         - EthernetAutonegotiationDecoder.cpp

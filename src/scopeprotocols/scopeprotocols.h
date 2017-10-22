@@ -40,6 +40,7 @@
 #include "../scopehal/ProtocolDecoder.h"
 //#include "../scopehal/StateDecoder.h"
 
+#include "DifferenceDecoder.h"
 #include "EthernetAutonegotiationDecoder.h"
 #include "EthernetProtocolDecoder.h"
 #include "Ethernet10BaseTDecoder.h"
