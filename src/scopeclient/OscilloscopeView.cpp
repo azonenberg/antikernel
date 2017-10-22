@@ -746,6 +746,46 @@ void OscilloscopeView::OnProtocolDecode(string protocol)
 			}
 		}
 
+		//FIXME: If we have two inputs, use the current and next channel
+		//This is temporary until we get a UI for this!
+		if(decoder->GetInputCount() == 2)
+		{
+			if(decoder->ValidateChannel(0, m_selectedChannel))
+				decoder->SetInput(0, m_selectedChannel);
+			else
+			{
+				LogError("Input 0 is not valid for this decoder\n");
+				delete decoder;
+				return;
+			}
+
+			//Find the adjacent channel
+			int ichan = -1;
+			for(int i=0; i<(int)m_scope->GetChannelCount() - 2; i++)
+			{
+				if(m_selectedChannel == m_scope->GetChannel(i))
+				{
+					ichan = i;
+					break;
+				}
+			}
+			if(ichan < 0)
+			{
+				LogError("Couldn't find adjacent channel\n");
+				delete decoder;
+				return;
+			}
+			OscilloscopeChannel* next = m_scope->GetChannel(ichan + 2);
+			if(decoder->ValidateChannel(1, next))
+				decoder->SetInput(1, next);
+			else
+			{
+				LogError("Input 1 is not valid for this decoder\n");
+				delete decoder;
+				return;
+			}
+		}
+
 		//TODO: dialog for configuring stuff
 		if(decoder->NeedsConfig())
 		{
@@ -788,7 +828,7 @@ void OscilloscopeView::OnProtocolDecode(string protocol)
 				if(r == render)
 					continue;
 
-				if(r->m_ypos >= render->m_ypos)
+				if(r->m_ypos >= (render->m_ypos - 10) )	//allow for padding
 					r->m_ypos += render->m_height;
 			}
 		}
