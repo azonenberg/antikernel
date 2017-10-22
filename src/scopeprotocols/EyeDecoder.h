@@ -68,13 +68,18 @@ protected:
 
 	bool DetectModulationLevels(AnalogCapture* din, EyeCapture* cap);
 	bool CalculateUIWidth(AnalogCapture* din, EyeCapture* cap);
+
 	bool MeasureEyeOpenings(
 		EyeCapture* cap,
 		std::map<int64_t, std::map<float, int64_t> >& pixmap);
+
 	bool GenerateEyeData(
 		AnalogCapture* din,
 		EyeCapture* cap,
 		std::map<int64_t, std::map<float, int64_t> >& pixmap);
+
+	bool MeasureRiseFallTimes(AnalogCapture* din, EyeCapture* cap);
+	int GetCodeForVoltage(float v, EyeCapture* cap);
 };
 
 #endif

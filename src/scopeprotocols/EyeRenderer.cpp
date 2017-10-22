@@ -214,10 +214,66 @@ void EyeRenderer::Render(
 
 		//Draw eye opening info at each decision point
 		RenderEyeOpenings(cr, xmid, yzero, yscale, ui_width, capture);
+
+		//Draw labels on rising/falling edges
+		RenderRiseFallTimes(cr, plot_width, xmid, yzero, yscale, capture);
 	}
 
 	cr->restore();
 	RenderEndCallback(cr, width, visleft, visright, ranges);
+}
+
+/**
+	@brief Draw the rise/fall time values
+ */
+void EyeRenderer::RenderRiseFallTimes(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		float plotwidth,
+		float xmid,
+		float yzero,
+		float yscale,
+		EyeCapture* capture)
+{
+	for(auto it : capture->m_riseFallTimes)
+	{
+		//Look up the original voltage levels
+		float startingVoltage = capture->m_signalLevels[it.first.first];
+		float endingVoltage = capture->m_signalLevels[it.first.second];
+		bool rising = startingVoltage < endingVoltage;
+
+		//Figure out where we're drawing vertically (midpoint of the transition)
+		float vmid = startingVoltage + (endingVoltage - startingVoltage)/2;
+		float y = yzero - yscale*vmid;
+
+		//Figure out where we're drawing horizontally (edge of the eye)
+		//TODO: pick this better
+		float x;
+		if(rising)
+			x = xmid - plotwidth/4;
+		else
+			x = xmid + plotwidth/4;
+
+		//Format
+		char tmp[128];
+		if(rising)
+			snprintf(tmp, sizeof(tmp), "Rise (10-90%%): %.2f ns", it.second * capture->m_timescale * 1e-3);
+		else
+			snprintf(tmp, sizeof(tmp), "Fall (90-10%%): %.2f ns", it.second * capture->m_timescale * 1e-3);
+
+		//and draw
+		int swidth;
+		int sheight;
+		GetStringWidth(cr, tmp, false, swidth, sheight);
+		x -= swidth/2;
+		y -= sheight/2;
+
+		cr->set_source_rgba(0, 0, 0, 0.75);
+		cr->rectangle(x, y, swidth, sheight);
+		cr->fill();
+
+		cr->set_source_rgba(1, 1, 1, 1);
+		DrawString(x , y, cr, tmp, false);
+	}
 }
 
 /**

@@ -80,6 +80,9 @@ public:
 
 	//Height of the eye at the center of each opening
 	std::vector<float> m_eyeHeights;
+
+	//Map of <code, code> -> rise/fall time (in samples)
+	std::map< std::pair<int, int>, double > m_riseFallTimes;
 };
 
 /**
@@ -121,6 +124,14 @@ protected:
 		float yzero,
 		float yscale,
 		float ui_width,
+		EyeCapture* capture);
+
+	void RenderRiseFallTimes(
+		const Cairo::RefPtr<Cairo::Context>& cr,
+		float plotwidth,
+		float xmid,
+		float yzero,
+		float yscale,
 		EyeCapture* capture);
 
 	void RenderDecisionThresholds(

@@ -476,6 +476,192 @@ bool EyeDecoder::GenerateEyeData(AnalogCapture* din, EyeCapture* cap, map<int64_
 	return true;
 }
 
+int EyeDecoder::GetCodeForVoltage(float v, EyeCapture* cap)
+{
+	int best_sample = 0;
+	float best_delta = 999;
+	for(int i=0; i<(int)cap->m_signalLevels.size(); i++)
+	{
+		float dv = fabs(cap->m_signalLevels[i] - v);
+		if(dv < best_delta)
+		{
+			best_delta = dv;
+			best_sample = i;
+		}
+	}
+	return best_sample;
+}
+
+bool EyeDecoder::MeasureRiseFallTimes(AnalogCapture* din, EyeCapture* cap)
+{
+	//Minimum slew rate (hitting this is considered the end of a transition)
+	double minSeparation = fabs(cap->m_signalLevels[1] - cap->m_signalLevels[0]);
+	double minSlew = minSeparation / (3*m_uiWidth);
+	//LogDebug("Min separation: %.0f mV\n", minSeparation * 1000);
+	//LogDebug("Min slew: %.0f mV/sample\n", minSlew * 1000);
+
+	//Find the set of transitions we support.
+	//Map from (src_code, dest_code) to vector<midpoint>
+	//Note that not all line codes use all transitions, for example MLT-3 has no -1 to +1
+	typedef pair<int, int> ipair;
+	map< ipair, vector<int64_t> > transitionsObserved;
+	float last_sample_value = 0;
+	//LogDebug("Finding legal transitions in signal...\n");
+	for(int64_t i=0; i<(int64_t)din->m_samples.size(); i++)
+	{
+		auto samp = din->m_samples[i];
+		float f = samp;
+
+		//See if this is a rising or falling edge
+		bool is_transition = false;
+		for(auto v : cap->m_decisionPoints)
+		{
+			if( (f > v) && (last_sample_value < v) )
+				is_transition = true;
+			if( (f < v) && (last_sample_value > v) )
+				is_transition = true;
+		}
+		last_sample_value = f;
+
+		//Skip anything that isn't the midpoint of a transition
+		if(!is_transition || i <= 2)
+			continue;
+
+		//We found a transition! Search left to find the starting code value.
+		//Stop after half a UI, or when we level off
+		//float starting_voltage = f;
+		float oldVoltage = f;
+		size_t halfWidth = m_uiWidth / 2;
+		//size_t start_delay = 1;
+		for(size_t j=i-1; j>0 && (i-j)<halfWidth; j--)
+		{
+			auto s = din->m_samples[j];
+			float g = s;
+			//starting_voltage = g;
+
+			//If we're not slewing much (more than 1 level per 3 UIs), stop
+			float dv = fabs(g - oldVoltage);
+			if(dv < minSlew)
+				break;
+
+			oldVoltage = g;
+			//start_delay = i-j;
+		}
+
+		//See what the old state is
+		int old_code = GetCodeForVoltage(oldVoltage, cap);
+		//LogDebug("Old voltage: %d, %3.0f mV (%2zu cycles before midpoint)\n",
+		//	old_code, starting_voltage * 1000, start_delay);
+
+		//Repeat to the right to find the ending code value
+		//float ending_voltage = f;
+		float newVoltage = f;
+		//size_t end_delay = 1;
+		for(size_t j=i+1; j<din->m_samples.size() && (j-i)<halfWidth; j++)
+		{
+			auto s = din->m_samples[j];
+			float g = s;
+			//ending_voltage = g;
+
+			//If we're not slewing much (more than 1 level per 3 UIs), stop
+			float dv = fabs(g - newVoltage);
+			if(dv < minSlew)
+				break;
+
+			newVoltage = g;
+			//end_delay = j-i;
+		}
+
+		int new_code = GetCodeForVoltage(newVoltage, cap);
+		//LogDebug("New voltage: %d, %3.0f mV (%2zu cycles after midpoint)\n",
+		//	new_code, ending_voltage * 1000, end_delay);
+
+		//Save this transition
+		transitionsObserved[ipair(old_code, new_code)].push_back(i);
+	}
+
+	//DEBUG: Print out the set of transitions we saw
+	/*
+	for(auto it : transitionsObserved)
+	{
+		LogDebug("%d -> %d: %lu occurrences\n",
+			it.first.first,
+			it.first.second,
+			it.second.size());
+	}
+	*/
+
+	//Once we know what the legal transitions are, examine every occurrence of each.
+	//Find the rise or fall time (10-90% for now)
+	for(auto it : transitionsObserved)
+	{
+		float originalVoltage = cap->m_signalLevels[it.first.first];
+		float endingVoltage = cap->m_signalLevels[it.first.second];
+		float dv = endingVoltage - originalVoltage;
+		float startThreshold = originalVoltage + dv*0.1;
+		float endThreshold = endingVoltage - dv*0.1;
+
+		/*
+		LogDebug("Code %d->%d: startThreshold=%3.0f mV, endThreshold=%3.0f mV\n",
+			it.first.first,
+			it.first.second,
+			startThreshold * 1000,
+			endThreshold * 1000);
+		*/
+
+		int64_t timeSum = 0;
+		int64_t timeCount = 0;
+		for(auto i : it.second)
+		{
+			float midpoint = din->m_samples[i];
+
+			//Go back until we cross the 10% threshold
+			int startDelay = 0;
+			for(size_t j=i-1; j>0; j--)
+			{
+				auto s = din->m_samples[j];
+				float v = s;
+
+				if(fabs(v - midpoint) > fabs(startThreshold - midpoint) )
+				{
+					startDelay = i-j;
+					break;
+				}
+			}
+
+			//Go forward until we cross the 90% threshold
+			int endDelay = 0;
+			for(size_t j=i+1; j<din->m_samples.size(); j++)
+			{
+				auto s = din->m_samples[j];
+				float v = s;
+
+				if(fabs(v - midpoint) > fabs(endThreshold - midpoint) )
+				{
+					endDelay = j-i;
+					break;
+				}
+			}
+
+			int edgetime = endDelay + startDelay;
+			//LogDebug("    Edge = %d samples (%.2f ns)\n", edgetime, edgetime * cap->m_timescale * 1e-3f);
+
+			timeSum += edgetime;
+			timeCount ++;
+		}
+
+		//Calculate the average rise/fall time
+		double averageTime = timeSum * 1.0 / timeCount;
+		//LogDebug("Average time: %.3lf ns\n", averageTime * cap->m_timescale * 1e-3);
+
+		//LogDebug("    Start delay = %d samples (%.2f ns)\n", startDelay, startDelay * cap->m_timescale * 1e-3f);
+
+		cap->m_riseFallTimes[it.first] = averageTime;
+	}
+
+	return true;
+}
+
 void EyeDecoder::Refresh()
 {
 	//Get the input data
@@ -519,6 +705,10 @@ void EyeDecoder::Refresh()
 
 	//Find the X/Y size of each eye opening
 	if(!MeasureEyeOpenings(cap, pixmap))
+		return;
+
+	//Measure our rise-fall times
+	if(!MeasureRiseFallTimes(din, cap))
 		return;
 
 	//Done, update the waveform
