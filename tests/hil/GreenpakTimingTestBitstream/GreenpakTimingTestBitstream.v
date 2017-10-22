@@ -34,7 +34,10 @@ module GreenpakTimingTestBitstream(
     output wire scope_i2c_scl,
     inout wire scope_i2c_sda,
 
-    inout wire[7:0] pmod_dq
+    inout wire[7:0] pmod_dq,
+
+    input wire uart_rxd,
+    output wire uart_txd
     );
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -930,5 +933,38 @@ module GreenpakTimingTestBitstream(
 		endcase
 
     end
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// The logic analyzer
+
+	RedTinUartWrapper #(
+		.WIDTH(64),
+		.DEPTH(512),
+		.UART_CLKDIV(16'd1736),	//115200 @ 200 MHz
+		.SYMBOL_ROM(
+			{
+				16384'h0,
+				"DEBUGROM", 				8'h0, 8'h01, 8'h00,
+				32'd5000,		//period of capture clock, in ps
+				32'd512,		//Capture depth (TODO auto-patch this?)
+				32'd64,			//Capture width (TODO auto-patch this?)
+				{ "temp_read_en", 			8'h0, 8'd1,   8'h0 },
+				{ "sensor_read_done", 		8'h0, 8'd1,   8'h0 },
+				{ "temp_value", 			8'h0, 8'd17,  8'h0 }
+			}
+		)
+	) analyzer (
+		.clk(clk_noc),
+		.capture_clk(clk_noc),
+		.din({
+				temp_read_en,				//1
+				sensor_read_done,			//1
+				temp_value,					//17
+				45'h0						//padding
+			}),
+		.uart_rx(uart_rxd),
+		.uart_tx(uart_txd),
+		.la_ready()
+	);
 
 endmodule

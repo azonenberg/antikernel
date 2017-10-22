@@ -36,7 +36,7 @@ GreenpakTimingTestBitstream:
 
     # Specify target BSP rather than list of triplets
     boards:
-        - ../../../bsp/starshipraider-host-x1.yml
+        - ../../../bsp/starshipraider-host-x1-scopeuart.yml
 
     # Signals that we need broken out at the top level (in addition to anything that peripheral IP requires)
     pins:
@@ -45,12 +45,16 @@ GreenpakTimingTestBitstream:
         pmod_dq: 8
         scope_i2c_sda: 1
         scope_i2c_scl: 1
+        uart_txd: 1
+        uart_rxd: 1
 
     # Pull in NoC address map
     constants:
         ../../../antikernel-ipcores/debug/JtagDebugBridge_addresses.yml:
             - verilog/localparam
         ../../../antikernel-ipcores/noc/rpcv3/RPCv3Transceiver_types.yml:
+            - verilog/localparam
+        ../../../antikernel-ipcores/la/RedTin_opcodes.yml:
             - verilog/localparam
 
     flags:
@@ -70,7 +74,12 @@ GreenpakTimingTestBitstream:
         - ../../../antikernel-ipcores/device_abstraction/ClockBuffer.v
         - ../../../antikernel-ipcores/device_abstraction/IODelayCalibration.v
         - ../../../antikernel-ipcores/device_abstraction/JtagTAP.v
+        - ../../../antikernel-ipcores/device_abstraction/MemoryMacro.v
         - ../../../antikernel-ipcores/interface/i2c/I2CTransceiver.v
+        - ../../../antikernel-ipcores/interface/uart/UART.v
+        - ../../../antikernel-ipcores/la/RedTinLogicAnalyzer.v
+        - ../../../antikernel-ipcores/la/RedTinLogicAnalyzer_trigger.v
+        - ../../../antikernel-ipcores/la/RedTinUartWrapper.v
         - ../../../antikernel-ipcores/math/CRC8_ATM.v
         - ../../../antikernel-ipcores/math/CRC32_Ethernet_x32.v
         - ../../../antikernel-ipcores/noc/rpcv3/RPCv3EchoNode.v
