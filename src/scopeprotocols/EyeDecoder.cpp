@@ -306,7 +306,7 @@ bool EyeDecoder::CalculateUIWidth(AnalogCapture* din, EyeCapture* cap)
 	return true;
 }
 
-bool EyeDecoder::MeasureEyeOpenings(AnalogCapture* din, EyeCapture* cap, map<int64_t, map<float, int64_t> >& pixmap)
+bool EyeDecoder::MeasureEyeOpenings(EyeCapture* cap, map<int64_t, map<float, int64_t> >& pixmap)
 {
 	//Measure the width of the eye at each decision point
 	//LogDebug("Measuring eye width\n");
@@ -518,7 +518,7 @@ void EyeDecoder::Refresh()
 		return;
 
 	//Find the X/Y size of each eye opening
-	if(!MeasureEyeOpenings(din, cap, pixmap))
+	if(!MeasureEyeOpenings(cap, pixmap))
 		return;
 
 	//Done, update the waveform

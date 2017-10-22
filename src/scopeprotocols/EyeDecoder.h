@@ -69,7 +69,6 @@ protected:
 	bool DetectModulationLevels(AnalogCapture* din, EyeCapture* cap);
 	bool CalculateUIWidth(AnalogCapture* din, EyeCapture* cap);
 	bool MeasureEyeOpenings(
-		AnalogCapture* din,
 		EyeCapture* cap,
 		std::map<int64_t, std::map<float, int64_t> >& pixmap);
 	bool GenerateEyeData(
