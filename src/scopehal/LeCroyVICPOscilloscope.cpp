@@ -686,11 +686,16 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 		if(!ReadWaveformBlock(data))
 			return false;
 
-		//For now, we assume Digital1 is using default config with all channels enabled.
+		//See what channels are enabled
+		string tmp = data.substr(data.find("SelectedLines=") + 14);
+		tmp = tmp.substr(0, 16);
+		bool enabledChannels[16];
+		for(int i=0; i<16; i++)
+			enabledChannels[i] = (tmp[i] == '1');
 
 		//Quick and dirty string searching. We only care about a small fraction of the XML
 		//so no sense bringing in a full parser.
-		string tmp = data.substr(data.find("<HorPerStep>") + 12);
+		tmp = data.substr(data.find("<HorPerStep>") + 12);
 		tmp = tmp.substr(0, tmp.find("</HorPerStep>"));
 		float interval = atof(tmp.c_str()) * 1e12f;
 		//LogDebug("Sample interval: %.2f ps\n", interval);
@@ -711,16 +716,28 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 		base64_decode_block(tmp.c_str(), tmp.length(), (char*)block, &state);
 
 		//We have each channel's data from start to finish before the next (no interleaving).
+		unsigned int icapchan = 0;
 		for(unsigned int i=0; i<m_digitalChannelCount; i++)
 		{
-			DigitalCapture* cap = new DigitalCapture;
-			cap->m_timescale = interval;
+			if(enabledChannels[icapchan])
+			{
+				DigitalCapture* cap = new DigitalCapture;
+				cap->m_timescale = interval;
 
-			for(int j=0; j<num_samples; j++)
-				cap->m_samples.push_back(DigitalSample(j, 1, block[i*num_samples + j]));
+				for(int j=0; j<num_samples; j++)
+					cap->m_samples.push_back(DigitalSample(j, 1, block[icapchan*num_samples + j]));
 
-			//Done, update the data
-			m_channels[m_analogChannelCount + i]->SetData(cap);
+				//Done, update the data
+				m_channels[m_analogChannelCount + i]->SetData(cap);
+
+				//Go to next channel in the capture
+				icapchan ++;
+			}
+			else
+			{
+				//No data here for us!
+				m_channels[m_analogChannelCount + i]->SetData(NULL);
+			}
 		}
 
 		delete[] block;
