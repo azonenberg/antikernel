@@ -196,9 +196,10 @@ void Ethernet100BaseTDecoder::Refresh()
 	//Search until we find a 1100010001 (J-K, start of stream) sequence
 	bool ssd[10] = {1, 1, 0, 0, 0, 1, 0, 0, 0, 1};
 	unsigned int i = 0;
+	bool hit = true;
 	for(i=0; i<descrambled_bits.size() - 10; i++)
 	{
-		bool hit = true;
+		hit = true;
 		for(int j=0; j<10; j++)
 		{
 			if(descrambled_bits[i+j].m_sample != ssd[j])
@@ -211,7 +212,14 @@ void Ethernet100BaseTDecoder::Refresh()
 		if(hit)
 			break;
 	}
-	//LogDebug("Found SSD at %u\n", i);
+	if(!hit)
+	{
+		LogWarning("No SSD found\n");
+		delete cap;
+		SetData(NULL);
+		return;
+	}
+	LogDebug("Found SSD at %u\n", i);
 
 	//Skip the J-K as we already parsed it
 	i += 10;
