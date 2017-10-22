@@ -29,7 +29,7 @@
 
 module TragicLaserTestBitstream(
 	input wire 			clk_100mhz,
-	
+
     output reg[1:0] 	led = 0,
     inout wire[9:0] 	gpio,
 
@@ -167,12 +167,13 @@ module TragicLaserTestBitstream(
 			end
 
 		endcase
-		
+
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 4B/5B coder
+	// TX 4B/5B coder
 
+	/*
 	reg[3:0] tx_4b_code = 0;
 	reg[4:0] tx_5b_code;
 	always @(*) begin
@@ -195,86 +196,67 @@ module TragicLaserTestBitstream(
 			15: tx_5b_code <= 5'b11101;
 		endcase
 	end
+	*/
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 100mbit bitstream generator
-
+	// TX serial bitstream generator
 	/*
 	reg[2:0] count = 0;
 	reg txbit = 0;
-	always @(posedge clk_125mhz) begin
+	always @(posedge clk_125mhz_bufg) begin
 		count	<= count + 1'h1;
 		case(count)
-			0:	txbit <= code_5[0];
-			1:	txbit <= code_5[1];
-			2:	txbit <= code_5[2];
-			3:	txbit <= code_5[3];
+			0:	txbit <= tx_5b_code[0];
+			1:	txbit <= tx_5b_code[1];
+			2:	txbit <= tx_5b_code[2];
+			3:	txbit <= tx_5b_code[3];
 			default: begin
-				txbit <= code_5[4];
+				txbit <= tx_5b_code[4];
 				code <= code + 1'h1;
 				count <= 0;
-			end			
+			end
 		endcase
 	end
 	*/
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// TODO: TX scrambler
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// TX MLT-3 coder
+
+	reg			tx_mlt3_din		= 0;
+
+	reg[1:0]	tx_mlt3_state	= 0;
+	always @(posedge clk_125mhz_bufg) begin
+
+		//Only proceed if din is 1
+		if(tx_mlt3_din)
+			tx_mlt3_state	<= tx_mlt3_state + 1'h1;
+
+		case(tx_mlt3_state)
+			0:	tx_symbol	<= TX_SYMBOL_0;
+			1:	tx_symbol	<= TX_SYMBOL_N1;
+			2:	tx_symbol	<= TX_SYMBOL_0;
+			3:	tx_symbol	<= TX_SYMBOL_1;
+		endcase
+
+	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // PRBS generator
 
     reg[6:0]	prbs_shreg		= 1;
 
-	//Step the PRBS shift register by TWO bits per clock
     wire[6:0]	prbs_shreg_next = { prbs_shreg[5:0], prbs_shreg[6] ^ prbs_shreg[5] };
-    wire[6:0]	prbs_shreg_next2 = { prbs_shreg_next[5:0], prbs_shreg_next[6] ^ prbs_shreg_next[5] };
+    //wire[6:0]	prbs_shreg_next2 = { prbs_shreg_next[5:0], prbs_shreg_next[6] ^ prbs_shreg_next[5] };
 
     always @(posedge clk_125mhz_bufg) begin
-		prbs_shreg	<= prbs_shreg_next2;
+		prbs_shreg	<= prbs_shreg_next;
+
+		tx_mlt3_din	<= prbs_shreg[0];
     end
 
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Generate a PAM-4 PRBS
-
-	wire[1:0] prbs_sym = { prbs_shreg[0], prbs_shreg_next[0] };
-
-	reg[3:0] count	= 0;
-
-	always @(posedge clk_125mhz_bufg) begin
-		count <= count + 1'h1;
-
-		if(count) begin
-			case(prbs_sym)
-				0:	tx_symbol	<= TX_SYMBOL_N2;
-				1:	tx_symbol	<= TX_SYMBOL_N1;
-				2:	tx_symbol	<= TX_SYMBOL_1;
-				3:	tx_symbol	<= TX_SYMBOL_2;
-			endcase
-		end
-	end
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Go through states in sequence
-
-	/*
-	always @(posedge clk_125mhz_bufg) begin
-		tx_symbol		<= tx_symbol + 1'h1;
-		if(tx_symbol == TX_SYMBOL_2)
-			tx_symbol	<= TX_SYMBOL_N2;
-	end
-	*/
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// LED blinky
-
-	/*
-    reg[24:0] count = 0;
-    always @(posedge clk_125mhz_bufg) begin
-        count <= count + 1'h1;
-
-        if(count == 0)
-			led <= led + 2'h1;
-    end
-	*/
-    
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// GPIOs
 
