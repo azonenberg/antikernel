@@ -186,6 +186,11 @@ void Ethernet100BaseTDecoder::Refresh()
 	{
 		LogError("Ethernet100BaseTDecoder: Unable to sync RX LFSR\n");
 		descrambled_bits.clear();
+
+		//this is a fatal error, stop
+		delete cap;
+		SetData(NULL);
+		return;
 	}
 
 	//Search until we find a 1100010001 (J-K, start of stream) sequence
