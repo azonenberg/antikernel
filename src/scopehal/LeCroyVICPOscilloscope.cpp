@@ -579,6 +579,13 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 
 	for(unsigned int i=0; i<m_analogChannelCount; i++)
 	{
+		//If the channel is invisible, don't waste time capturing data
+		if(!m_channels[i]->m_visible)
+		{
+			m_channels[i]->SetData(NULL);
+			continue;
+		}
+
 		//Set up the capture we're going to store our data into
 		AnalogCapture* cap = new AnalogCapture;
 
