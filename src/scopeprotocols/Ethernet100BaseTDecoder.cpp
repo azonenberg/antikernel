@@ -302,7 +302,8 @@ void Ethernet100BaseTDecoder::Refresh()
 			bytes.clear();
 			continue;
 		}
-		//TODO: process /H/ - 0x04
+
+		//TODO: process /H/ - 0x04 (error in the middle of a packet)
 
 		//Ignore idles
 		else if(code == 0x1f)

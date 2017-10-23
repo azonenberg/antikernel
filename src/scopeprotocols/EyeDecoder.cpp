@@ -225,10 +225,10 @@ bool EyeDecoder::CalculateUIWidth(AnalogCapture* din, EyeCapture* cap)
 	}
 
 	int64_t eye_width = max_bin;
-	/*double baud = 1e6 / (eye_width * cap->m_timescale);
+	double baud = 1e6 / (eye_width * cap->m_timescale);
 	LogDebug("Computing symbol rate\n");
 	LogDebug("    UI width (first pass): %ld samples / %.3f ns (%.3lf Mbd)\n",
-		eye_width, eye_width * cap->m_timescale / 1e3, baud);*/
+		eye_width, eye_width * cap->m_timescale / 1e3, baud);
 
 	//Second pass: compute the sum of UIs across the entire signal and average.
 	//If the delta is significantly off from our first-guess UI, call it two!
@@ -291,9 +291,9 @@ bool EyeDecoder::CalculateUIWidth(AnalogCapture* din, EyeCapture* cap)
 	m_uiWidth = round(average_width);
 	m_uiWidthFractional = average_width;
 
-	/*baud = 1e6f / (eye_width * cap->m_timescale);
+	baud = 1e6f / (eye_width * cap->m_timescale);
 	LogDebug("    UI width (second pass): %ld samples / %.3f ns (%.3lf Mbd)\n",
-		eye_width, eye_width * cap->m_timescale / 1e3, baud);*/
+		eye_width, eye_width * cap->m_timescale / 1e3, baud);
 
 	//Sanity check
 	if(eye_width == 0)

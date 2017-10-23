@@ -52,5 +52,6 @@ TragicLaserTestBitstream:
     # All source code for now, no automatic generation
     sources:
         - TragicLaserTestBitstream.v
+        - TragicLaserPHY.v
         - ../../../antikernel-ipcores/device_abstraction/ClockBuffer.v
         - ../../../antikernel-ipcores/device_abstraction/DDROutputBuffer.v
