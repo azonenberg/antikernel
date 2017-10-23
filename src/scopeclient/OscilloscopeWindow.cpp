@@ -146,6 +146,9 @@ bool OscilloscopeWindow::OnTimer(int /*timer*/)
 				str += ".";
 			m_statprogress.set_text(str);
 
+			//TODO: poll channel status and time/div etc and update our in-memory representation
+			//(in case the user enabled a channel etc with hardware buttons)
+
 			//Poll the trigger status of the scope
 			Oscilloscope::TriggerMode status = m_scope->PollTrigger();
 			if(status > Oscilloscope::TRIGGER_MODE_COUNT)

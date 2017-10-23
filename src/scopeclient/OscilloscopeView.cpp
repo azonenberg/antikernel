@@ -159,9 +159,9 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 			{
 				auto chan = m_scope->GetChannel(i);
 				auto it = m_renderers.find(chan);
-				if(it == m_renderers.end())
+				if( (it == m_renderers.end()) || (it->second == NULL) )
 				{
-					LogWarning("Channel \"%s\" has no renderer\n", chan->m_displayname.c_str());
+					//LogWarning("Channel \"%s\" has no renderer\n", chan->m_displayname.c_str());
 					continue;
 				}
 				it->second->Render(cr, width, 0 + xoff, pwidth + xoff, ranges);
@@ -242,7 +242,10 @@ bool OscilloscopeView::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
 				for(size_t i=0; i<m_scope->GetChannelCount(); i++)
 				{
 					auto chan = m_scope->GetChannel(i);
-					auto r = m_renderers[chan];
+					auto it = m_renderers.find(chan);
+					if(it == m_renderers.end())
+						continue;
+					auto r = it->second;
 
 					auto ybot = r->m_ypos + r->m_height;
 
@@ -302,7 +305,10 @@ bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
 	for(size_t i=0; i<m_scope->GetChannelCount(); i++)
 	{
 		auto chan = m_scope->GetChannel(i);
-		auto render = m_renderers[chan];
+		auto it = m_renderers.find(chan);
+		if(it == m_renderers.end())		//invisible channel
+			continue;
+		auto render = it->second;
 
 		if( (event->y >= render->m_ypos) && (event->y <= (render->m_ypos + render->m_height)) )
 			m_selectedChannel = chan;
@@ -464,6 +470,9 @@ bool OscilloscopeView::on_button_press_event(GdkEventButton* event)
  */
 void OscilloscopeView::Refresh()
 {
+	//Deselect whatever channel is currently active
+	m_selectedChannel = NULL;
+
 	//Delete old renderers
 	for(ChannelMap::iterator it=m_renderers.begin(); it != m_renderers.end(); ++it)
 		delete it->second;
@@ -513,6 +522,8 @@ void OscilloscopeView::Resize()
 	for(ChannelMap::iterator it=m_renderers.begin(); it != m_renderers.end(); ++it)
 	{
 		ChannelRenderer* pRender = it->second;
+		if(pRender == NULL)
+			continue;
 
 		//Height
 		int bottom = pRender->m_ypos + pRender->m_height;

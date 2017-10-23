@@ -108,18 +108,30 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 				break;
 		}
 
-		m_channels.push_back(new OscilloscopeChannel(
+		//Create the channel
+		auto chan = new OscilloscopeChannel(
 			chname,
 			OscilloscopeChannel::CHANNEL_TYPE_ANALOG,
 			color,
-			1));
+			1);
+
+		//See if the channel is enabled, hide it if not
+		string cmd = "C1:TRACE?";
+		cmd[1] += i;
+		SendCommand(cmd);
+		reply = ReadSingleBlockString(true);
+		if(reply == "OFF")
+			chan->m_visible = false;
+
+		//Done, save it
+		m_channels.push_back(chan);
 	}
 	m_analogChannelCount = nchans;
 	m_digitalChannelCount = 0;
 
 	//Look at options and see if we have digital channels too
 	SendCommand("*OPT?", true);
-	reply = ReadSingleBlockString();
+	reply = ReadSingleBlockString(true);
 	if(reply.length() > 3)
 	{
 		//Read options until we hit a null
@@ -139,7 +151,7 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 				opt = "";
 			}
 
-			else if(reply[i] != '\n')
+			else
 				opt += reply[i];
 		}
 		if(opt != "")
@@ -754,9 +766,17 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 	return true;
 }
 
-string LeCroyVICPOscilloscope::ReadSingleBlockString()
+string LeCroyVICPOscilloscope::ReadSingleBlockString(bool trimNewline)
 {
 	string payload = ReadData();
+
+	if(trimNewline && (payload.length() > 0) )
+	{
+		int iend = payload.length() - 1;
+		if(trimNewline && (payload[iend] == '\n'))
+			payload.resize(iend);
+	}
+
 	payload += "\0";
 	return payload;
 }

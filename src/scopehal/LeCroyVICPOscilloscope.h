@@ -97,7 +97,7 @@ protected:
 	bool SendCommand(std::string cmd, bool eoi=true);
 	std::string ReadData();
 	std::string ReadMultiBlockString();
-	std::string ReadSingleBlockString();
+	std::string ReadSingleBlockString(bool trimNewline = false);
 	bool ReadWaveformBlock(std::string& data);
 
 	uint8_t GetNextSequenceNumber(bool eoi);
