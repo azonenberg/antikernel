@@ -543,8 +543,17 @@ void OscilloscopeView::MakeTimeRanges(vector<time_range>& ranges)
 	ranges.clear();
 	if(m_scope->GetChannelCount() == 0)
 		return;
-	OscilloscopeChannel* chan = m_scope->GetChannel(0);
-	CaptureChannelBase* capture = chan->GetData();
+
+	//Use the lowest numbered channel with data in it
+	OscilloscopeChannel* chan = NULL;
+	CaptureChannelBase* capture = NULL;
+	for(size_t i=0; i<m_scope->GetChannelCount(); i++)
+	{
+		chan = m_scope->GetChannel(i);
+		capture = chan->GetData();
+		if(capture != NULL)
+			break;
+	}
 	if(capture == NULL)
 		return;
 	if(m_renderers.empty())

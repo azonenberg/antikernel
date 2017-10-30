@@ -630,8 +630,8 @@ bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 	//Pre-process the buffer
 	//If two samples in a row are identical (incomplete compression, etc) combine them
 	//Do not merge the first two samples. This ensures that we always have a line to draw.
-	unsigned int write_ptr = 1;
-	for(unsigned int read_ptr=1; read_ptr<m_depth; read_ptr++)
+	unsigned int write_ptr = 2;
+	for(unsigned int read_ptr=2; read_ptr<m_depth; read_ptr++)
 	{
 		//Invariant: read_ptr >= write_ptr
 
@@ -660,7 +660,6 @@ bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 			timestamp[write_ptr] = timestamp[read_ptr];
 			write_ptr ++;
 		}
-
 	}
 
 	int sample_count = write_ptr - 1;

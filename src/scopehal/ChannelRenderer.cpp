@@ -286,7 +286,7 @@ void ChannelRenderer::Render(
 
 	CaptureChannelBase* capture = m_channel->GetData();
 	ProtocolDecoder* decode = dynamic_cast<ProtocolDecoder*>(m_channel);
-	if(capture != NULL)
+	if( (capture != NULL) && !ranges.empty() )
 	{
 		//Save time scales
 		float tscale = m_channel->m_timescale * capture->m_timescale;
