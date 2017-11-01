@@ -28,7 +28,7 @@
 ***********************************************************************************************************************/
 
 module SPIFlashTestBitstream(
-    inout wire[7:0] pmod_dq,
+    //inout wire[7:0] pmod_dq,
 
     //output reg		starting = 0,
 
@@ -103,7 +103,7 @@ module SPIFlashTestBitstream(
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Identify this device as an indirect SPI flash programmer
-
+	/*
     JtagUserIdentifier #(
 		.IDCODE_VID(24'h42445a),	//"ADZ"
 		.IDCODE_PID(8'h01)			//Indirect SPI programming
@@ -234,6 +234,7 @@ module SPIFlashTestBitstream(
 		end
 
 	end
+	*/
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // The flash controller
@@ -253,6 +254,8 @@ module SPIFlashTestBitstream(
     wire		flash_busy;
 
     wire		la_ready;
+
+    wire		sfdp_bad;
 
     QuadSPIFlashController #(
 		.QUAD_DISABLE(1)		//no quad mode yet
@@ -276,10 +279,11 @@ module SPIFlashTestBitstream(
 		.busy(flash_busy),
 
 		.capacity_mbits(capacity_mbits),
+		.sfdp_bad(sfdp_bad),
 
 		//DEBUG
-		//.uart_rxd(uart_rxd),
-		//.uart_txd(uart_txd),
+		.uart_rxd(/*uart_rxd*/),
+		.uart_txd(/*uart_txd*/),
 
 		.start(1'b1)
 		);
@@ -473,6 +477,9 @@ module SPIFlashTestBitstream(
 		tx_fifo_wr_en			<= 0;
 		rx_fifo_wr_en			<= 0;
 
+		led[0]					<= flash_busy_sync;
+		led[2]					<= sfdp_bad;
+
 		case(state)
 
 			//Wait for flash to start initializing
@@ -483,7 +490,7 @@ module SPIFlashTestBitstream(
 
 			STATE_IDLE: begin
 
-				led[0]	<= (capacity_mbits == 64);
+				led[0]	<= (capacity_mbits == 8);
 
 				if(uart_rx_en) begin
 
@@ -553,7 +560,6 @@ module SPIFlashTestBitstream(
 
 			STATE_ERASE: begin
 				if(flash_done) begin
-					led[3]			<= 1;
 					tx_fifo_wr_en	<= 1;
 					tx_fifo_wr_data	<= 8'h01;
 					state			<= STATE_IDLE;
@@ -611,7 +617,6 @@ module SPIFlashTestBitstream(
 							end
 
 							FLASH_OP_ERASE: begin
-								led[2]			<= 1;
 								state			<= STATE_ERASE;
 							end
 
@@ -662,7 +667,7 @@ module SPIFlashTestBitstream(
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // DEBUG
-
+/*
     DDROutputBuffer #(
 		.WIDTH(1)
 	) clkoutbuf(
@@ -681,7 +686,7 @@ module SPIFlashTestBitstream(
 
 	assign pmod_dq[6]	= flash_done;
 	assign pmod_dq[4]	= (cmd_id == FLASH_OP_PROGRAM) && cmd_en;
-	assign pmod_dq[5]	= (state == STATE_IDLE);
+	assign pmod_dq[5]	= (state == STATE_IDLE);*/
 
 	/*
 	//intclk is 66.5 MHz for current prototype at last measurement

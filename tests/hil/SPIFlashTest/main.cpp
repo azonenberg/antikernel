@@ -62,6 +62,7 @@ int main(int argc, char* argv[])
 		string tty;
 
 		string mode;
+		string file;
 
 		//Parse command-line arguments
 		for(int i=1; i<argc; i++)
@@ -80,6 +81,8 @@ int main(int argc, char* argv[])
 				tty = argv[++i];
 			else if(s == "--mode")
 				mode = argv[++i];
+			else if(s == "--file")
+				file = argv[++i];
 			else
 			{
 				printf("Unrecognized command-line argument \"%s\", expected --server or --port\n", s.c_str());
@@ -129,7 +132,7 @@ int main(int argc, char* argv[])
 
 			uint32_t max_addr = capacity_mbits * 1024 * 1024 / 8;	//Kb Mb MB
 
-			FILE* fp = fopen("/tmp/flashdump.bin", "wb");
+			FILE* fp = fopen(file.c_str(), "wb");
 			if(!fp)
 			{
 				LogError("fail to open\n");
@@ -180,8 +183,32 @@ int main(int argc, char* argv[])
 		//Program
 		else if(mode == "program")
 		{
-			unsigned char temp[] = "hello world";
-			Program(uart, 4, temp, sizeof(temp));
+			FILE* fp = fopen(file.c_str(), "rb");
+			const unsigned int txbufsize = 256;
+			unsigned char txbuf[txbufsize];
+			for(uint32_t address=0; ; address += txbufsize)
+			{
+				size_t len = fread(txbuf, 1, txbufsize, fp);
+				if(len == 0)
+					break;
+
+				if(address && ( (address % blocksize) == 0) )
+				{
+					double now = GetTime();
+					double dt = now - start;
+					start = now;
+					LogDebug("0x%08x (%.3f KB/s)\n", address, kb_per_block / dt);
+				}
+
+				if(!Program(uart, address, txbuf, len))
+				{
+					LogError("fail to program\n");
+					return 1;
+				}
+
+				if(len < txbufsize)
+					break;
+			}
 		}
 	}
 
