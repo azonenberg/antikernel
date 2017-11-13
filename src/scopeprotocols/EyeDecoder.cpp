@@ -105,7 +105,7 @@ bool EyeDecoder::DetectModulationLevels(AnalogCapture* din, EyeCapture* cap)
 	}
 
 	//Crunch the histogram to find the number of signal levels in use.
-	//We're looking for peaks of significant height (10% of maximum or more) and not too close to another peak.
+	//We're looking for peaks of significant height (25% of maximum or more) and not too close to another peak.
 	int neighborhood = 60;
 	int64_t maxpeak = 0;
 	for(auto it : vhist)
@@ -113,7 +113,7 @@ bool EyeDecoder::DetectModulationLevels(AnalogCapture* din, EyeCapture* cap)
 		if(it.second > maxpeak)
 			maxpeak = it.second;
 	}
-	int64_t peakthresh = maxpeak/10;
+	int64_t peakthresh = maxpeak/4;
 	for(auto it : vhist)
 	{
 		//Skip peaks that aren't tall enough
@@ -230,7 +230,25 @@ bool EyeDecoder::CalculateUIWidth(AnalogCapture* din, EyeCapture* cap)
 	LogDebug("    UI width (first pass): %ld samples / %.3f ns (%.3lf Mbd)\n",
 		eye_width, eye_width * cap->m_timescale / 1e3, baud);
 
-	//Second pass: compute the sum of UIs across the entire signal and average.
+	//Second pass: compute weighted average around that point.
+	//We may have some variation in UI width due to ISI
+	int64_t bin_sum = 0;
+	int64_t bin_count = 0;
+	int range = 0.45*eye_width;	//narrow enough to avoid harmonics of UI, but pretty wide otherwise
+	for(int delta = -range; delta <= range; delta++)
+	{
+		int bin = eye_width + delta;
+		int64_t count = hist[bin];
+		bin_count += count;
+		bin_sum += count*bin;
+	}
+	double weighted_width = bin_sum * 1.0 / bin_count;
+	eye_width = weighted_width;
+	baud = 1e6 / (eye_width * cap->m_timescale);
+	LogDebug("    UI width (second pass, window=%d to %d): %ld samples / %.3f ns (%.3lf Mbd)\n",
+		max_bin-range, max_bin+range, eye_width, eye_width * cap->m_timescale / 1e3, baud);
+
+	//Third pass: compute the sum of UIs across the entire signal and average.
 	//If the delta is significantly off from our first-guess UI, call it two!
 	last_sample_value = 0;
 	tstart = 0;
@@ -292,7 +310,7 @@ bool EyeDecoder::CalculateUIWidth(AnalogCapture* din, EyeCapture* cap)
 	m_uiWidthFractional = average_width;
 
 	baud = 1e6f / (eye_width * cap->m_timescale);
-	LogDebug("    UI width (second pass): %ld samples / %.3f ns (%.3lf Mbd)\n",
+	LogDebug("    UI width (third pass): %ld samples / %.3f ns (%.3lf Mbd)\n",
 		eye_width, eye_width * cap->m_timescale / 1e3, baud);
 
 	//Sanity check
