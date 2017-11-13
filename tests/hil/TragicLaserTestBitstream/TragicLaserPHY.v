@@ -64,12 +64,20 @@ module TragicLaserPHY(
 	//Clocks
 	input wire			clk_25mhz,		//MII clock (must be phase aligned to 125 MHz core clock)
 	input wire			clk_125mhz,		//125 MHz data clock
+	input wire			clk_500mhz_bufpll,
+	input wire			serdes_strobe,
 
 	//Wire-side transmit interface
 	output wire			tx_p_b,
-    output reg[1:0]		tx_p_a = 2'bz,
+    output wire[1:0]	tx_p_a,
     output wire			tx_n_b,
-    output reg[1:0]		tx_n_a = 2'bz,
+    output wire[1:0]	tx_n_a,
+
+    //Wire-side receive interface
+    input wire			rx_p_signal_hi,
+	input wire			rx_p_vref_hi,
+	input wire			rx_p_signal_lo,
+	input wire			rx_p_vref_lo,
 
     //MII interface
     output wire			mii_tx_clk,
@@ -86,6 +94,153 @@ module TragicLaserPHY(
 
 	//TODO: BUFGMUX or something?
 	assign			mii_tx_clk	= clk_25mhz;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Input buffers
+
+	wire	rx_p_hi;
+	wire	rx_p_lo;
+
+	IBUFDS #(
+		.DIFF_TERM("FALSE"),
+		.IOSTANDARD("LVDS_33")
+	) ibuf_rx_p_hi(
+		.I(rx_p_signal_hi),
+		.IB(rx_p_vref_hi),
+		.O(rx_p_hi)
+	);
+
+	IBUFDS #(
+		.DIFF_TERM("FALSE"),
+		.IOSTANDARD("LVDS_33")
+	) ibuf_rx_p_lo(
+		.I(rx_p_signal_lo),
+		.IB(rx_p_vref_lo),
+		.O(rx_p_lo)
+	);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Output buffers for 10Mbps lines
+
+	reg[3:0]		tx_d_10m_p	= 4'h0;
+	reg[3:0]		tx_t_10m_p	= 4'hf;
+
+	reg[3:0]		tx_d_10m_n	= 4'h0;
+	reg[3:0]		tx_t_10m_n	= 4'hf;
+
+	wire			tx_p_a0_raw;
+	wire			tx_p_a0_t;
+
+	wire			tx_n_a0_raw;
+	wire			tx_n_a0_t;
+
+	assign tx_n_a[1] = 1'bz;
+	assign tx_p_a[1] = 1'bz;
+
+	OBUFT #(
+		.DRIVE(2),
+		.SLEW("FAST")
+	) obuf_10m_p0(
+		.I(tx_p_a0_raw),
+		.T(tx_p_a0_t),
+		.O(tx_p_a[0])
+	);
+
+	OBUFT #(
+		.DRIVE(2),
+		.SLEW("FAST")
+	) obuf_10m_n0(
+		.I(tx_n_a0_raw),
+		.T(tx_n_a0_t),
+		.O(tx_n_a[0])
+	);
+
+	localparam USE_OSERDES = 1;
+
+		generate
+
+		if(!USE_OSERDES) begin
+			assign tx_n_a0_raw = tx_d_10m_n[3];
+			assign tx_n_a0_t = tx_t_10m_n[3];
+
+			assign tx_p_a0_raw = tx_d_10m_p[3];
+			assign tx_p_a0_t = tx_t_10m_p[3];
+		end
+
+		else begin
+			OSERDES2 #(
+				.DATA_RATE_OQ("SDR"),
+				.DATA_RATE_OT("SDR"),
+				.DATA_WIDTH(4),
+				.OUTPUT_MODE("SINGLE_ENDED"),
+				.SERDES_MODE("MASTER"),
+				.TRAIN_PATTERN(16'h0)
+			) serdes_10m_p (
+				.CLKDIV(clk_125mhz),
+				.CLK0(clk_500mhz_bufpll),
+				.D1(tx_d_10m_p[0]),
+				.D2(tx_d_10m_p[1]),
+				.D3(tx_d_10m_p[2]),
+				.D4(tx_d_10m_p[3]),
+				.IOCE(serdes_strobe),
+				.OCE(1'b1),
+				.OQ(tx_p_a0_raw),
+				.RST(1'b0),
+				.TCE(1'b1),
+				.TQ(tx_p_a0_t),
+				.TRAIN(1'b0),
+				.T1(tx_t_10m_p[0]),
+				.T2(tx_t_10m_p[1]),
+				.T3(tx_t_10m_p[2]),
+				.T4(tx_t_10m_p[3]),
+
+				.SHIFTOUT1(),
+				.SHIFTOUT2(),
+				.SHIFTOUT3(),
+				.SHIFTOUT4(),
+				.SHIFTIN1(1'b0),
+				.SHIFTIN2(1'b0),
+				.SHIFTIN3(1'b0),
+				.SHIFTIN4(1'b0)
+			);
+
+			OSERDES2 #(
+				.DATA_RATE_OQ("SDR"),
+				.DATA_RATE_OT("SDR"),
+				.DATA_WIDTH(4),
+				.OUTPUT_MODE("SINGLE_ENDED"),
+				.SERDES_MODE("MASTER"),
+				.TRAIN_PATTERN(16'h0)
+			) serdes_10m_n (
+				.CLKDIV(clk_125mhz),
+				.CLK0(clk_500mhz_bufpll),
+				.D1(tx_d_10m_n[0]),
+				.D2(tx_d_10m_n[1]),
+				.D3(tx_d_10m_n[2]),
+				.D4(tx_d_10m_n[3]),
+				.IOCE(serdes_strobe),
+				.OCE(1'b1),
+				.OQ(tx_n_a0_raw),
+				.RST(1'b0),
+				.TCE(1'b1),
+				.TQ(tx_n_a0_t),
+				.TRAIN(1'b0),
+				.T1(tx_t_10m_n[0]),
+				.T2(tx_t_10m_n[1]),
+				.T3(tx_t_10m_n[2]),
+				.T4(tx_t_10m_n[3]),
+
+				.SHIFTOUT1(),
+				.SHIFTOUT2(),
+				.SHIFTOUT3(),
+				.SHIFTOUT4(),
+				.SHIFTIN1(1'b0),
+				.SHIFTIN2(1'b0),
+				.SHIFTIN3(1'b0),
+				.SHIFTIN4(1'b0)
+			);
+		end
+	endgenerate
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Output buffers for 100Mbps lines
@@ -120,8 +275,6 @@ module TragicLaserPHY(
 		.O(tx_n_b)
 	);
 
-	localparam USE_OSERDES = 0;
-
 	generate
 
 		if(!USE_OSERDES) begin
@@ -133,7 +286,6 @@ module TragicLaserPHY(
 		end
 
 		else begin
-			/*
 			OSERDES2 #(
 				.DATA_RATE_OQ("SDR"),
 				.DATA_RATE_OT("SDR"),
@@ -205,7 +357,6 @@ module TragicLaserPHY(
 				.SHIFTIN3(1'b0),
 				.SHIFTIN4(1'b0)
 			);
-			*/
 		end
 	endgenerate
 
@@ -233,11 +384,11 @@ module TragicLaserPHY(
 	always @(posedge clk_125mhz) begin
 
 		//Tristate all drivers by default
-		tx_p_a				<= 2'bzz;
-		tx_n_a				<= 2'bzz;
-
 		tx_t_100m_p			<= 4'b1111;
 		tx_t_100m_n			<= 4'b1111;
+
+		tx_t_10m_p			<= 4'b1111;
+		tx_t_10m_n			<= 4'b1111;
 
 		tx_symbol_ff		<= tx_symbol;
 
@@ -245,8 +396,8 @@ module TragicLaserPHY(
 
 			//10baseT -2.5V
 			TX_SYMBOL_N2: begin
-				tx_p_a		<= 2'b00;
-				tx_n_a		<= 2'b11;
+				//tx_p_a		<= 2'b00;
+				//tx_n_a		<= 2'b11;
 			end
 
 			//100baseTX -1V
@@ -256,33 +407,28 @@ module TragicLaserPHY(
 
 				tx_d_100m_p		<= 4'b0000;
 				tx_d_100m_n		<= 4'b1111;
-
-				//tx_p_b		<= 1'b0;
-				//tx_n_b		<= 1'b1;
 			end
 
 			//100baseTX 0 or 10baseT differential idle - leave all drivers tristated
 			TX_SYMBOL_0: begin
 
-				/*
 				//If we're coming from a 100baseTX -1 state, drive +1 briefly
 				if(tx_symbol_ff == TX_SYMBOL_N1) begin
-					tx_t_100m_p		<= 4'b1110;
-					tx_t_100m_n		<= 4'b1110;
+					tx_t_10m_p		<= 4'b1110;
+					tx_t_10m_n		<= 4'b1110;
 
-					tx_d_100m_p		<= 4'b1111;
-					tx_d_100m_n		<= 4'b0000;
+					tx_d_10m_p		<= 4'b1111;
+					tx_d_10m_n		<= 4'b0000;
 				end
 
 				//If we're coming from a 100baseTX +1 state, drive -1 briefly
 				else if(tx_symbol_ff == TX_SYMBOL_1) begin
-					tx_t_100m_p		<= 4'b1110;
-					tx_t_100m_n		<= 4'b1110;
+					tx_t_10m_p		<= 4'b1110;
+					tx_t_10m_n		<= 4'b1110;
 
-					tx_d_100m_p		<= 4'b0000;
-					tx_d_100m_n		<= 4'b1111;
+					tx_d_10m_p		<= 4'b0000;
+					tx_d_10m_n		<= 4'b1111;
 				end
-				*/
 
 			end
 
@@ -301,8 +447,8 @@ module TragicLaserPHY(
 
 			//10baseT +2.5V
 			TX_SYMBOL_2: begin
-				tx_p_a		<= 2'b11;
-				tx_n_a		<= 2'b00;
+				//tx_p_a		<= 2'b11;
+				//tx_n_a		<= 2'b00;
 			end
 
 			/*
@@ -543,32 +689,50 @@ module TragicLaserPHY(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Debug GPIOs
 
-	//Output clock for the LA
-	DDROutputBuffer #(
-		.WIDTH(1)
-	) clkoutbuf(
-		.clk_p(clk_125mhz),
-		.clk_n(!clk_125mhz),
-		.dout(gpio[9]),
-		.din0(1'b0),
-		.din1(1'b1)
+	wire	la_ready;
+	RedTinUartWrapper #(
+		.WIDTH(128),
+		.DEPTH(1024),
+		.UART_CLKDIV(16'd1085),	//115200 @ 125 MHz
+		.SYMBOL_ROM(
+			{
+				16384'h0,
+				"DEBUGROM", 				8'h0, 8'h01, 8'h00,
+				32'd8000,		//period of internal clock, in ps
+				32'd1024,		//Capture depth (TODO auto-patch this?)
+				32'd128,		//Capture width (TODO auto-patch this?)
+				{ "frame_active",		8'h0, 8'h1,  8'h0 },
+				{ "mii_tx_er",			8'h0, 8'h1,  8'h0 },
+				{ "mii_tx_en",			8'h0, 8'h1,  8'h0 },
+				{ "mii_txd",			8'h0, 8'h4,  8'h0 },
+				{ "tx_p_b_raw",			8'h0, 8'h1,  8'h0 },
+				{ "tx_n_b_raw",			8'h0, 8'h1,  8'h0 },
+				{ "rx_p_hi",			8'h0, 8'h1,  8'h0 },
+				{ "rx_p_lo",			8'h0, 8'h1,  8'h0 }
+			}
+		)
+	) analyzer (
+		.clk(clk_125mhz),
+		.capture_clk(clk_125mhz),
+		.din({
+				frame_active,		//1
+				mii_tx_er,			//1
+				mii_tx_en,			//1
+				mii_txd,			//4
+				2'b0,	//FIXME
+				//tx_p_b_raw,			//1
+				//tx_n_b_raw,			//1
+				rx_p_hi,			//1
+				rx_p_lo,			//1
+				117'h0				//padding
+			}),
+		.uart_rx(gpio[9]),
+		.uart_tx(gpio[7]),
+		.la_ready(la_ready),
+		.ext_trig(1'b0)
 	);
 
-	//MII clock
-	DDROutputBuffer #(
-		.WIDTH(1)
-	) clkoutbuf2(
-		.clk_p(clk_25mhz),
-		.clk_n(!clk_25mhz),
-		.dout(gpio[7]),
-		.din0(1'b0),
-		.din1(1'b1)
-	);
-
-	assign gpio[8]		= 1'b0;				//unused for now
-	assign gpio[6]		= frame_active;
-	assign gpio[5]		= mii_tx_er;
-	assign gpio[4]		= mii_tx_en;
-	assign gpio[3:0]	= mii_txd;
+	assign gpio[8] = 0;
+	assign gpio[6:0] = 0;
 
 endmodule

@@ -38,6 +38,11 @@ TragicLaserTestBitstream:
     boards:
         - ../../../bsp/tragiclaser.yml
 
+    # pull in opcode table
+    constants:
+        ../../../antikernel-ipcores/la/RedTin_opcodes.yml:
+            - verilog/localparam
+
     # Signals that we need broken out at the top level (in addition to anything that peripheral IP requires)
     pins:
         clk_100mhz: 1
@@ -49,9 +54,21 @@ TragicLaserTestBitstream:
         tx_p_b:		1
         tx_p_a:		2
 
+        rx_p_signal_hi: 1
+        rx_p_vref_hi:   1
+        rx_p_signal_lo: 1
+        rx_p_vref_lo:   1
+
     # All source code for now, no automatic generation
     sources:
         - TragicLaserTestBitstream.v
         - TragicLaserPHY.v
+        - ../../../antikernel-ipcores/clock/crossing/HandshakeSynchronizer.v
+        - ../../../antikernel-ipcores/clock/crossing/ThreeStageSynchronizer.v
         - ../../../antikernel-ipcores/device_abstraction/ClockBuffer.v
         - ../../../antikernel-ipcores/device_abstraction/DDROutputBuffer.v
+        - ../../../antikernel-ipcores/device_abstraction/MemoryMacro.v
+        - ../../../antikernel-ipcores/la/RedTinLogicAnalyzer.v
+        - ../../../antikernel-ipcores/la/RedTinLogicAnalyzer_trigger.v
+        - ../../../antikernel-ipcores/la/RedTinUartWrapper.v
+        - ../../../antikernel-ipcores/interface/uart/UART.v
