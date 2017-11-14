@@ -42,7 +42,12 @@ module TragicLaserTestBitstream(
     input wire			rx_p_signal_hi,
 	input wire			rx_p_vref_hi,
 	input wire			rx_p_signal_lo,
-	input wire			rx_p_vref_lo
+	input wire			rx_p_vref_lo,
+
+	input wire			rx_n_signal_hi,
+	input wire			rx_n_vref_hi,
+	input wire			rx_n_signal_lo,
+	input wire			rx_n_vref_lo
     );
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -170,6 +175,11 @@ module TragicLaserTestBitstream(
 		.rx_p_vref_hi(rx_p_vref_hi),
 		.rx_p_signal_lo(rx_p_signal_lo),
 		.rx_p_vref_lo(rx_p_vref_lo),
+
+		.rx_n_signal_hi(rx_n_signal_hi),
+		.rx_n_vref_hi(rx_n_vref_hi),
+		.rx_n_signal_lo(rx_n_signal_lo),
+		.rx_n_vref_lo(rx_n_vref_lo),
 
 		.mii_tx_clk(mii_tx_clk),
 		.mii_tx_en(mii_tx_en),

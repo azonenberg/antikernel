@@ -79,6 +79,11 @@ module TragicLaserPHY(
 	input wire			rx_p_signal_lo,
 	input wire			rx_p_vref_lo,
 
+	input wire			rx_n_signal_hi,
+	input wire			rx_n_vref_hi,
+	input wire			rx_n_signal_lo,
+	input wire			rx_n_vref_lo,
+
     //MII interface
     output wire			mii_tx_clk,
     input wire			mii_tx_en,
@@ -96,10 +101,13 @@ module TragicLaserPHY(
 	assign			mii_tx_clk	= clk_25mhz;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Input buffers
+	// Differential input buffers
 
 	wire	rx_p_hi;
 	wire	rx_p_lo;
+
+	wire	rx_n_hi;
+	wire	rx_n_lo;
 
 	IBUFDS #(
 		.DIFF_TERM("FALSE"),
@@ -117,6 +125,111 @@ module TragicLaserPHY(
 		.I(rx_p_signal_lo),
 		.IB(rx_p_vref_lo),
 		.O(rx_p_lo)
+	);
+
+	IBUFDS #(
+		.DIFF_TERM("FALSE"),
+		.IOSTANDARD("LVDS_33")
+	) ibuf_rx_n_hi(
+		.I(rx_n_signal_hi),
+		.IB(rx_n_vref_hi),
+		.O(rx_n_hi)
+	);
+
+	IBUFDS #(
+		.DIFF_TERM("FALSE"),
+		.IOSTANDARD("LVDS_33")
+	) ibuf_rx_n_lo(
+		.I(rx_n_signal_lo),
+		.IB(rx_n_vref_lo),
+		.O(rx_n_lo)
+	);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 4x input oversampling
+
+	wire[3:0]	rx_p_hi_arr;
+	ISERDES2 #(
+		.DATA_RATE("SDR"),
+		.DATA_WIDTH(4),
+		.BITSLIP_ENABLE("FALSE"),
+		.SERDES_MODE("NONE"),
+		.INTERFACE_TYPE("NETWORKING")
+	) rx_p_hi_serdes (
+		.CLK0(clk_500mhz_bufpll),
+		.CLKDIV(clk_125mhz),
+		.CE0(1'b1),
+		.BITSLIP(1'b0),
+		.D(rx_p_hi),
+		.RST(1'b0),
+		.IOCE(serdes_strobe),
+		.Q1(rx_p_hi_arr[3]),
+		.Q2(rx_p_hi_arr[2]),
+		.Q3(rx_p_hi_arr[1]),
+		.Q4(rx_p_hi_arr[0])
+	);
+
+	wire[3:0]	rx_p_lo_arr;
+	ISERDES2 #(
+		.DATA_RATE("SDR"),
+		.DATA_WIDTH(4),
+		.BITSLIP_ENABLE("FALSE"),
+		.SERDES_MODE("NONE"),
+		.INTERFACE_TYPE("NETWORKING")
+	) rx_p_lo_serdes (
+		.CLK0(clk_500mhz_bufpll),
+		.CLKDIV(clk_125mhz),
+		.CE0(1'b1),
+		.BITSLIP(1'b0),
+		.D(rx_p_lo),
+		.RST(1'b0),
+		.IOCE(serdes_strobe),
+		.Q1(rx_p_lo_arr[3]),
+		.Q2(rx_p_lo_arr[2]),
+		.Q3(rx_p_lo_arr[1]),
+		.Q4(rx_p_lo_arr[0])
+	);
+
+	wire[3:0]	rx_n_hi_arr;
+	ISERDES2 #(
+		.DATA_RATE("SDR"),
+		.DATA_WIDTH(4),
+		.BITSLIP_ENABLE("FALSE"),
+		.SERDES_MODE("NONE"),
+		.INTERFACE_TYPE("NETWORKING")
+	) rx_n_hi_serdes (
+		.CLK0(clk_500mhz_bufpll),
+		.CLKDIV(clk_125mhz),
+		.CE0(1'b1),
+		.BITSLIP(1'b0),
+		.D(rx_n_hi),
+		.RST(1'b0),
+		.IOCE(serdes_strobe),
+		.Q1(rx_n_hi_arr[3]),
+		.Q2(rx_n_hi_arr[2]),
+		.Q3(rx_n_hi_arr[1]),
+		.Q4(rx_n_hi_arr[0])
+	);
+
+	wire[3:0]	rx_n_lo_arr;
+	ISERDES2 #(
+		.DATA_RATE("SDR"),
+		.DATA_WIDTH(4),
+		.BITSLIP_ENABLE("FALSE"),
+		.SERDES_MODE("NONE"),
+		.INTERFACE_TYPE("NETWORKING")
+	) rx_n_lo_serdes (
+		.CLK0(clk_500mhz_bufpll),
+		.CLKDIV(clk_125mhz),
+		.CE0(1'b1),
+		.BITSLIP(1'b0),
+		.D(rx_n_lo),
+		.RST(1'b0),
+		.IOCE(serdes_strobe),
+		.Q1(rx_n_lo_arr[3]),
+		.Q2(rx_n_lo_arr[2]),
+		.Q3(rx_n_lo_arr[1]),
+		.Q4(rx_n_lo_arr[0])
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -155,92 +268,77 @@ module TragicLaserPHY(
 		.O(tx_n_a[0])
 	);
 
-	localparam USE_OSERDES = 1;
+	OSERDES2 #(
+		.DATA_RATE_OQ("SDR"),
+		.DATA_RATE_OT("SDR"),
+		.DATA_WIDTH(4),
+		.OUTPUT_MODE("SINGLE_ENDED"),
+		.SERDES_MODE("MASTER"),
+		.TRAIN_PATTERN(16'h0)
+	) serdes_10m_p (
+		.CLKDIV(clk_125mhz),
+		.CLK0(clk_500mhz_bufpll),
+		.D1(tx_d_10m_p[0]),
+		.D2(tx_d_10m_p[1]),
+		.D3(tx_d_10m_p[2]),
+		.D4(tx_d_10m_p[3]),
+		.IOCE(serdes_strobe),
+		.OCE(1'b1),
+		.OQ(tx_p_a0_raw),
+		.RST(1'b0),
+		.TCE(1'b1),
+		.TQ(tx_p_a0_t),
+		.TRAIN(1'b0),
+		.T1(tx_t_10m_p[0]),
+		.T2(tx_t_10m_p[1]),
+		.T3(tx_t_10m_p[2]),
+		.T4(tx_t_10m_p[3]),
 
-		generate
+		.SHIFTOUT1(),
+		.SHIFTOUT2(),
+		.SHIFTOUT3(),
+		.SHIFTOUT4(),
+		.SHIFTIN1(1'b0),
+		.SHIFTIN2(1'b0),
+		.SHIFTIN3(1'b0),
+		.SHIFTIN4(1'b0)
+	);
 
-		if(!USE_OSERDES) begin
-			assign tx_n_a0_raw = tx_d_10m_n[3];
-			assign tx_n_a0_t = tx_t_10m_n[3];
+	OSERDES2 #(
+		.DATA_RATE_OQ("SDR"),
+		.DATA_RATE_OT("SDR"),
+		.DATA_WIDTH(4),
+		.OUTPUT_MODE("SINGLE_ENDED"),
+		.SERDES_MODE("MASTER"),
+		.TRAIN_PATTERN(16'h0)
+	) serdes_10m_n (
+		.CLKDIV(clk_125mhz),
+		.CLK0(clk_500mhz_bufpll),
+		.D1(tx_d_10m_n[0]),
+		.D2(tx_d_10m_n[1]),
+		.D3(tx_d_10m_n[2]),
+		.D4(tx_d_10m_n[3]),
+		.IOCE(serdes_strobe),
+		.OCE(1'b1),
+		.OQ(tx_n_a0_raw),
+		.RST(1'b0),
+		.TCE(1'b1),
+		.TQ(tx_n_a0_t),
+		.TRAIN(1'b0),
+		.T1(tx_t_10m_n[0]),
+		.T2(tx_t_10m_n[1]),
+		.T3(tx_t_10m_n[2]),
+		.T4(tx_t_10m_n[3]),
 
-			assign tx_p_a0_raw = tx_d_10m_p[3];
-			assign tx_p_a0_t = tx_t_10m_p[3];
-		end
-
-		else begin
-			OSERDES2 #(
-				.DATA_RATE_OQ("SDR"),
-				.DATA_RATE_OT("SDR"),
-				.DATA_WIDTH(4),
-				.OUTPUT_MODE("SINGLE_ENDED"),
-				.SERDES_MODE("MASTER"),
-				.TRAIN_PATTERN(16'h0)
-			) serdes_10m_p (
-				.CLKDIV(clk_125mhz),
-				.CLK0(clk_500mhz_bufpll),
-				.D1(tx_d_10m_p[0]),
-				.D2(tx_d_10m_p[1]),
-				.D3(tx_d_10m_p[2]),
-				.D4(tx_d_10m_p[3]),
-				.IOCE(serdes_strobe),
-				.OCE(1'b1),
-				.OQ(tx_p_a0_raw),
-				.RST(1'b0),
-				.TCE(1'b1),
-				.TQ(tx_p_a0_t),
-				.TRAIN(1'b0),
-				.T1(tx_t_10m_p[0]),
-				.T2(tx_t_10m_p[1]),
-				.T3(tx_t_10m_p[2]),
-				.T4(tx_t_10m_p[3]),
-
-				.SHIFTOUT1(),
-				.SHIFTOUT2(),
-				.SHIFTOUT3(),
-				.SHIFTOUT4(),
-				.SHIFTIN1(1'b0),
-				.SHIFTIN2(1'b0),
-				.SHIFTIN3(1'b0),
-				.SHIFTIN4(1'b0)
-			);
-
-			OSERDES2 #(
-				.DATA_RATE_OQ("SDR"),
-				.DATA_RATE_OT("SDR"),
-				.DATA_WIDTH(4),
-				.OUTPUT_MODE("SINGLE_ENDED"),
-				.SERDES_MODE("MASTER"),
-				.TRAIN_PATTERN(16'h0)
-			) serdes_10m_n (
-				.CLKDIV(clk_125mhz),
-				.CLK0(clk_500mhz_bufpll),
-				.D1(tx_d_10m_n[0]),
-				.D2(tx_d_10m_n[1]),
-				.D3(tx_d_10m_n[2]),
-				.D4(tx_d_10m_n[3]),
-				.IOCE(serdes_strobe),
-				.OCE(1'b1),
-				.OQ(tx_n_a0_raw),
-				.RST(1'b0),
-				.TCE(1'b1),
-				.TQ(tx_n_a0_t),
-				.TRAIN(1'b0),
-				.T1(tx_t_10m_n[0]),
-				.T2(tx_t_10m_n[1]),
-				.T3(tx_t_10m_n[2]),
-				.T4(tx_t_10m_n[3]),
-
-				.SHIFTOUT1(),
-				.SHIFTOUT2(),
-				.SHIFTOUT3(),
-				.SHIFTOUT4(),
-				.SHIFTIN1(1'b0),
-				.SHIFTIN2(1'b0),
-				.SHIFTIN3(1'b0),
-				.SHIFTIN4(1'b0)
-			);
-		end
-	endgenerate
+		.SHIFTOUT1(),
+		.SHIFTOUT2(),
+		.SHIFTOUT3(),
+		.SHIFTOUT4(),
+		.SHIFTIN1(1'b0),
+		.SHIFTIN2(1'b0),
+		.SHIFTIN3(1'b0),
+		.SHIFTIN4(1'b0)
+	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Output buffers for 100Mbps lines
@@ -275,90 +373,77 @@ module TragicLaserPHY(
 		.O(tx_n_b)
 	);
 
-	generate
+	OSERDES2 #(
+		.DATA_RATE_OQ("SDR"),
+		.DATA_RATE_OT("SDR"),
+		.DATA_WIDTH(4),
+		.OUTPUT_MODE("SINGLE_ENDED"),
+		.SERDES_MODE("MASTER"),
+		.TRAIN_PATTERN(16'h0)
+	) serdes_100m_p (
+		.CLKDIV(clk_125mhz),
+		.CLK0(clk_500mhz_bufpll),
+		.D1(tx_d_100m_p[0]),
+		.D2(tx_d_100m_p[1]),
+		.D3(tx_d_100m_p[2]),
+		.D4(tx_d_100m_p[3]),
+		.IOCE(serdes_strobe),
+		.OCE(1'b1),
+		.OQ(tx_p_b_raw),
+		.RST(1'b0),
+		.TCE(1'b1),
+		.TQ(tx_p_b_t),
+		.TRAIN(1'b0),
+		.T1(tx_t_100m_p[0]),
+		.T2(tx_t_100m_p[1]),
+		.T3(tx_t_100m_p[2]),
+		.T4(tx_t_100m_p[3]),
 
-		if(!USE_OSERDES) begin
-			assign tx_n_b_raw = tx_d_100m_n[3];
-			assign tx_n_b_t = tx_t_100m_n[3];
+		.SHIFTOUT1(),
+		.SHIFTOUT2(),
+		.SHIFTOUT3(),
+		.SHIFTOUT4(),
+		.SHIFTIN1(1'b0),
+		.SHIFTIN2(1'b0),
+		.SHIFTIN3(1'b0),
+		.SHIFTIN4(1'b0)
+	);
 
-			assign tx_p_b_raw = tx_d_100m_p[3];
-			assign tx_p_b_t = tx_t_100m_p[3];
-		end
+	OSERDES2 #(
+		.DATA_RATE_OQ("SDR"),
+		.DATA_RATE_OT("SDR"),
+		.DATA_WIDTH(4),
+		.OUTPUT_MODE("SINGLE_ENDED"),
+		.SERDES_MODE("MASTER"),
+		.TRAIN_PATTERN(16'h0)
+	) serdes_100m_n (
+		.CLKDIV(clk_125mhz),
+		.CLK0(clk_500mhz_bufpll),
+		.D1(tx_d_100m_n[0]),
+		.D2(tx_d_100m_n[1]),
+		.D3(tx_d_100m_n[2]),
+		.D4(tx_d_100m_n[3]),
+		.IOCE(serdes_strobe),
+		.OCE(1'b1),
+		.OQ(tx_n_b_raw),
+		.RST(1'b0),
+		.TCE(1'b1),
+		.TQ(tx_n_b_t),
+		.TRAIN(1'b0),
+		.T1(tx_t_100m_n[0]),
+		.T2(tx_t_100m_n[1]),
+		.T3(tx_t_100m_n[2]),
+		.T4(tx_t_100m_n[3]),
 
-		else begin
-			OSERDES2 #(
-				.DATA_RATE_OQ("SDR"),
-				.DATA_RATE_OT("SDR"),
-				.DATA_WIDTH(4),
-				.OUTPUT_MODE("SINGLE_ENDED"),
-				.SERDES_MODE("MASTER"),
-				.TRAIN_PATTERN(16'h0)
-			) serdes_100m_p (
-				.CLKDIV(clk_125mhz),
-				.CLK0(clk_500mhz_bufpll),
-				.D1(tx_d_100m_p[0]),
-				.D2(tx_d_100m_p[1]),
-				.D3(tx_d_100m_p[2]),
-				.D4(tx_d_100m_p[3]),
-				.IOCE(serdes_strobe),
-				.OCE(1'b1),
-				.OQ(tx_p_b_raw),
-				.RST(1'b0),
-				.TCE(1'b1),
-				.TQ(tx_p_b_t),
-				.TRAIN(1'b0),
-				.T1(tx_t_100m_p[0]),
-				.T2(tx_t_100m_p[1]),
-				.T3(tx_t_100m_p[2]),
-				.T4(tx_t_100m_p[3]),
-
-				.SHIFTOUT1(),
-				.SHIFTOUT2(),
-				.SHIFTOUT3(),
-				.SHIFTOUT4(),
-				.SHIFTIN1(1'b0),
-				.SHIFTIN2(1'b0),
-				.SHIFTIN3(1'b0),
-				.SHIFTIN4(1'b0)
-			);
-
-			OSERDES2 #(
-				.DATA_RATE_OQ("SDR"),
-				.DATA_RATE_OT("SDR"),
-				.DATA_WIDTH(4),
-				.OUTPUT_MODE("SINGLE_ENDED"),
-				.SERDES_MODE("MASTER"),
-				.TRAIN_PATTERN(16'h0)
-			) serdes_100m_n (
-				.CLKDIV(clk_125mhz),
-				.CLK0(clk_500mhz_bufpll),
-				.D1(tx_d_100m_n[0]),
-				.D2(tx_d_100m_n[1]),
-				.D3(tx_d_100m_n[2]),
-				.D4(tx_d_100m_n[3]),
-				.IOCE(serdes_strobe),
-				.OCE(1'b1),
-				.OQ(tx_n_b_raw),
-				.RST(1'b0),
-				.TCE(1'b1),
-				.TQ(tx_n_b_t),
-				.TRAIN(1'b0),
-				.T1(tx_t_100m_n[0]),
-				.T2(tx_t_100m_n[1]),
-				.T3(tx_t_100m_n[2]),
-				.T4(tx_t_100m_n[3]),
-
-				.SHIFTOUT1(),
-				.SHIFTOUT2(),
-				.SHIFTOUT3(),
-				.SHIFTOUT4(),
-				.SHIFTIN1(1'b0),
-				.SHIFTIN2(1'b0),
-				.SHIFTIN3(1'b0),
-				.SHIFTIN4(1'b0)
-			);
-		end
-	endgenerate
+		.SHIFTOUT1(),
+		.SHIFTOUT2(),
+		.SHIFTOUT3(),
+		.SHIFTOUT4(),
+		.SHIFTIN1(1'b0),
+		.SHIFTIN2(1'b0),
+		.SHIFTIN3(1'b0),
+		.SHIFTIN4(1'b0)
+	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// PMA layer: drive the H-bridge outputs depending on the chosen line rate and output waveform
@@ -670,30 +755,127 @@ module TragicLaserPHY(
 
 	end
 
-	/*
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Compute the RX MLT-3 state
+
+	//leftmost bits are first chronologically
+	reg[15:0]	rx_p_state;
+	reg[15:0]	rx_n_state;
+
+	integer i;
+	always @(*) begin
+
+		for(i=0; i<4; i=i+1) begin
+			if(rx_p_hi_arr[i] && rx_p_lo_arr[i])
+				rx_p_state[i*4 +: 4]	<= 3;
+			else if(rx_p_lo_arr[i])
+				rx_p_state[i*4 +: 4]	<= 2;
+			else
+				rx_p_state[i*4 +: 4]	<= 1;
+
+			if(rx_n_hi_arr[i] && rx_n_lo_arr[i])
+				rx_n_state[i*4 +: 4]	<= 3;
+			else if(rx_n_lo_arr[i])
+				rx_n_state[i*4 +: 4]	<= 2;
+			else
+				rx_n_state[i*4 +: 4]	<= 1;
+		end
+
+	end
+
+	//debug: tx side too
+	reg[1:0] tx_p_state;
+	reg[1:0] tx_n_state;
+	always @(*) begin
+
+		//tristate
+		if(tx_t_100m_p[3])
+			tx_p_state	<= 2;
+
+		//high
+		else if(tx_d_100m_p[3])
+			tx_p_state	<= 3;
+
+		//low
+		else
+			tx_p_state	<= 1;
+
+		//tristate
+		if(tx_t_100m_n[3])
+			tx_n_state	<= 2;
+
+		//high
+		else if(tx_d_100m_n[3])
+			tx_n_state	<= 1;
+
+		//low
+		else
+			tx_n_state	<= 3;
+
+	end
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // PRBS generator
+	// Find MLT-3 state transitions
 
-    reg[6:0]	prbs_shreg		= 1;
+	//TODO: examine the actual state ordering (-1 to +1 should never happen)
+	//TODO: sanity checking by using both _P and _N legs of the RX
 
-    wire[6:0]	prbs_shreg_next = { prbs_shreg[5:0], prbs_shreg[6] ^ prbs_shreg[5] };
-    //wire[6:0]	prbs_shreg_next2 = { prbs_shreg_next[5:0], prbs_shreg_next[6] ^ prbs_shreg_next[5] };
+	reg[1:0]	num_state_changes;	//normally 0 for no change or 1 for a change
+									//2 is occasionally possible, though, if the remote side has a slightly faster
+									//clock than us!
 
-    always @(posedge clk_125mhz_bufg) begin
-		prbs_shreg	<= prbs_shreg_next;
+	reg[1:0]	last_mlt3_state	= 0;
 
-		tx_mlt3_din	<= prbs_shreg[0];
-    end
-    */
+	//Find changes
+	reg[3:0]	mlt3_state_changes = 0;
+	always @(*) begin
+		mlt3_state_changes[3]	<= (last_mlt3_state   != rx_p_state[15:12]);
+		mlt3_state_changes[2]	<= (rx_p_state[15:12] != rx_p_state[11:8]);
+		mlt3_state_changes[1]	<= (rx_p_state[11:8]  != rx_p_state[7:4]);
+		mlt3_state_changes[0]	<= (rx_p_state[7:4]   != rx_p_state[3:0]);
+	end
+
+
+	always @(posedge clk_125mhz) begin
+		last_mlt3_state	<= rx_p_state[3:0];
+
+		num_state_changes	<=	mlt3_state_changes[0] +
+								mlt3_state_changes[1] +
+								mlt3_state_changes[2] +
+								mlt3_state_changes[3];
+	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Debug GPIOs
 
+	reg[1:0]	tx_p_state_ff = 0;
+	reg[1:0]	tx_p_state_ff1 = 0;
+	reg[1:0]	tx_p_state_ff2 = 0;
+	reg[1:0]	tx_p_state_ff3 = 0;
+	reg[1:0]	tx_p_state_ff4 = 0;
+
+	reg[15:0]	rx_p_state_ff;
+
+	always @(posedge clk_125mhz) begin
+		tx_p_state_ff	<= tx_p_state;
+		tx_p_state_ff2	<= tx_p_state_ff;
+		tx_p_state_ff3	<= tx_p_state_ff2;
+		tx_p_state_ff4	<= tx_p_state_ff3;
+
+		rx_p_state_ff	<= rx_p_state;
+	end
+
+	wire[15:0]	rx_p_state_bitslip = { rx_p_state_ff[7:0], rx_p_state[15:8] };
+
 	wire	la_ready;
+	wire	trig_out;
+	wire	capture_done;
+
 	RedTinUartWrapper #(
 		.WIDTH(128),
 		.DEPTH(1024),
 		.UART_CLKDIV(16'd1085),	//115200 @ 125 MHz
+		.USE_EXT_TRIG(0),
 		.SYMBOL_ROM(
 			{
 				16384'h0,
@@ -701,38 +883,47 @@ module TragicLaserPHY(
 				32'd8000,		//period of internal clock, in ps
 				32'd1024,		//Capture depth (TODO auto-patch this?)
 				32'd128,		//Capture width (TODO auto-patch this?)
-				{ "frame_active",		8'h0, 8'h1,  8'h0 },
-				{ "mii_tx_er",			8'h0, 8'h1,  8'h0 },
-				{ "mii_tx_en",			8'h0, 8'h1,  8'h0 },
-				{ "mii_txd",			8'h0, 8'h4,  8'h0 },
-				{ "tx_p_b_raw",			8'h0, 8'h1,  8'h0 },
-				{ "tx_n_b_raw",			8'h0, 8'h1,  8'h0 },
-				{ "rx_p_hi",			8'h0, 8'h1,  8'h0 },
-				{ "rx_p_lo",			8'h0, 8'h1,  8'h0 }
+				{ "tx_p_state",			8'h0, 8'h2,  8'h0 },
+				{ "tx_p_state_ff4",		8'h0, 8'h2,  8'h0 },
+				{ "rx_p_state_bitslip", 8'h0, 8'h10,  8'h0 },
+				{ "rx_p_state",			8'h0, 8'h10,  8'h0 },
+				//{ "tx_n_state",			8'h0, 8'h2,  8'h0 },
+				//{ "rx_n_state",			8'h0, 8'h10,  8'h0 },
+				{ "tx_mlt3_din",		8'h0, 8'h1,  8'h0 },
+				{ "num_state_changes",	8'h0, 8'h2,  8'h0 },
+				{ "last_mlt3_state",	8'h0, 8'h2,  8'h0 }
 			}
 		)
 	) analyzer (
 		.clk(clk_125mhz),
 		.capture_clk(clk_125mhz),
 		.din({
-				frame_active,		//1
-				mii_tx_er,			//1
-				mii_tx_en,			//1
-				mii_txd,			//4
-				2'b0,	//FIXME
-				//tx_p_b_raw,			//1
-				//tx_n_b_raw,			//1
-				rx_p_hi,			//1
-				rx_p_lo,			//1
-				117'h0				//padding
+				tx_p_state,			//2
+				tx_p_state_ff4,		//2
+				rx_p_state_bitslip,	//16
+				rx_p_state,			//16
+				//tx_n_state,			//2
+				//rx_n_state,			//16
+				tx_mlt3_din,		//1
+				num_state_changes,	//2
+				last_mlt3_state,	//2
+				87'h0				//padding
 			}),
 		.uart_rx(gpio[9]),
 		.uart_tx(gpio[7]),
 		.la_ready(la_ready),
-		.ext_trig(1'b0)
+		.ext_trig(1'b0),
+		.trig_out(trig_out),
+		.capture_done(capture_done)
 	);
 
 	assign gpio[8] = 0;
-	assign gpio[6:0] = 0;
+	assign gpio[6:3] = 0;
+
+	DDROutputBuffer #(.WIDTH(1))
+		ddrbuf(.clk_p(clk_125mhz), .clk_n(!clk_125mhz), .dout(gpio[1]), .din0(1'b0), .din1(1'b1));
+
+	assign gpio[0] = la_ready;			//d0
+	assign gpio[2] = capture_done;		//d3
 
 endmodule
