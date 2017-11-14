@@ -132,6 +132,32 @@ RedTinLogicAnalyzer::~RedTinLogicAnalyzer()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Information queries
 
+bool RedTinLogicAnalyzer::Ping()
+{
+	LogDebug("Pinging\n");
+
+	int npings = 10;
+	for(int i=0; i<npings; i++)
+	{
+		LogDebug("    %d/%d\n", i, npings);
+
+		uint8_t op = REDTIN_PING;
+		m_uart->Write(&op, 1);
+		uint8_t rxbuf;
+		if(!m_uart->Read(&rxbuf, 1))
+		{
+			LogError("Couldn't get ping\n");
+			return false;
+		}
+
+		if(rxbuf != REDTIN_PING)
+		{
+			LogError("Bad ping reply (got %02x, expected %02x)\n", rxbuf, op);
+		}
+	}
+	return true;
+}
+
 unsigned int RedTinLogicAnalyzer::GetInstrumentTypes()
 {
 	return INST_OSCILLOSCOPE;
@@ -242,8 +268,8 @@ void RedTinLogicAnalyzer::LoadChannels()
 			//We now have the signal width, then reserved type field
 			if(ptr + 2 > end)
 			{
-				LogError("Last signal is truncated\n");
-				return;
+				LogError("Last signal (%s) is truncated\n", name.c_str());
+				break;
 			}
 
 			width = ptr[0];
@@ -516,6 +542,8 @@ bool RedTinLogicAnalyzer::AcquireData(sigc::slot1<int, float> progress_callback)
 
 			//Request readback (one read request per row, for simple lock-step flow control)
 			uint8_t op = REDTIN_READ_DATA;
+			if(row != 0)
+				op = REDTIN_READ_CONTINUE;
 			if(!m_uart->Write(&op, 1))
 				return false;
 
@@ -829,7 +857,7 @@ void RedTinLogicAnalyzer::StartSingleTrigger()
 		//Wait for OK result
 		m_uart->Read(&op, 1);
 		if(op != REDTIN_LOAD_TRIGGER)
-			LogError("Bad response from LA\n");
+			LogError("Bad response from LA (%02x, expected %02x)\n", op, REDTIN_LOAD_TRIGGER);
 	}
 
 	else

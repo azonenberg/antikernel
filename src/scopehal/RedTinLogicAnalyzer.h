@@ -74,6 +74,7 @@ protected:
 	} m_transport;
 
 	void LoadChannels();
+	bool Ping();
 
 	//std::string ReadString(const unsigned char* data, int& pos);
 
