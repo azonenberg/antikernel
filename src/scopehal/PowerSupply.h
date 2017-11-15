@@ -26,48 +26,40 @@
 * POSSIBILITY OF SUCH DAMAGE.                                                                                          *
 *                                                                                                                      *
 ***********************************************************************************************************************/
+#ifndef PowerSupply_h
+#define PowerSupply_h
 
 /**
-	@file
-	@author Andrew D. Zonenberg
-	@brief Declaration of Instrument
+	@brief A generic power supply
  */
-
-#ifndef Instrument_h
-#define Instrument_h
-
-/**
-	@brief An arbitrary lab instrument. Oscilloscope, LA, PSU, DMM, etc
- */
-class Instrument
+class PowerSupply : public virtual Instrument
 {
 public:
-	virtual ~Instrument();
+	PowerSupply();
+	virtual ~PowerSupply();
 
-	/*
-		@brief Types of instrument.
+	//Channel info
+	virtual int GetPowerChannelCount() =0;
+	virtual std::string GetPowerChannelName(int chan) =0;
 
-		Note that we can't use RTTI for this because of software options.
-		For example, some WaveSurfer 3000 devices have the function generator option and others don't.
-	 */
-	enum InstrumentTypes
-	{
-		//An oscilloscope or logic analyzer
-		INST_OSCILLOSCOPE 		= 1,
+	//Read sensors
+	virtual double GetPowerVoltageActual(int chan) =0;				//actual voltage after current limiting
+	virtual double GetPowerVoltageNominal(int chan) =0;				//set point
+	virtual double GetPowerCurrentActual(int chan) =0;				//actual current drawn by the load
+	virtual double GetPowerCurrentNominal(int chan) =0;				//current limit
+	virtual bool GetPowerChannelActive(int chan) =0;
 
-		//A multimeter (query to see what measurements it supports)
-		INST_DMM 				= 2,
+	//Configuration
+	virtual bool GetPowerOvercurrentShutdownEnabled(int chan) =0;	//shut channel off entirely on overload,
+																	//rather than current limiting
+	virtual void SetPowerOvercurrentShutdownEnabled(int chan, bool enable) =0;
+	virtual bool GetPowerOvercurrentShutdownTripped(int chan) =0;
+	virtual void SetPowerVoltage(int chan, double volts) =0;
+	virtual void SetPowerCurrent(int chan, double amps) =0;
+	virtual void SetPowerChannelActive(int chan, bool on) =0;
 
-		//A power supply
-		INST_PSU				= 4,
-	};
-
-	virtual unsigned int GetInstrumentTypes() =0;
-
-	//Device information
-	virtual std::string GetName() =0;
-	virtual std::string GetVendor() =0;
-	virtual std::string GetSerial() =0;
+	virtual bool GetMasterPowerEnable() =0;
+	virtual void SetMasterPowerEnable(bool enable) = 0;
 };
 
 #endif

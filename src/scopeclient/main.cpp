@@ -36,10 +36,12 @@
 #include "scopeclient.h"
 #include "OscilloscopeWindow.h"
 #include "DMMWindow.h"
+#include "PSUWindow.h"
 #include "ScopeConnectionDialog.h"
 //#include "../scopehal/NetworkedOscilloscope.h"
 #include "../scopehal/RedTinLogicAnalyzer.h"
 #include "../scopehal/LeCroyVICPOscilloscope.h"
+#include "../scopehal/RohdeSchwarzHMC804xPowerSupply.h"
 #include "../scopeprotocols/scopeprotocols.h"
 
 using namespace std;
@@ -113,6 +115,15 @@ void ScopeApp::on_activate()
 		if(features & Instrument::INST_DMM)
 		{
 			auto w = new DMMWindow(dynamic_cast<Multimeter*>(i.m_inst), i.m_server, i.m_port);
+			m_windows.push_back(w);
+			add_window(*w);
+			w->present();
+		}
+
+		//Add UI for the power supply
+		if(features & Instrument::INST_PSU)
+		{
+			auto w = new PSUWindow(dynamic_cast<PowerSupply*>(i.m_inst), i.m_server, i.m_port);
 			m_windows.push_back(w);
 			add_window(*w);
 			w->present();
@@ -214,6 +225,15 @@ int main(int argc, char* argv[])
 				port = 1861;
 
 			app->m_instruments.push_back(InstrumentInfo(new LeCroyVICPOscilloscope(server, port), server, port));
+		}
+		else if(api == "rohdeschwarz_psu")
+		{
+			//default port if not specified
+			if(port == 0)
+				port = 5025;
+
+			app->m_instruments.push_back(
+				InstrumentInfo(new RohdeSchwarzHMC804xPowerSupply(server, port), server, port));
 		}
 		else
 		{

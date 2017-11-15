@@ -27,47 +27,71 @@
 *                                                                                                                      *
 ***********************************************************************************************************************/
 
-/**
-	@file
-	@author Andrew D. Zonenberg
-	@brief Declaration of Instrument
- */
+#ifndef RohdeSchwarzHMC804xPowerSupply_h
+#define RohdeSchwarzHMC804xPowerSupply_h
 
-#ifndef Instrument_h
-#define Instrument_h
+
+#include "../xptools/Socket.h"
 
 /**
-	@brief An arbitrary lab instrument. Oscilloscope, LA, PSU, DMM, etc
+	@brief A Rohde & Schwarz HMC804x power supply
  */
-class Instrument
+class RohdeSchwarzHMC804xPowerSupply
+	: public virtual PowerSupply
 {
 public:
-	virtual ~Instrument();
-
-	/*
-		@brief Types of instrument.
-
-		Note that we can't use RTTI for this because of software options.
-		For example, some WaveSurfer 3000 devices have the function generator option and others don't.
-	 */
-	enum InstrumentTypes
-	{
-		//An oscilloscope or logic analyzer
-		INST_OSCILLOSCOPE 		= 1,
-
-		//A multimeter (query to see what measurements it supports)
-		INST_DMM 				= 2,
-
-		//A power supply
-		INST_PSU				= 4,
-	};
-
-	virtual unsigned int GetInstrumentTypes() =0;
+	RohdeSchwarzHMC804xPowerSupply(std::string hostname, unsigned short port);
+	virtual ~RohdeSchwarzHMC804xPowerSupply();
 
 	//Device information
-	virtual std::string GetName() =0;
-	virtual std::string GetVendor() =0;
-	virtual std::string GetSerial() =0;
+	virtual std::string GetName();
+	virtual std::string GetVendor();
+	virtual std::string GetSerial();
+
+	virtual unsigned int GetInstrumentTypes();
+
+	//Channel info
+	virtual int GetPowerChannelCount();
+	virtual std::string GetPowerChannelName(int chan);
+
+	//Read sensors
+	virtual double GetPowerVoltageActual(int chan);				//actual voltage after current limiting
+	virtual double GetPowerVoltageNominal(int chan);			//set point
+	virtual double GetPowerCurrentActual(int chan);				//actual current drawn by the load
+	virtual double GetPowerCurrentNominal(int chan);			//current limit
+	virtual bool GetPowerChannelActive(int chan);
+
+	//Configuration
+	virtual bool GetPowerOvercurrentShutdownEnabled(int chan);	//shut channel off entirely on overload,
+																//rather than current limiting
+	virtual void SetPowerOvercurrentShutdownEnabled(int chan, bool enable);
+	virtual bool GetPowerOvercurrentShutdownTripped(int chan);
+	virtual void SetPowerVoltage(int chan, double volts);
+	virtual void SetPowerCurrent(int chan, double amps);
+	virtual void SetPowerChannelActive(int chan, bool on);
+
+	virtual bool GetMasterPowerEnable();
+	virtual void SetMasterPowerEnable(bool enable);
+
+protected:
+	Socket m_socket;
+
+	std::string m_hostname;
+	unsigned short m_port;
+
+	std::string m_vendor;
+	std::string m_model;
+	std::string m_serial;
+	std::string m_hwVersion;
+	std::string m_fwVersion;
+
+	//Helpers for controlling stuff
+	bool SelectChannel(int chan);
+
+	int m_channelCount;
+
+	bool SendCommand(std::string cmd);
+	std::string ReadReply();
 };
 
 #endif

@@ -30,44 +30,57 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Declaration of Instrument
+	@brief A top-level window containing the UI for a power supply
  */
-
-#ifndef Instrument_h
-#define Instrument_h
+#ifndef PSUWindow_h
+#define PSUWindow_h
 
 /**
-	@brief An arbitrary lab instrument. Oscilloscope, LA, PSU, DMM, etc
+	@brief Main application window class for a power supply
  */
-class Instrument
+class PSUWindow	: public Gtk::Window
 {
 public:
-	virtual ~Instrument();
+	PSUWindow(PowerSupply* psu, std::string host, int port);
+	~PSUWindow();
 
-	/*
-		@brief Types of instrument.
+protected:
 
-		Note that we can't use RTTI for this because of software options.
-		For example, some WaveSurfer 3000 devices have the function generator option and others don't.
-	 */
-	enum InstrumentTypes
-	{
-		//An oscilloscope or logic analyzer
-		INST_OSCILLOSCOPE 		= 1,
+	//Initialization
+	void CreateWidgets();
 
-		//A multimeter (query to see what measurements it supports)
-		INST_DMM 				= 2,
+	//Widgets
+	Gtk::VBox m_vbox;
+		std::vector<Gtk::HSeparator> m_hseps;
+		std::vector<Gtk::Label> m_channelLabels;
+		std::vector<Gtk::HBox> m_chanhboxes;
+			std::vector<Gtk::VBox> m_voltboxes;
+				std::vector<Gtk::HBox> m_vhboxes;
+					std::vector<Gtk::Label> m_voltageLabels;
+				std::vector<Gtk::HBox> m_vmhboxes;
+					std::vector<Gtk::Label> m_mvoltageLabels;
+					std::vector<Gtk::Label> m_voltageValueLabels;
+			std::vector<Gtk::VBox> m_currboxes;
+				std::vector<Gtk::HBox> m_ihboxes;
+					std::vector<Gtk::Label> m_currentLabels;
+				std::vector<Gtk::HBox> m_imhboxes;
+					std::vector<Gtk::Label> m_mcurrentLabels;
+					std::vector<Gtk::Label> m_currentValueLabels;
 
-		//A power supply
-		INST_PSU				= 4,
-	};
+	//Our instrument connection
+	PowerSupply* m_psu;
 
-	virtual unsigned int GetInstrumentTypes() =0;
+	//Status polling
+	bool OnTimer(int timer);
 
-	//Device information
-	virtual std::string GetName() =0;
-	virtual std::string GetVendor() =0;
-	virtual std::string GetSerial() =0;
+	//UI handlers
+	//void OnSignalSourceChanged();
+	//void OnMeasurementTypeChanged();
+	//void OnAutoRangeChanged();
+
+	virtual void on_show();
+	virtual void on_hide();
 };
+
 
 #endif

@@ -27,47 +27,13 @@
 *                                                                                                                      *
 ***********************************************************************************************************************/
 
-/**
-	@file
-	@author Andrew D. Zonenberg
-	@brief Declaration of Instrument
- */
+#include "scopehal.h"
+#include "PowerSupply.h"
 
-#ifndef Instrument_h
-#define Instrument_h
-
-/**
-	@brief An arbitrary lab instrument. Oscilloscope, LA, PSU, DMM, etc
- */
-class Instrument
+PowerSupply::PowerSupply()
 {
-public:
-	virtual ~Instrument();
+}
 
-	/*
-		@brief Types of instrument.
-
-		Note that we can't use RTTI for this because of software options.
-		For example, some WaveSurfer 3000 devices have the function generator option and others don't.
-	 */
-	enum InstrumentTypes
-	{
-		//An oscilloscope or logic analyzer
-		INST_OSCILLOSCOPE 		= 1,
-
-		//A multimeter (query to see what measurements it supports)
-		INST_DMM 				= 2,
-
-		//A power supply
-		INST_PSU				= 4,
-	};
-
-	virtual unsigned int GetInstrumentTypes() =0;
-
-	//Device information
-	virtual std::string GetName() =0;
-	virtual std::string GetVendor() =0;
-	virtual std::string GetSerial() =0;
-};
-
-#endif
+PowerSupply::~PowerSupply()
+{
+}

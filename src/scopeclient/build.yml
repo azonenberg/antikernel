@@ -37,6 +37,7 @@ scopeclient:
         - OscilloscopeWindow.cpp
         - OscilloscopeView.cpp
         - ProtocolDecoderDialog.cpp
+        - PSUWindow.cpp
         - ScopeConnectionDialog.cpp
 
     flags:

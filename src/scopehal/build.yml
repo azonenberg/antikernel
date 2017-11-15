@@ -48,7 +48,9 @@ scopehal:
         - Oscilloscope.cpp
         - OscilloscopeChannel.cpp
         - ProtocolDecoder.cpp
+        - PowerSupply.cpp
         - RedTinLogicAnalyzer.cpp
+        - RohdeSchwarzHMC804xPowerSupply.cpp
         - TextRenderer.cpp
         - TimescaleRenderer.cpp
 
