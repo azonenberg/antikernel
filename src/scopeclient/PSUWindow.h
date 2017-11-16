@@ -54,6 +54,7 @@ protected:
 		Gtk::HBox m_masterEnableHbox;
 			Gtk::Label m_masterEnableLabel;
 			Gtk::Switch m_masterEnableButton;
+			Gtk::Button m_revertButton;
 			Gtk::Button m_commitButton;
 		std::vector<Gtk::HSeparator> m_hseps;
 		std::vector<Gtk::HBox> m_channelLabelHboxes;
@@ -86,6 +87,7 @@ protected:
 	void OnMasterEnableChanged();
 	void OnChannelEnableChanged(int i);
 	void OnCommitChanges();
+	void OnRevertChanges();
 	void OnChannelVoltageChanged(int i);
 	void OnChannelCurrentChanged(int i);
 

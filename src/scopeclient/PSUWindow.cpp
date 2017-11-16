@@ -85,8 +85,6 @@ PSUWindow::~PSUWindow()
  */
 void PSUWindow::CreateWidgets()
 {
-	char tmp[128];
-
 	//Set up window hierarchy
 	add(m_vbox);
 		m_vbox.pack_start(m_masterEnableHbox, Gtk::PACK_SHRINK);
@@ -99,10 +97,16 @@ void PSUWindow::CreateWidgets()
 				m_masterEnableButton.override_font(Pango::FontDescription("sans bold 24"));
 				m_masterEnableButton.set_active(m_psu->GetMasterPowerEnable());
 				m_masterEnableButton.set_halign(Gtk::ALIGN_START);
-			m_masterEnableHbox.pack_start(m_commitButton, Gtk::PACK_EXPAND_WIDGET);
+			m_masterEnableHbox.pack_start(m_revertButton, Gtk::PACK_EXPAND_WIDGET);
+				m_revertButton.override_font(Pango::FontDescription("sans bold 16"));
+				m_revertButton.set_halign(Gtk::ALIGN_END);
+				m_revertButton.set_label("Revert");
+				m_revertButton.set_image_from_icon_name("gtk-clear");
+			m_masterEnableHbox.pack_start(m_commitButton, Gtk::PACK_SHRINK);
 				m_commitButton.override_font(Pango::FontDescription("sans bold 16"));
 				m_commitButton.set_halign(Gtk::ALIGN_END);
 				m_commitButton.set_label("Commit");
+				m_commitButton.set_image_from_icon_name("gtk-execute");
 	for(int i=0; i<m_psu->GetPowerChannelCount(); i++)
 	{
 		//Create boxes
@@ -129,8 +133,6 @@ void PSUWindow::CreateWidgets()
 			m_voltageLabels[i].set_text("Voltage (nominal)");
 			m_voltageLabels[i].set_size_request(150, -1);
 		m_voltageEntries.push_back(Gtk::Entry());
-			snprintf(tmp, sizeof(tmp), "%7.3f", m_psu->GetPowerVoltageNominal(i));
-			m_voltageEntries[i].set_text(tmp);
 			m_voltageEntries[i].set_width_chars(6);
 			m_voltageEntries[i].override_font(Pango::FontDescription("monospace bold 32"));
 		m_mvoltageLabels.push_back(Gtk::Label());
@@ -144,8 +146,6 @@ void PSUWindow::CreateWidgets()
 			m_currentLabels[i].set_text("Current (nominal)");
 			m_currentLabels[i].set_size_request(150, -1);
 		m_currentEntries.push_back(Gtk::Entry());
-			snprintf(tmp, sizeof(tmp), "%6.3f", m_psu->GetPowerCurrentNominal(i));
-			m_currentEntries[i].set_text(tmp);
 			m_currentEntries[i].set_width_chars(6);
 			m_currentEntries[i].override_font(Pango::FontDescription("monospace bold 32"));
 		m_mcurrentLabels.push_back(Gtk::Label());
@@ -197,11 +197,16 @@ void PSUWindow::CreateWidgets()
 			sigc::bind<int>(sigc::mem_fun(*this, &PSUWindow::OnChannelCurrentChanged), i));
 	}
 
+	//Revert changes (clear background and load all "nominal" text boxes with the right values
+	OnRevertChanges();
+
 	//Event handlers
 	m_masterEnableButton.property_active().signal_changed().connect(
 		sigc::mem_fun(*this, &PSUWindow::OnMasterEnableChanged));
 	m_commitButton.signal_clicked().connect(
 		sigc::mem_fun(*this, &PSUWindow::OnCommitChanges));
+	m_revertButton.signal_clicked().connect(
+		sigc::mem_fun(*this, &PSUWindow::OnRevertChanges));
 
 	show_all();
 }
@@ -220,6 +225,22 @@ void PSUWindow::OnCommitChanges()
 	{
 		m_psu->SetPowerVoltage(i, atof(m_voltageEntries[i].get_text().c_str()));
 		m_psu->SetPowerCurrent(i, atof(m_currentEntries[i].get_text().c_str()));
+	}
+
+	//reload text boxes with proper formatting
+	OnRevertChanges();
+}
+
+void PSUWindow::OnRevertChanges()
+{
+	char tmp[128];
+	for(int i=0; i<m_psu->GetPowerChannelCount(); i++)
+	{
+		snprintf(tmp, sizeof(tmp), "%7.3f", m_psu->GetPowerVoltageNominal(i));
+		m_voltageEntries[i].set_text(tmp);
+
+		snprintf(tmp, sizeof(tmp), "%6.3f", m_psu->GetPowerCurrentNominal(i));
+		m_currentEntries[i].set_text(tmp);
 
 		//clear to white
 		m_voltageEntries[i].override_background_color(Gdk::RGBA("#ffffff"));
@@ -253,7 +274,6 @@ void PSUWindow::on_hide()
 {
 	Gtk::Window::on_hide();
 }
-
 
 bool PSUWindow::OnTimer(int /*timer*/)
 {
