@@ -134,6 +134,22 @@ unsigned int RohdeSchwarzHMC804xPowerSupply::GetInstrumentTypes()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Actual hardware interfacing
 
+bool RohdeSchwarzHMC804xPowerSupply::IsPowerConstantCurrent(int chan)
+{
+	int reg = GetStatusRegister(chan);
+	return (reg & 0x02);	//CC bit
+}
+
+int RohdeSchwarzHMC804xPowerSupply::GetStatusRegister(int chan)
+{
+	SelectChannel(chan);
+
+	//Get status register
+	SendCommand("stat:ques:cond?");
+	string ret = ReadReply();
+	return atoi(ret.c_str());
+}
+
 int RohdeSchwarzHMC804xPowerSupply::GetPowerChannelCount()
 {
 	return m_channelCount;

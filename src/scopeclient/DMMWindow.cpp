@@ -157,8 +157,6 @@ void DMMWindow::CreateWidgets()
 	m_signalSourceSelector.signal_changed().connect(sigc::mem_fun(*this, &DMMWindow::OnSignalSourceChanged));
 	m_measurementTypeSelector.signal_changed().connect(sigc::mem_fun(*this, &DMMWindow::OnMeasurementTypeChanged));
 	m_autoRangeSelector.signal_toggled().connect(sigc::mem_fun(*this, &DMMWindow::OnAutoRangeChanged));
-
-	//TODO: autorange checkbox
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

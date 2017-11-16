@@ -58,6 +58,8 @@ public:
 	virtual void SetPowerCurrent(int chan, double amps) =0;
 	virtual void SetPowerChannelActive(int chan, bool on) =0;
 
+	virtual bool IsPowerConstantCurrent(int chan) =0;				//true = CC, false = CV
+
 	virtual bool GetMasterPowerEnable() =0;
 	virtual void SetMasterPowerEnable(bool enable) = 0;
 };

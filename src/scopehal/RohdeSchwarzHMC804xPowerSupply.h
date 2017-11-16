@@ -69,11 +69,14 @@ public:
 	virtual void SetPowerVoltage(int chan, double volts);
 	virtual void SetPowerCurrent(int chan, double amps);
 	virtual void SetPowerChannelActive(int chan, bool on);
+	virtual bool IsPowerConstantCurrent(int chan);
 
 	virtual bool GetMasterPowerEnable();
 	virtual void SetMasterPowerEnable(bool enable);
 
 protected:
+	int GetStatusRegister(int chan);
+
 	Socket m_socket;
 
 	std::string m_hostname;

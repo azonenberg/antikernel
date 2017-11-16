@@ -70,7 +70,7 @@ PSUWindow::PSUWindow(PowerSupply* psu, std::string host, int port)
 
 	//Set the update timer
 	sigc::slot<bool> slot = sigc::bind(sigc::mem_fun(*this, &PSUWindow::OnTimer), 1);
-	sigc::connection conn = Glib::signal_timeout().connect(slot, 250);
+	sigc::connection conn = Glib::signal_timeout().connect(slot, 500);
 }
 
 /**
@@ -85,13 +85,30 @@ PSUWindow::~PSUWindow()
  */
 void PSUWindow::CreateWidgets()
 {
+	char tmp[128];
+
 	//Set up window hierarchy
 	add(m_vbox);
+		m_vbox.pack_start(m_masterEnableHbox, Gtk::PACK_SHRINK);
+			m_masterEnableHbox.pack_start(m_masterEnableLabel, Gtk::PACK_SHRINK);
+				m_masterEnableLabel.set_label("Master");
+				m_masterEnableLabel.set_halign(Gtk::ALIGN_START);
+				m_masterEnableLabel.set_size_request(150, -1);
+				m_masterEnableLabel.override_font(Pango::FontDescription("sans bold 24"));
+			m_masterEnableHbox.pack_start(m_masterEnableButton, Gtk::PACK_SHRINK);
+				m_masterEnableButton.override_font(Pango::FontDescription("sans bold 24"));
+				m_masterEnableButton.set_active(m_psu->GetMasterPowerEnable());
+				m_masterEnableButton.set_halign(Gtk::ALIGN_START);
+			m_masterEnableHbox.pack_start(m_commitButton, Gtk::PACK_EXPAND_WIDGET);
+				m_commitButton.override_font(Pango::FontDescription("sans bold 16"));
+				m_commitButton.set_halign(Gtk::ALIGN_END);
+				m_commitButton.set_label("Commit");
 	for(int i=0; i<m_psu->GetPowerChannelCount(); i++)
 	{
 		//Create boxes
 		m_hseps.push_back(Gtk::HSeparator());
 		m_vhboxes.push_back(Gtk::HBox());
+		m_channelLabelHboxes.push_back(Gtk::HBox());
 		m_vmhboxes.push_back(Gtk::HBox());
 		m_chanhboxes.push_back(Gtk::HBox());
 		m_voltboxes.push_back(Gtk::VBox());
@@ -102,131 +119,131 @@ void PSUWindow::CreateWidgets()
 		//Create and set up labels and controls
 		m_channelLabels.push_back(Gtk::Label());
 			m_channelLabels[i].set_text(m_psu->GetPowerChannelName(i));
-			m_channelLabels[i].set_alignment(0, 0.5);
+			m_channelLabels[i].set_halign(Gtk::ALIGN_START);
 			m_channelLabels[i].override_font(Pango::FontDescription("sans bold 24"));
+			m_channelLabels[i].set_size_request(150, -1);
+		m_channelEnableButtons.push_back(Gtk::Switch());
+			m_channelEnableButtons[i].override_font(Pango::FontDescription("sans bold 16"));
+			m_channelEnableButtons[i].set_halign(Gtk::ALIGN_START);
 		m_voltageLabels.push_back(Gtk::Label());
 			m_voltageLabels[i].set_text("Voltage (nominal)");
+			m_voltageLabels[i].set_size_request(150, -1);
+		m_voltageEntries.push_back(Gtk::Entry());
+			snprintf(tmp, sizeof(tmp), "%7.3f", m_psu->GetPowerVoltageNominal(i));
+			m_voltageEntries[i].set_text(tmp);
+			m_voltageEntries[i].set_width_chars(6);
+			m_voltageEntries[i].override_font(Pango::FontDescription("monospace bold 32"));
 		m_mvoltageLabels.push_back(Gtk::Label());
 			m_mvoltageLabels[i].set_text("Voltage (measured)");
+			m_mvoltageLabels[i].set_size_request(150, -1);
 		m_voltageValueLabels.push_back(Gtk::Label());
 			m_voltageValueLabels[i].set_alignment(0, 0.5);
 			m_voltageValueLabels[i].override_font(Pango::FontDescription("monospace bold 32"));
 			m_voltageValueLabels[i].set_text("---");
 		m_currentLabels.push_back(Gtk::Label());
 			m_currentLabels[i].set_text("Current (nominal)");
+			m_currentLabels[i].set_size_request(150, -1);
+		m_currentEntries.push_back(Gtk::Entry());
+			snprintf(tmp, sizeof(tmp), "%6.3f", m_psu->GetPowerCurrentNominal(i));
+			m_currentEntries[i].set_text(tmp);
+			m_currentEntries[i].set_width_chars(6);
+			m_currentEntries[i].override_font(Pango::FontDescription("monospace bold 32"));
 		m_mcurrentLabels.push_back(Gtk::Label());
 			m_mcurrentLabels[i].set_text("Current (measured)");
-		m_mcurrentLabels.push_back(Gtk::Label());
-			m_mcurrentLabels[i].set_text("Current (measured)");
+			m_mcurrentLabels[i].set_size_request(150, -1);
 		m_currentValueLabels.push_back(Gtk::Label());
 			m_currentValueLabels[i].set_alignment(0, 0.5);
 			m_currentValueLabels[i].override_font(Pango::FontDescription("monospace bold 32"));
 			m_currentValueLabels[i].set_text("---");
+		m_channelStatusLabels.push_back(Gtk::Label());
+			m_channelStatusLabels[i].set_halign(Gtk::ALIGN_END);
+			m_channelStatusLabels[i].set_text("--");
+			m_channelStatusLabels[i].override_font(Pango::FontDescription("sans bold 24"));
 
 		m_voltboxes[i].set_size_request(500, -1);
 		m_currboxes[i].set_size_request(500, -1);
 
+		m_hseps[i].set_size_request(-1, 15);
+
 		//Pack stuff
-		m_vbox.pack_start(m_hseps[i], Gtk::PACK_SHRINK);
-		m_vbox.pack_start(m_channelLabels[i], Gtk::PACK_SHRINK);
+		m_vbox.pack_start(m_hseps[i], Gtk::PACK_EXPAND_WIDGET);
+		m_vbox.pack_start(m_channelLabelHboxes[i], Gtk::PACK_SHRINK);
+			m_channelLabelHboxes[i].pack_start(m_channelLabels[i], Gtk::PACK_SHRINK);
+			m_channelLabelHboxes[i].pack_start(m_channelEnableButtons[i], Gtk::PACK_SHRINK);
+			m_channelLabelHboxes[i].pack_start(m_channelStatusLabels[i], Gtk::PACK_EXPAND_WIDGET);
 		m_vbox.pack_start(m_chanhboxes[i], Gtk::PACK_SHRINK);
 			m_chanhboxes[i].pack_start(m_voltboxes[i]);
 				m_voltboxes[i].pack_start(m_vhboxes[i], Gtk::PACK_SHRINK);
 					m_vhboxes[i].pack_start(m_voltageLabels[i], Gtk::PACK_SHRINK);
+					m_vhboxes[i].pack_start(m_voltageEntries[i]);
 				m_voltboxes[i].pack_start(m_vmhboxes[i], Gtk::PACK_SHRINK);
 					m_vmhboxes[i].pack_start(m_mvoltageLabels[i], Gtk::PACK_SHRINK);
 					m_vmhboxes[i].pack_start(m_voltageValueLabels[i], Gtk::PACK_SHRINK);
 			m_chanhboxes[i].pack_start(m_currboxes[i]);
 				m_currboxes[i].pack_start(m_ihboxes[i], Gtk::PACK_SHRINK);
 					m_ihboxes[i].pack_start(m_currentLabels[i], Gtk::PACK_SHRINK);
+					m_ihboxes[i].pack_start(m_currentEntries[i]);
 				m_currboxes[i].pack_start(m_imhboxes[i], Gtk::PACK_SHRINK);
 					m_imhboxes[i].pack_start(m_mcurrentLabels[i], Gtk::PACK_SHRINK);
 					m_imhboxes[i].pack_start(m_currentValueLabels[i], Gtk::PACK_SHRINK);
 
+		//Event handlers
+		m_channelEnableButtons[i].property_active().signal_changed().connect(
+			sigc::bind<int>(sigc::mem_fun(*this, &PSUWindow::OnChannelEnableChanged), i));
+
+		m_voltageEntries[i].signal_changed().connect(
+			sigc::bind<int>(sigc::mem_fun(*this, &PSUWindow::OnChannelVoltageChanged), i));
+		m_currentEntries[i].signal_changed().connect(
+			sigc::bind<int>(sigc::mem_fun(*this, &PSUWindow::OnChannelCurrentChanged), i));
 	}
-	/*	m_hbox.pack_start(m_vbox, Gtk::PACK_SHRINK);
-			int labelWidth = 75;
-			m_vbox.pack_start(m_signalSourceBox, Gtk::PACK_SHRINK);
-				m_signalSourceBox.pack_start(m_signalSourceLabel, Gtk::PACK_SHRINK);
-					m_signalSourceLabel.set_text("Input");
-					m_signalSourceLabel.set_size_request(labelWidth, -1);
-				m_signalSourceBox.pack_start(m_signalSourceSelector, Gtk::PACK_SHRINK);
-					int count = m_psu->GetMeterChannelCount();
-					for(int i=0; i<count; i++)
-						m_signalSourceSelector.append(m_psu->GetMeterChannelName(i));
-					int cur_chan = m_psu->GetCurrentMeterChannel();
-					m_signalSourceSelector.set_active_text(m_psu->GetMeterChannelName(cur_chan));
-			m_vbox.pack_start(m_measurementTypeBox, Gtk::PACK_SHRINK);
-				m_measurementTypeBox.pack_start(m_measurementTypeLabel, Gtk::PACK_SHRINK);
-					m_measurementTypeLabel.set_text("Mode");
-					m_measurementTypeLabel.set_size_request(labelWidth, -1);
-				m_measurementTypeBox.pack_start(m_measurementTypeSelector, Gtk::PACK_SHRINK);
-					unsigned int type = m_psu->GetMeasurementTypes();
-					if(type & Multipsu::DC_VOLTAGE)
-						m_measurementTypeSelector.append("Voltage");
-					if(type & Multipsu::DC_RMS_AMPLITUDE)
-						m_measurementTypeSelector.append("RMS (DC couple)");
-					if(type & Multipsu::AC_RMS_AMPLITUDE)
-						m_measurementTypeSelector.append("RMS (AC couple)");
-					if(type & Multipsu::FREQUENCY)
-						m_measurementTypeSelector.append("Frequency");
-					switch(m_psu->GetMeterMode())
-					{
-						case Multipsu::DC_VOLTAGE:
-							m_measurementTypeSelector.set_active_text("Voltage");
-							break;
-
-						case Multipsu::DC_RMS_AMPLITUDE:
-							m_measurementTypeSelector.set_active_text("RMS (DC couple)");
-							break;
-
-						case Multipsu::AC_RMS_AMPLITUDE:
-							m_measurementTypeSelector.set_active_text("RMS (AC couple)");
-							break;
-
-						case Multipsu::FREQUENCY:
-							m_measurementTypeSelector.set_active_text("Frequency");
-							break;
-					}
-			m_vbox.pack_start(m_autoRangeBox, Gtk::PACK_SHRINK);
-				m_autoRangeBox.pack_start(m_autoRangeLabel, Gtk::PACK_SHRINK);
-					m_autoRangeLabel.set_text("Auto-range");
-					m_autoRangeLabel.set_size_request(labelWidth, -1);
-				m_autoRangeBox.pack_start(m_autoRangeSelector, Gtk::PACK_SHRINK);
-					m_autoRangeSelector.set_active(m_psu->GetMeterAutoRange());
-		m_hbox.pack_start(m_measurementBox, Gtk::PACK_EXPAND_WIDGET);
-			m_measurementBox.pack_start(m_voltageLabel, Gtk::PACK_EXPAND_WIDGET);
-				m_voltageLabel.override_font(Pango::FontDescription("monospace bold 32"));
-				m_voltageLabel.set_alignment(0, 0.5);
-				m_voltageLabel.set_size_request(500, -1);
-			m_measurementBox.pack_start(m_vppLabel, Gtk::PACK_EXPAND_WIDGET);
-				m_vppLabel.override_font(Pango::FontDescription("monospace bold 32"));
-				m_vppLabel.set_alignment(0, 0.5);
-				m_vppLabel.set_size_request(500, -1);
-			m_measurementBox.pack_start(m_frequencyLabel, Gtk::PACK_EXPAND_WIDGET);
-				m_frequencyLabel.override_font(Pango::FontDescription("monospace bold 32"));
-				m_frequencyLabel.set_alignment(0, 0.5);
-				m_frequencyLabel.set_size_request(500, -1);
 
 	//Event handlers
-	m_signalSourceSelector.signal_changed().connect(sigc::mem_fun(*this, &PSUWindow::OnSignalSourceChanged));
-	m_measurementTypeSelector.signal_changed().connect(sigc::mem_fun(*this, &PSUWindow::OnMeasurementTypeChanged));
-	m_autoRangeSelector.signal_toggled().connect(sigc::mem_fun(*this, &PSUWindow::OnAutoRangeChanged));
-
-	//TODO: autorange checkbox
-	*/
+	m_masterEnableButton.property_active().signal_changed().connect(
+		sigc::mem_fun(*this, &PSUWindow::OnMasterEnableChanged));
+	m_commitButton.signal_clicked().connect(
+		sigc::mem_fun(*this, &PSUWindow::OnCommitChanges));
 
 	show_all();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Message handlers
-/*
-void PSUWindow::OnAutoRangeChanged()
+
+void PSUWindow::OnMasterEnableChanged()
 {
-	m_psu->SetMeterAutoRange(m_autoRangeSelector.get_active());
+	m_psu->SetMasterPowerEnable(m_masterEnableButton.get_active());
 }
-*/
+
+void PSUWindow::OnCommitChanges()
+{
+	for(int i=0; i<m_psu->GetPowerChannelCount(); i++)
+	{
+		m_psu->SetPowerVoltage(i, atof(m_voltageEntries[i].get_text().c_str()));
+		m_psu->SetPowerCurrent(i, atof(m_currentEntries[i].get_text().c_str()));
+
+		//clear to white
+		m_voltageEntries[i].override_background_color(Gdk::RGBA("#ffffff"));
+		m_currentEntries[i].override_background_color(Gdk::RGBA("#ffffff"));
+	}
+}
+
+void PSUWindow::OnChannelVoltageChanged(int i)
+{
+	//make yellow to indicate uncommitted changes
+	m_voltageEntries[i].override_background_color(Gdk::RGBA("#ffffa0"));
+}
+
+void PSUWindow::OnChannelCurrentChanged(int i)
+{
+	//make yellow to indicate uncommitted changes
+	m_currentEntries[i].override_background_color(Gdk::RGBA("#ffffa0"));
+}
+
+void PSUWindow::OnChannelEnableChanged(int i)
+{
+	m_psu->SetPowerChannelActive(i, m_channelEnableButtons[i].get_active());
+}
+
 void PSUWindow::on_show()
 {
 	Gtk::Window::on_show();
@@ -242,9 +259,13 @@ bool PSUWindow::OnTimer(int /*timer*/)
 {
 	try
 	{
+		//Master enable
+		m_masterEnableButton.set_active(m_psu->GetMasterPowerEnable());
+
 		char tmp[128];
 		for(int i=0; i<m_psu->GetPowerChannelCount(); i++)
 		{
+			//Channel voltage
 			double v = m_psu->GetPowerVoltageActual(i);
 			if(fabs(v) < 1)
 				snprintf(tmp, sizeof(tmp), "%5.1f   mV", v * 1000);
@@ -252,12 +273,36 @@ bool PSUWindow::OnTimer(int /*timer*/)
 				snprintf(tmp, sizeof(tmp), "%7.3f  V", v);
 			m_voltageValueLabels[i].set_text(tmp);
 
+			//Channel current
 			double c = m_psu->GetPowerCurrentActual(i);
 			if(i == 0)//fabs(c) < 1)
 				snprintf(tmp, sizeof(tmp), "%4.1f  mA", c * 1000);
 			else
 				snprintf(tmp, sizeof(tmp), "%6.3f A", c);
 			m_currentValueLabels[i].set_text(tmp);
+
+			//Channel enable
+			bool enabled = m_psu->GetPowerChannelActive(i);
+			m_channelEnableButtons[i].set_active(enabled);
+
+			//Channel status
+			if(!enabled)
+			{
+				m_channelStatusLabels[i].set_label("--");
+				m_channelStatusLabels[i].override_color(Gdk::RGBA("#000000"));
+			}
+
+			else if(m_psu->IsPowerConstantCurrent(i))
+			{
+				m_channelStatusLabels[i].set_label("CC");
+				m_channelStatusLabels[i].override_color(Gdk::RGBA("#ff0000"));
+			}
+
+			else
+			{
+				m_channelStatusLabels[i].set_label("CV");
+				m_channelStatusLabels[i].override_color(Gdk::RGBA("#00a000"));
+			}
 		}
 	}
 

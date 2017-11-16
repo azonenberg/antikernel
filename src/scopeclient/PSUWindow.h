@@ -51,18 +51,27 @@ protected:
 
 	//Widgets
 	Gtk::VBox m_vbox;
+		Gtk::HBox m_masterEnableHbox;
+			Gtk::Label m_masterEnableLabel;
+			Gtk::Switch m_masterEnableButton;
+			Gtk::Button m_commitButton;
 		std::vector<Gtk::HSeparator> m_hseps;
-		std::vector<Gtk::Label> m_channelLabels;
+		std::vector<Gtk::HBox> m_channelLabelHboxes;
+			std::vector<Gtk::Label> m_channelLabels;
+			std::vector<Gtk::Switch> m_channelEnableButtons;
+			std::vector<Gtk::Label> m_channelStatusLabels;
 		std::vector<Gtk::HBox> m_chanhboxes;
 			std::vector<Gtk::VBox> m_voltboxes;
 				std::vector<Gtk::HBox> m_vhboxes;
 					std::vector<Gtk::Label> m_voltageLabels;
+					std::vector<Gtk::Entry> m_voltageEntries;
 				std::vector<Gtk::HBox> m_vmhboxes;
 					std::vector<Gtk::Label> m_mvoltageLabels;
 					std::vector<Gtk::Label> m_voltageValueLabels;
 			std::vector<Gtk::VBox> m_currboxes;
 				std::vector<Gtk::HBox> m_ihboxes;
 					std::vector<Gtk::Label> m_currentLabels;
+					std::vector<Gtk::Entry> m_currentEntries;
 				std::vector<Gtk::HBox> m_imhboxes;
 					std::vector<Gtk::Label> m_mcurrentLabels;
 					std::vector<Gtk::Label> m_currentValueLabels;
@@ -74,9 +83,11 @@ protected:
 	bool OnTimer(int timer);
 
 	//UI handlers
-	//void OnSignalSourceChanged();
-	//void OnMeasurementTypeChanged();
-	//void OnAutoRangeChanged();
+	void OnMasterEnableChanged();
+	void OnChannelEnableChanged(int i);
+	void OnCommitChanges();
+	void OnChannelVoltageChanged(int i);
+	void OnChannelCurrentChanged(int i);
 
 	virtual void on_show();
 	virtual void on_hide();
