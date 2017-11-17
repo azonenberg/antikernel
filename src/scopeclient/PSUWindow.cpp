@@ -295,7 +295,7 @@ bool PSUWindow::OnTimer(int /*timer*/)
 
 			//Channel current
 			double c = m_psu->GetPowerCurrentActual(i);
-			if(i == 0)//fabs(c) < 1)
+			if(fabs(c) < 1)
 				snprintf(tmp, sizeof(tmp), "%4.1f  mA", c * 1000);
 			else
 				snprintf(tmp, sizeof(tmp), "%6.3f A", c);
