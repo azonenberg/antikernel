@@ -681,13 +681,16 @@ module TragicLaserPHY(
 			tx_mlt3_state	<= tx_mlt3_state + 1'h1;
 		end
 
+	end
+
+	//do this combinatorially to save a cycle of latency
+	always @(*) begin
 		case(tx_mlt3_state)
 			0:	tx_symbol	<= TX_SYMBOL_0;
 			1:	tx_symbol	<= TX_SYMBOL_N1;
 			2:	tx_symbol	<= TX_SYMBOL_0;
 			3:	tx_symbol	<= TX_SYMBOL_1;
 		endcase
-
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -817,44 +820,174 @@ module TragicLaserPHY(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Find MLT-3 state transitions
 
+	//Bitslip for debug to phase align us to the outgoing signal
+	reg[15:0]	rx_p_state_ff;
+	wire[15:0]	rx_p_state_bitslip = { rx_p_state_ff[7:0], rx_p_state[15:8] };
+	always @(posedge clk_125mhz) begin
+		rx_p_state_ff	<= rx_p_state;
+	end
+
 	//TODO: examine the actual state ordering (-1 to +1 should never happen)
 	//TODO: sanity checking by using both _P and _N legs of the RX
-
-	reg[1:0]	num_state_changes;	//normally 0 for no change or 1 for a change
-									//2 is occasionally possible, though, if the remote side has a slightly faster
-									//clock than us!
 
 	reg[1:0]	last_mlt3_state	= 0;
 
 	//Find changes
 	reg[3:0]	mlt3_state_changes = 0;
 	always @(*) begin
-		mlt3_state_changes[3]	<= (last_mlt3_state   != rx_p_state[15:12]);
-		mlt3_state_changes[2]	<= (rx_p_state[15:12] != rx_p_state[11:8]);
-		mlt3_state_changes[1]	<= (rx_p_state[11:8]  != rx_p_state[7:4]);
-		mlt3_state_changes[0]	<= (rx_p_state[7:4]   != rx_p_state[3:0]);
+		mlt3_state_changes[3]	<= (last_mlt3_state   != rx_p_state_bitslip[15:12]);
+		mlt3_state_changes[2]	<= (rx_p_state_bitslip[15:12] != rx_p_state_bitslip[11:8]);
+		mlt3_state_changes[1]	<= (rx_p_state_bitslip[11:8]  != rx_p_state_bitslip[7:4]);
+		mlt3_state_changes[0]	<= (rx_p_state_bitslip[7:4]   != rx_p_state_bitslip[3:0]);
 	end
 
+	always @(posedge clk_125mhz) begin
+		last_mlt3_state	<= rx_p_state_bitslip[1:0];
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// We have state transitions, now convert this to a stream of bits
+
+	reg[1:0]	rx_bits					= 0;
+	reg[1:0]	rx_bits_valid			= 0;
+	reg[7:0]	time_since_last_edge 	= 0;	//in sub-clocks
 
 	always @(posedge clk_125mhz) begin
-		last_mlt3_state	<= rx_p_state[3:0];
 
-		num_state_changes	<=	mlt3_state_changes[0] +
-								mlt3_state_changes[1] +
-								mlt3_state_changes[2] +
-								mlt3_state_changes[3];
+		//Loop over the edge list and process potential edges
+		//May be 1 or 2 due to eye narrowing etc, but should never be >2
+		rx_bits_valid	= 0;
+		rx_bits			= 0;
+		for(i = 0; i < 4; i = i+1) begin
+
+			//If we had an edge, make a note of that.
+			if(mlt3_state_changes[3-i]) begin
+				time_since_last_edge	= 0;
+				rx_bits					= {rx_bits[0], 1'b1};
+				rx_bits_valid			= rx_bits_valid + 1'h1;
+			end
+
+			//Nope, increment timer
+			else begin
+				time_since_last_edge	= time_since_last_edge + 1'h1;
+
+				//If last edge was >= 5 cycles ago, emit a "0" bit
+				if(time_since_last_edge >= 5) begin
+					rx_bits					= {rx_bits[0], 1'b0};
+					rx_bits_valid			= rx_bits_valid + 1'h1;
+					time_since_last_edge	= time_since_last_edge - 8'h4;	//round to 1 clock
+				end
+
+			end
+
+		end
+
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// We have an irregular stream of bits, turn this back into 5-bit scrambled code groups
+
+	reg[2:0]	rx_5b_buf_valid			= 0;
+	reg[5:0]	rx_5b_buf				= 0;
+
+	reg			rx_5b_valid				= 0;
+	reg[4:0]	rx_5b_code				= 0;
+
+	always @(posedge clk_125mhz) begin
+
+		rx_5b_valid			<= 0;
+
+		//Push new stuff in
+		if(rx_bits_valid == 1) begin
+			rx_5b_buf		= {rx_5b_buf[4:0], rx_bits[0]};
+			rx_5b_buf_valid	= rx_5b_buf_valid + 1'h1;
+		end
+
+		else if(rx_bits_valid == 2) begin
+			rx_5b_buf		= {rx_5b_buf[3:0], rx_bits[1:0]};
+			rx_5b_buf_valid	= rx_5b_buf_valid + 2'h2;
+		end
+
+		//Pop words out once we have five valid bits
+		if(rx_5b_buf_valid == 5) begin
+			rx_5b_code		<= rx_5b_buf[4:0];
+			rx_5b_valid		<= 1;
+			rx_5b_buf_valid	= 0;
+			rx_5b_buf		= 0;
+		end
+		else if(rx_5b_buf_valid == 6) begin
+			rx_5b_code		<= rx_5b_buf[5:1];
+			rx_5b_valid		<= 1;
+			rx_5b_buf_valid	= 1;
+			rx_5b_buf[5:1]	= 0;
+		end
+
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// RX LFSR
+
+	reg[10:0]	rx_lfsr = 1;
+
+	reg[4:0]	rx_lfsr_dout;
+
+	reg			rx_lfsr_synced		= 0;
+	reg[3:0]	rx_lfsr_wordcount	= 0;
+
+	reg[10:0]	rx_last_11_bits		= 0;
+	reg[15:0]	rx_last_16_bits		= 0;
+
+	always @(posedge clk_125mhz) begin
+
+		if(rx_5b_valid) begin
+
+			//FIFO of the last 11 bits to come off the wire
+			rx_last_11_bits			<= {rx_last_11_bits[5:0], rx_5b_code[4:0]};
+
+			//FIFO of the last 16 bits to come off the wire (DEBUG ONLY)
+			rx_last_16_bits			<= {rx_last_16_bits[10:0], rx_5b_code[4:0]};
+
+			//Every time we get a new data word shift the LFSR by 5 bits and save them as we go.
+			//First bit on the wire is [4]
+			for(i=0; i<5; i=i+1) begin
+				rx_lfsr_dout[4-i]	= rx_lfsr[0];
+				rx_lfsr				= { rx_lfsr[9:0], rx_lfsr[8] ^ rx_lfsr[10] };
+			end
+
+			//If we are NOT synced, try using the complement of the last few words as the LFSR sequence.
+			if(!rx_lfsr_synced) begin
+
+				rx_lfsr_wordcount		<= rx_lfsr_wordcount + 1'h1;
+
+				//Every 16th message word (80 bits) re-sync if we didn't lock.
+				//(16, 11, and 5 are relatively prime so we should align eventually)
+				if(rx_lfsr_wordcount == 0)
+					rx_lfsr				= ~rx_last_11_bits;
+
+			end
+
+		end
+
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Debug GPIOs
 
-	reg[1:0]	tx_p_state_ff = 0;
+	reg[1:0]	tx_p_state_ff  = 0;
 	reg[1:0]	tx_p_state_ff1 = 0;
 	reg[1:0]	tx_p_state_ff2 = 0;
 	reg[1:0]	tx_p_state_ff3 = 0;
 	reg[1:0]	tx_p_state_ff4 = 0;
 
-	reg[15:0]	rx_p_state_ff;
+	reg			tx_mlt3_din_ff	= 0;
+	reg			tx_mlt3_din_ff2	= 0;
+	reg			tx_mlt3_din_ff3	= 0;
+	reg			tx_mlt3_din_ff4	= 0;
+	reg			tx_mlt3_din_ff5	= 0;
+	reg			tx_mlt3_din_ff6	= 0;
+	reg			tx_mlt3_din_ff7	= 0;
+	reg			tx_mlt3_din_ff8	= 0;
+	reg			tx_mlt3_din_ff9	= 0;
 
 	always @(posedge clk_125mhz) begin
 		tx_p_state_ff	<= tx_p_state;
@@ -862,14 +995,34 @@ module TragicLaserPHY(
 		tx_p_state_ff3	<= tx_p_state_ff2;
 		tx_p_state_ff4	<= tx_p_state_ff3;
 
-		rx_p_state_ff	<= rx_p_state;
+		tx_mlt3_din_ff	<= tx_mlt3_din;
+		tx_mlt3_din_ff2	<= tx_mlt3_din_ff;
+		tx_mlt3_din_ff3	<= tx_mlt3_din_ff2;
+		tx_mlt3_din_ff4	<= tx_mlt3_din_ff3;
+		tx_mlt3_din_ff5	<= tx_mlt3_din_ff4;
+		tx_mlt3_din_ff6	<= tx_mlt3_din_ff5;
+		tx_mlt3_din_ff7	<= tx_mlt3_din_ff6;
+		tx_mlt3_din_ff8	<= tx_mlt3_din_ff7;
+		tx_mlt3_din_ff9	<= tx_mlt3_din_ff8;
 	end
-
-	wire[15:0]	rx_p_state_bitslip = { rx_p_state_ff[7:0], rx_p_state[15:8] };
 
 	wire	la_ready;
 	wire	trig_out;
 	wire	capture_done;
+
+	/*
+		0	tx_unscrambled_bit
+		1	tx_mlt3_din
+		2	tx_mlt3_state				tx_symbol					tx_mlt3_din_ff
+		3	tx_d_100m_p					tx_p_state					tx_mlt3_din_ff2
+		4	tx_p_state_ff											tx_mlt3_din_ff3
+		5	tx_p_state_ff2											tx_mlt3_din_ff4
+		6	tx_p_state_ff3											tx_mlt3_din_ff5
+		7	tx_p_state_ff4				rx_p_state_bitslip			tx_mlt3_din_ff6
+		8	rx_bits
+		9	rx_5b_buf					rx_5b_buf_valid
+		10	rx_5b_code					rx_5b_valid
+	 */
 
 	RedTinUartWrapper #(
 		.WIDTH(128),
@@ -883,31 +1036,50 @@ module TragicLaserPHY(
 				32'd8000,		//period of internal clock, in ps
 				32'd1024,		//Capture depth (TODO auto-patch this?)
 				32'd128,		//Capture width (TODO auto-patch this?)
-				{ "tx_p_state",			8'h0, 8'h2,  8'h0 },
-				{ "tx_p_state_ff4",		8'h0, 8'h2,  8'h0 },
-				{ "rx_p_state_bitslip", 8'h0, 8'h10,  8'h0 },
-				{ "rx_p_state",			8'h0, 8'h10,  8'h0 },
-				//{ "tx_n_state",			8'h0, 8'h2,  8'h0 },
-				//{ "rx_n_state",			8'h0, 8'h10,  8'h0 },
 				{ "tx_mlt3_din",		8'h0, 8'h1,  8'h0 },
-				{ "num_state_changes",	8'h0, 8'h2,  8'h0 },
-				{ "last_mlt3_state",	8'h0, 8'h2,  8'h0 }
+				{ "tx_mlt3_din_ff6",	8'h0, 8'h1,  8'h0 },
+				{ "tx_p_state_ff4",		8'h0, 8'h2,  8'h0 },
+				{ "rx_p_state_bitslip",	8'h0, 8'h10,  8'h0 },
+				{ "mlt3_state_changes",	8'h0, 8'h4,  8'h0 },
+				{ "rx_bits",			8'h0, 8'h2,  8'h0 },
+				{ "rx_bits_valid",		8'h0, 8'h2,  8'h0 },
+				{ "time_since_last_edge",	8'h0, 8'h8,  8'h0 },
+				{ "rx_5b_buf_valid",	8'h0, 8'h3,  8'h0 },
+				{ "rx_5b_buf",			8'h0, 8'h6,  8'h0 },
+				{ "rx_5b_valid",		8'h0, 8'h1,  8'h0 },
+				{ "rx_5b_code",			8'h0, 8'h5,  8'h0 },
+				{ "~rx_5b_code",		8'h0, 8'h5,  8'h0 },
+				{ "rx_lfsr_dout",		8'h0, 8'h5,  8'h0 },
+				{ "rx_lfsr_synced",		8'h0, 8'h1,  8'h0 },
+				{ "rx_lfsr_wordcount",  8'h0, 8'h4,  8'h0 },
+				{ "rx_last_11_bits", 	8'h0, 8'hb,  8'h0 },
+				{ "rx_last_16_bits", 	8'h0, 8'h10,  8'h0 }
 			}
 		)
 	) analyzer (
 		.clk(clk_125mhz),
 		.capture_clk(clk_125mhz),
 		.din({
-				tx_p_state,			//2
+				tx_mlt3_din,		//1
+				tx_mlt3_din_ff6,	//1
 				tx_p_state_ff4,		//2
 				rx_p_state_bitslip,	//16
-				rx_p_state,			//16
-				//tx_n_state,			//2
-				//rx_n_state,			//16
-				tx_mlt3_din,		//1
-				num_state_changes,	//2
-				last_mlt3_state,	//2
-				87'h0				//padding
+				mlt3_state_changes,	//4
+				rx_bits,			//2
+				rx_bits_valid,		//2
+				time_since_last_edge,	//8
+				rx_5b_buf_valid,	//3
+				rx_5b_buf,			//6
+				rx_5b_valid,		//1
+				rx_5b_code,			//5
+				~rx_5b_code,		//5
+				rx_lfsr_dout,		//5
+				rx_lfsr_synced,		//1
+				rx_lfsr_wordcount,	//4
+				rx_last_11_bits,	//11
+				rx_last_16_bits,	//16
+
+				35'h0				//padding
 			}),
 		.uart_rx(gpio[9]),
 		.uart_tx(gpio[7]),
