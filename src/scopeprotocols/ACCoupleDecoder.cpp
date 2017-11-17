@@ -27,36 +27,100 @@
 *                                                                                                                      *
 ***********************************************************************************************************************/
 
-/**
-	@file
-	@author Andrew D. Zonenberg
-	@brief Main library include file
- */
-
-#ifndef scopeprotocols_h
-#define scopeprotocols_h
-
 #include "../scopehal/scopehal.h"
-#include "../scopehal/ProtocolDecoder.h"
-//#include "../scopehal/StateDecoder.h"
-
 #include "ACCoupleDecoder.h"
-#include "DifferenceDecoder.h"
-#include "EthernetAutonegotiationDecoder.h"
-#include "EthernetProtocolDecoder.h"
-#include "Ethernet10BaseTDecoder.h"
-#include "Ethernet100BaseTDecoder.h"
-#include "EyeDecoder.h"
-#include "NRZDecoder.h"
-#include "UARTDecoder.h"
-/*
-#include "DigitalToAnalogDecoder.h"
-#include "DMADecoder.h"
-#include "RPCDecoder.h"
-#include "RPCNameserverDecoder.h"
-#include "SchmittTriggerDecoder.h"
-#include "SPIDecoder.h"
-*/
-void ScopeProtocolStaticInit();
+#include "../scopehal/AnalogRenderer.h"
 
-#endif
+using namespace std;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Construction / destruction
+
+ACCoupleDecoder::ACCoupleDecoder(
+	std::string hwname, std::string color)
+	: ProtocolDecoder(hwname, OscilloscopeChannel::CHANNEL_TYPE_ANALOG, color)
+{
+	//Set up channels
+	m_signalNames.push_back("din");
+	m_channels.push_back(NULL);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Factory methods
+
+ChannelRenderer* ACCoupleDecoder::CreateRenderer()
+{
+	return new AnalogRenderer(this);
+}
+
+bool ACCoupleDecoder::ValidateChannel(size_t i, OscilloscopeChannel* channel)
+{
+	if( (i == 0) && (channel->GetType() == OscilloscopeChannel::CHANNEL_TYPE_ANALOG) )
+		return true;
+	return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Accessors
+
+string ACCoupleDecoder::GetProtocolName()
+{
+	return "AC Couple";
+}
+
+bool ACCoupleDecoder::IsOverlay()
+{
+	//we create a new analog channel
+	return false;
+}
+
+bool ACCoupleDecoder::NeedsConfig()
+{
+	//we auto-select the midpoint as our threshold
+	return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Actual decoder logic
+
+void ACCoupleDecoder::Refresh()
+{
+	//Get the input data
+	if(m_channels[0] == NULL)
+	{
+		SetData(NULL);
+		return;
+	}
+	AnalogCapture* din = dynamic_cast<AnalogCapture*>(m_channels[0]->GetData());
+
+	//We need meaningful data
+	if(din->GetDepth() == 0)
+	{
+		SetData(NULL);
+		return;
+	}
+
+	//Find the average of our samples (assume data is DC balanced)
+	double sum = 0;
+	int64_t count = 0;
+	for(auto sample : *din)
+	{
+		sum += sample;
+		count ++;
+	}
+	double offset = sum / count;
+	LogDebug("ACCoupleDecoder: DC offset is %.3f\n", offset);
+
+	//Subtract all of our samples
+	AnalogCapture* cap = new AnalogCapture;
+	for(size_t i=0; i<din->m_samples.size(); i++)
+	{
+		AnalogSample sin = din->m_samples[i];
+		cap->m_samples.push_back(AnalogSample(sin.m_offset, sin.m_duration, sin.m_sample - offset));
+	}
+	SetData(cap);
+
+	//Copy our time scales from the input
+	m_timescale = m_channels[0]->m_timescale;
+	cap->m_timescale = din->m_timescale;
+}
