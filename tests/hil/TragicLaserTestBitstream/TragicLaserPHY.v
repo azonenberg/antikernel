@@ -885,7 +885,8 @@ module TragicLaserPHY(
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// We have an irregular stream of bits, turn this back into 5-bit scrambled code groups
+	// We have an irregular stream of bits, turn this back into 5-bit scrambled code groups.
+	// (note that, at this time, we're probably not synced to a 4b/5b boundary!)
 
 	reg[2:0]	rx_5b_buf_valid			= 0;
 	reg[5:0]	rx_5b_buf				= 0;
@@ -925,50 +926,95 @@ module TragicLaserPHY(
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// RX LFSR
+	// RX descrambler
 
 	reg[10:0]	rx_lfsr = 1;
 
-	reg[4:0]	rx_lfsr_dout;
-
 	reg			rx_lfsr_synced		= 0;
-	reg[3:0]	rx_lfsr_wordcount	= 0;
+	reg[4:0]	rx_lfsr_wordcount	= 0;
 
 	reg[10:0]	rx_last_11_bits		= 0;
-	reg[15:0]	rx_last_16_bits		= 0;
 
+	//Number of consecutive idle characters we've seen
+	reg[3:0]	rx_idle_runlen		= 0;
+
+	//Time since we had a run of 9 idles
+	reg[15:0]	rx_last_lock		= 0;
+
+	//Unscramble the incoming data. Still not word aligned yet.
+	reg[4:0]	rx_5b_code_ff		= 0;
+	reg			rx_5b_valid_ff		= 0;
+	wire[4:0]	rx_5b_code_unscrambled	= rx_5b_code_ff ^ rx_lfsr[4:0];
+	always @(posedge clk_125mhz) begin
+		rx_5b_valid_ff	<= rx_5b_valid;
+		if(rx_5b_valid)
+			rx_5b_code_ff	<= rx_5b_code;
+	end
+
+	//Advance the LFSR and check for lock
 	always @(posedge clk_125mhz) begin
 
 		if(rx_5b_valid) begin
 
+			//Check for idle characters (0x1f descrambled).
+			if(rx_5b_code_unscrambled == 5'h1f)
+				rx_idle_runlen		<= rx_idle_runlen + 1'h1;
+			else begin
+				rx_last_lock		<= rx_last_lock + 1'h1;
+				rx_idle_runlen		<= 0;
+			end
+
 			//FIFO of the last 11 bits to come off the wire
 			rx_last_11_bits			<= {rx_last_11_bits[5:0], rx_5b_code[4:0]};
 
-			//FIFO of the last 16 bits to come off the wire (DEBUG ONLY)
-			rx_last_16_bits			<= {rx_last_16_bits[10:0], rx_5b_code[4:0]};
-
-			//Every time we get a new data word shift the LFSR by 5 bits and save them as we go.
-			//First bit on the wire is [4]
-			for(i=0; i<5; i=i+1) begin
-				rx_lfsr_dout[4-i]	= rx_lfsr[0];
+			//Every time we get a new data word shift the LFSR by 5 bits
+			for(i=0; i<5; i=i+1)
 				rx_lfsr				= { rx_lfsr[9:0], rx_lfsr[8] ^ rx_lfsr[10] };
+
+			//9 idles in a row (45 bits)? We're locked to the LFSR
+			//This is enough to allow lock if we tried locking at the start of a minimum IPG.
+			if(rx_idle_runlen == 4'h9) begin
+				rx_lfsr_synced	<= 1;
+				rx_last_lock	<= 0;
+			end
+
+			//Four MTUs passed without an IPG? Definitely lost lock!
+			if(rx_last_lock > 16'd12000) begin
+				rx_lfsr_synced			<= 0;
+				rx_lfsr_wordcount		<= 0;
 			end
 
 			//If we are NOT synced, try using the complement of the last few words as the LFSR sequence.
 			if(!rx_lfsr_synced) begin
 
+				//Update count
 				rx_lfsr_wordcount		<= rx_lfsr_wordcount + 1'h1;
 
-				//Every 16th message word (80 bits) re-sync if we didn't lock.
-				//(16, 11, and 5 are relatively prime so we should align eventually)
-				if(rx_lfsr_wordcount == 0)
+				//Every 32ndth message word (160 bits), try re-syncing if we're not locked yet
+				//(32, 11, and 5 are relatively prime so we should align eventually)
+				if(rx_lfsr_wordcount == 0) begin
+					rx_idle_runlen		<= 0;
+					rx_last_lock		<= 0;
+
+					//Load the old code value
 					rx_lfsr				= ~rx_last_11_bits;
+
+					//Iterate 5 times to calculate the state as of the next 5-bit block
+					for(i=0; i<5; i=i+1)
+						rx_lfsr			= { rx_lfsr[9:0], rx_lfsr[8] ^ rx_lfsr[10] };
+
+				end
 
 			end
 
 		end
 
 	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// RX codeword alignment
+
+	//Default to
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Debug GPIOs
@@ -1036,50 +1082,20 @@ module TragicLaserPHY(
 				32'd8000,		//period of internal clock, in ps
 				32'd1024,		//Capture depth (TODO auto-patch this?)
 				32'd128,		//Capture width (TODO auto-patch this?)
-				{ "tx_mlt3_din",		8'h0, 8'h1,  8'h0 },
-				{ "tx_mlt3_din_ff6",	8'h0, 8'h1,  8'h0 },
-				{ "tx_p_state_ff4",		8'h0, 8'h2,  8'h0 },
-				{ "rx_p_state_bitslip",	8'h0, 8'h10,  8'h0 },
-				{ "mlt3_state_changes",	8'h0, 8'h4,  8'h0 },
-				{ "rx_bits",			8'h0, 8'h2,  8'h0 },
-				{ "rx_bits_valid",		8'h0, 8'h2,  8'h0 },
-				{ "time_since_last_edge",	8'h0, 8'h8,  8'h0 },
-				{ "rx_5b_buf_valid",	8'h0, 8'h3,  8'h0 },
-				{ "rx_5b_buf",			8'h0, 8'h6,  8'h0 },
-				{ "rx_5b_valid",		8'h0, 8'h1,  8'h0 },
-				{ "rx_5b_code",			8'h0, 8'h5,  8'h0 },
-				{ "~rx_5b_code",		8'h0, 8'h5,  8'h0 },
-				{ "rx_lfsr_dout",		8'h0, 8'h5,  8'h0 },
-				{ "rx_lfsr_synced",		8'h0, 8'h1,  8'h0 },
-				{ "rx_lfsr_wordcount",  8'h0, 8'h4,  8'h0 },
-				{ "rx_last_11_bits", 	8'h0, 8'hb,  8'h0 },
-				{ "rx_last_16_bits", 	8'h0, 8'h10,  8'h0 }
+				{ "rx_lfsr_synced", 	8'h0, 8'h1,  8'h0 },
+				{ "rx_5b_valid_ff", 	8'h0, 8'h1,  8'h0 },
+				{ "rx_5b_code_unscrambled", 8'h0, 8'h5,  8'h0 }
 			}
 		)
 	) analyzer (
 		.clk(clk_125mhz),
 		.capture_clk(clk_125mhz),
 		.din({
-				tx_mlt3_din,		//1
-				tx_mlt3_din_ff6,	//1
-				tx_p_state_ff4,		//2
-				rx_p_state_bitslip,	//16
-				mlt3_state_changes,	//4
-				rx_bits,			//2
-				rx_bits_valid,		//2
-				time_since_last_edge,	//8
-				rx_5b_buf_valid,	//3
-				rx_5b_buf,			//6
-				rx_5b_valid,		//1
-				rx_5b_code,			//5
-				~rx_5b_code,		//5
-				rx_lfsr_dout,		//5
-				rx_lfsr_synced,		//1
-				rx_lfsr_wordcount,	//4
-				rx_last_11_bits,	//11
-				rx_last_16_bits,	//16
+				rx_lfsr_synced,			//1
+				rx_5b_valid_ff,			//1
+				rx_5b_code_unscrambled,	//5
 
-				35'h0				//padding
+				121'h0				//padding
 			}),
 		.uart_rx(gpio[9]),
 		.uart_tx(gpio[7]),
