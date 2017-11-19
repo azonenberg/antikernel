@@ -49,16 +49,21 @@
 		tx_p_a[1:0]		LVCMOS33		High side of 10M/autonegotiation TX H-bridge.
 										Connect both bits together for increase drive current.
 										Connect a 16 ohm resistor from tx_p_a to TX_P input of magnetics
+										[0] should be 2 mA drive, slow slew (pre-emphasis)
+										[1] should be 24 mA drive, fast slew (main driver)
 
 		tx_n_a[1:0]		LVCMOS33		Low side of 10M/autonegotiation TX H-bridge.
 										Connect both bits together for increase drive current.
 										Connect a 16 ohm resistor from tx_n_a to TX_N input of magnetics
+										[0] should be 2 mA drive, slow slew (pre-emphasis)
+										[1] should be 24 mA drive, fast slew (main driver)
 
 		tx_p_b			LVCMOS33		High side of 100M TX H-bridge.
-										Connect a 115 ohm resistor from tx_p_b to TX_P input of magnetics
+						24 mA / fast	Connect a 115 ohm resistor from tx_p_b to TX_P input of magnetics
+
 
 		tx_n_b			LVCMOS33		Low side of 100M TX H-bridge.
-										Connect a 115 ohm resistor from tx_n_b to TX_N input of magnetics
+						24 mA / fast	Connect a 115 ohm resistor from tx_n_b to TX_N input of magnetics
  */
 module TragicLaserPHY(
 	//Clocks
@@ -109,271 +114,7 @@ module TragicLaserPHY(
 	assign			mii_tx_clk	= clk_25mhz;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Differential input buffers
-
-	wire	rx_p_hi;
-	wire	rx_p_lo;
-
-	wire	rx_n_hi;
-	wire	rx_n_lo;
-
-	IBUFDS #(
-		.DIFF_TERM("FALSE"),
-		.IOSTANDARD("LVDS_33")
-	) ibuf_rx_p_hi(
-		.I(rx_p_signal_hi),
-		.IB(rx_p_vref_hi),
-		.O(rx_p_hi)
-	);
-
-	IBUFDS #(
-		.DIFF_TERM("FALSE"),
-		.IOSTANDARD("LVDS_33")
-	) ibuf_rx_p_lo(
-		.I(rx_p_signal_lo),
-		.IB(rx_p_vref_lo),
-		.O(rx_p_lo)
-	);
-
-	/*
-	IBUFDS #(
-		.DIFF_TERM("FALSE"),
-		.IOSTANDARD("LVDS_33")
-	) ibuf_rx_n_hi(
-		.I(rx_n_signal_hi),
-		.IB(rx_n_vref_hi),
-		.O(rx_n_hi)
-	);
-
-	IBUFDS #(
-		.DIFF_TERM("FALSE"),
-		.IOSTANDARD("LVDS_33")
-	) ibuf_rx_n_lo(
-		.I(rx_n_signal_lo),
-		.IB(rx_n_vref_lo),
-		.O(rx_n_lo)
-	);
-	*/
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 4x input oversampling
-
-	wire[3:0]	rx_p_hi_arr;
-	ISERDES2 #(
-		.DATA_RATE("SDR"),
-		.DATA_WIDTH(4),
-		.BITSLIP_ENABLE("FALSE"),
-		.SERDES_MODE("NONE"),
-		.INTERFACE_TYPE("NETWORKING")
-	) rx_p_hi_serdes (
-		.CLK0(clk_500mhz_bufpll),
-		.CLKDIV(clk_125mhz),
-		.CE0(1'b1),
-		.CFB0(),
-		.CFB1(),
-		.CLK1(),
-		.DFB(),
-		.INCDEC(),
-		.SHIFTIN(),
-		.SHIFTOUT(),
-		.FABRICOUT(),
-		.VALID(),
-		.BITSLIP(1'b0),
-		.D(rx_p_hi),
-		.RST(1'b0),
-		.IOCE(serdes_strobe),
-		.Q1(rx_p_hi_arr[3]),
-		.Q2(rx_p_hi_arr[2]),
-		.Q3(rx_p_hi_arr[1]),
-		.Q4(rx_p_hi_arr[0])
-	);
-
-	wire[3:0]	rx_p_lo_arr;
-	ISERDES2 #(
-		.DATA_RATE("SDR"),
-		.DATA_WIDTH(4),
-		.BITSLIP_ENABLE("FALSE"),
-		.SERDES_MODE("NONE"),
-		.INTERFACE_TYPE("NETWORKING")
-	) rx_p_lo_serdes (
-		.CLK0(clk_500mhz_bufpll),
-		.CLKDIV(clk_125mhz),
-		.CE0(1'b1),
-		.CFB0(),
-		.CFB1(),
-		.CLK1(),
-		.DFB(),
-		.INCDEC(),
-		.SHIFTIN(),
-		.SHIFTOUT(),
-		.FABRICOUT(),
-		.VALID(),
-		.BITSLIP(1'b0),
-		.D(rx_p_lo),
-		.RST(1'b0),
-		.IOCE(serdes_strobe),
-		.Q1(rx_p_lo_arr[3]),
-		.Q2(rx_p_lo_arr[2]),
-		.Q3(rx_p_lo_arr[1]),
-		.Q4(rx_p_lo_arr[0])
-	);
-
-	/*
-	wire[3:0]	rx_n_hi_arr;
-	ISERDES2 #(
-		.DATA_RATE("SDR"),
-		.DATA_WIDTH(4),
-		.BITSLIP_ENABLE("FALSE"),
-		.SERDES_MODE("NONE"),
-		.INTERFACE_TYPE("NETWORKING")
-	) rx_n_hi_serdes (
-		.CLK0(clk_500mhz_bufpll),
-		.CLKDIV(clk_125mhz),
-		.CE0(1'b1),
-		.BITSLIP(1'b0),
-		.D(rx_n_hi),
-		.RST(1'b0),
-		.IOCE(serdes_strobe),
-		.Q1(rx_n_hi_arr[3]),
-		.Q2(rx_n_hi_arr[2]),
-		.Q3(rx_n_hi_arr[1]),
-		.Q4(rx_n_hi_arr[0])
-	);
-
-	wire[3:0]	rx_n_lo_arr;
-	ISERDES2 #(
-		.DATA_RATE("SDR"),
-		.DATA_WIDTH(4),
-		.BITSLIP_ENABLE("FALSE"),
-		.SERDES_MODE("NONE"),
-		.INTERFACE_TYPE("NETWORKING")
-	) rx_n_lo_serdes (
-		.CLK0(clk_500mhz_bufpll),
-		.CLKDIV(clk_125mhz),
-		.CE0(1'b1),
-		.BITSLIP(1'b0),
-		.D(rx_n_lo),
-		.RST(1'b0),
-		.IOCE(serdes_strobe),
-		.Q1(rx_n_lo_arr[3]),
-		.Q2(rx_n_lo_arr[2]),
-		.Q3(rx_n_lo_arr[1]),
-		.Q4(rx_n_lo_arr[0])
-	);
-	*/
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Output buffers for 10Mbps lines
-
-	reg[3:0]		tx_d_10m_p	= 4'h0;
-	reg[3:0]		tx_t_10m_p	= 4'hf;
-
-	reg[3:0]		tx_d_10m_n	= 4'h0;
-	reg[3:0]		tx_t_10m_n	= 4'hf;
-
-	wire			tx_p_a0_raw;
-	wire			tx_p_a0_t;
-
-	wire			tx_n_a0_raw;
-	wire			tx_n_a0_t;
-
-	assign tx_n_a[1] = 1'bz;
-	assign tx_p_a[1] = 1'bz;
-
-	OBUFT #(
-		.DRIVE(2),
-		.SLEW("FAST")
-	) obuf_10m_p0(
-		.I(tx_p_a0_raw),
-		.T(tx_p_a0_t),
-		.O(tx_p_a[0])
-	);
-
-	OBUFT #(
-		.DRIVE(2),
-		.SLEW("FAST")
-	) obuf_10m_n0(
-		.I(tx_n_a0_raw),
-		.T(tx_n_a0_t),
-		.O(tx_n_a[0])
-	);
-
-	OSERDES2 #(
-		.DATA_RATE_OQ("SDR"),
-		.DATA_RATE_OT("SDR"),
-		.DATA_WIDTH(4),
-		.OUTPUT_MODE("SINGLE_ENDED"),
-		.SERDES_MODE("MASTER"),
-		.TRAIN_PATTERN(16'h0)
-	) serdes_10m_p (
-		.CLKDIV(clk_125mhz),
-		.CLK0(clk_500mhz_bufpll),
-		.CLK1(),
-		.D1(tx_d_10m_p[0]),
-		.D2(tx_d_10m_p[1]),
-		.D3(tx_d_10m_p[2]),
-		.D4(tx_d_10m_p[3]),
-		.IOCE(serdes_strobe),
-		.OCE(1'b1),
-		.OQ(tx_p_a0_raw),
-		.RST(1'b0),
-		.TCE(1'b1),
-		.TQ(tx_p_a0_t),
-		.TRAIN(1'b0),
-		.T1(tx_t_10m_p[0]),
-		.T2(tx_t_10m_p[1]),
-		.T3(tx_t_10m_p[2]),
-		.T4(tx_t_10m_p[3]),
-
-		.SHIFTOUT1(),
-		.SHIFTOUT2(),
-		.SHIFTOUT3(),
-		.SHIFTOUT4(),
-		.SHIFTIN1(1'b0),
-		.SHIFTIN2(1'b0),
-		.SHIFTIN3(1'b0),
-		.SHIFTIN4(1'b0)
-	);
-
-	OSERDES2 #(
-		.DATA_RATE_OQ("SDR"),
-		.DATA_RATE_OT("SDR"),
-		.DATA_WIDTH(4),
-		.OUTPUT_MODE("SINGLE_ENDED"),
-		.SERDES_MODE("MASTER"),
-		.TRAIN_PATTERN(16'h0)
-	) serdes_10m_n (
-		.CLKDIV(clk_125mhz),
-		.CLK0(clk_500mhz_bufpll),
-		.CLK1(),
-		.D1(tx_d_10m_n[0]),
-		.D2(tx_d_10m_n[1]),
-		.D3(tx_d_10m_n[2]),
-		.D4(tx_d_10m_n[3]),
-		.IOCE(serdes_strobe),
-		.OCE(1'b1),
-		.OQ(tx_n_a0_raw),
-		.RST(1'b0),
-		.TCE(1'b1),
-		.TQ(tx_n_a0_t),
-		.TRAIN(1'b0),
-		.T1(tx_t_10m_n[0]),
-		.T2(tx_t_10m_n[1]),
-		.T3(tx_t_10m_n[2]),
-		.T4(tx_t_10m_n[3]),
-
-		.SHIFTOUT1(),
-		.SHIFTOUT2(),
-		.SHIFTOUT3(),
-		.SHIFTOUT4(),
-		.SHIFTIN1(1'b0),
-		.SHIFTIN2(1'b0),
-		.SHIFTIN3(1'b0),
-		.SHIFTIN4(1'b0)
-	);
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Output buffers for 100Mbps lines
+	// I/O buffers
 
 	reg[3:0]		tx_d_100m_p	= 4'h0;
 	reg[3:0]		tx_t_100m_p	= 4'hf;
@@ -381,102 +122,42 @@ module TragicLaserPHY(
 	reg[3:0]		tx_d_100m_n	= 4'h0;
 	reg[3:0]		tx_t_100m_n	= 4'hf;
 
-	wire			tx_p_b_raw;
-	wire			tx_p_b_t;
+	reg[3:0]		tx_d_10m_p	= 4'h0;
+	reg[3:0]		tx_t_10m_p	= 4'hf;
 
-	wire			tx_n_b_raw;
-	wire			tx_n_b_t;
+	reg[3:0]		tx_d_10m_n	= 4'h0;
+	reg[3:0]		tx_t_10m_n	= 4'hf;
 
-	OBUFT #(
-		.DRIVE(24),
-		.SLEW("FAST")
-	) obuf_100m_p(
-		.I(tx_p_b_raw),
-		.T(tx_p_b_t),
-		.O(tx_p_b)
-	);
+	wire[3:0]		rx_p_hi_arr;
+	wire[3:0]		rx_p_lo_arr;
 
-	OBUFT #(
-		.DRIVE(24),
-		.SLEW("FAST")
-	) obuf_100m_n(
-		.I(tx_n_b_raw),
-		.T(tx_n_b_t),
-		.O(tx_n_b)
-	);
+	TragicLaserPHY_iobufs iobufs(
+		.clk_125mhz(clk_125mhz),
+		.clk_500mhz_bufpll(clk_500mhz_bufpll),
+		.serdes_strobe(serdes_strobe),
 
-	OSERDES2 #(
-		.DATA_RATE_OQ("SDR"),
-		.DATA_RATE_OT("SDR"),
-		.DATA_WIDTH(4),
-		.OUTPUT_MODE("SINGLE_ENDED"),
-		.SERDES_MODE("MASTER"),
-		.TRAIN_PATTERN(16'h0)
-	) serdes_100m_p (
-		.CLKDIV(clk_125mhz),
-		.CLK0(clk_500mhz_bufpll),
-		.CLK1(),
-		.D1(tx_d_100m_p[0]),
-		.D2(tx_d_100m_p[1]),
-		.D3(tx_d_100m_p[2]),
-		.D4(tx_d_100m_p[3]),
-		.IOCE(serdes_strobe),
-		.OCE(1'b1),
-		.OQ(tx_p_b_raw),
-		.RST(1'b0),
-		.TCE(1'b1),
-		.TQ(tx_p_b_t),
-		.TRAIN(1'b0),
-		.T1(tx_t_100m_p[0]),
-		.T2(tx_t_100m_p[1]),
-		.T3(tx_t_100m_p[2]),
-		.T4(tx_t_100m_p[3]),
+		.tx_p_a(tx_p_a),
+		.tx_p_b(tx_p_b),
+		.tx_n_a(tx_n_a),
+		.tx_n_b(tx_n_b),
 
-		.SHIFTOUT1(),
-		.SHIFTOUT2(),
-		.SHIFTOUT3(),
-		.SHIFTOUT4(),
-		.SHIFTIN1(1'b0),
-		.SHIFTIN2(1'b0),
-		.SHIFTIN3(1'b0),
-		.SHIFTIN4(1'b0)
-	);
+		.rx_p_signal_hi(rx_p_signal_hi),
+		.rx_p_vref_hi(rx_p_vref_hi),
+		.rx_p_signal_lo(rx_p_signal_lo),
+		.rx_p_vref_lo(rx_p_vref_lo),
 
-	OSERDES2 #(
-		.DATA_RATE_OQ("SDR"),
-		.DATA_RATE_OT("SDR"),
-		.DATA_WIDTH(4),
-		.OUTPUT_MODE("SINGLE_ENDED"),
-		.SERDES_MODE("MASTER"),
-		.TRAIN_PATTERN(16'h0)
-	) serdes_100m_n (
-		.CLKDIV(clk_125mhz),
-		.CLK0(clk_500mhz_bufpll),
-		.CLK1(),
-		.D1(tx_d_100m_n[0]),
-		.D2(tx_d_100m_n[1]),
-		.D3(tx_d_100m_n[2]),
-		.D4(tx_d_100m_n[3]),
-		.IOCE(serdes_strobe),
-		.OCE(1'b1),
-		.OQ(tx_n_b_raw),
-		.RST(1'b0),
-		.TCE(1'b1),
-		.TQ(tx_n_b_t),
-		.TRAIN(1'b0),
-		.T1(tx_t_100m_n[0]),
-		.T2(tx_t_100m_n[1]),
-		.T3(tx_t_100m_n[2]),
-		.T4(tx_t_100m_n[3]),
+		.tx_d_100m_p(tx_d_100m_p),
+		.tx_t_100m_p(tx_t_100m_p),
+		.tx_d_100m_n(tx_d_100m_n),
+		.tx_t_100m_n(tx_t_100m_n),
 
-		.SHIFTOUT1(),
-		.SHIFTOUT2(),
-		.SHIFTOUT3(),
-		.SHIFTOUT4(),
-		.SHIFTIN1(1'b0),
-		.SHIFTIN2(1'b0),
-		.SHIFTIN3(1'b0),
-		.SHIFTIN4(1'b0)
+		.tx_d_10m_p(tx_d_10m_p),
+		.tx_t_10m_p(tx_t_10m_p),
+		.tx_d_10m_n(tx_d_10m_n),
+		.tx_t_10m_n(tx_t_10m_n),
+
+		.rx_p_hi_arr(rx_p_hi_arr),
+		.rx_p_lo_arr(rx_p_lo_arr)
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -486,7 +167,7 @@ module TragicLaserPHY(
 	localparam LINK_SPEED_10		= 1;
 	localparam LINK_SPEED_100		= 2;
 
-	reg			link_speed			= LINK_SPEED_10;
+	reg[1:0]	link_speed			= LINK_SPEED_100;
 
 	localparam TX_SYMBOL_N2			= 0;	//-2.5V
 	localparam TX_SYMBOL_N1			= 1;	//-1V
@@ -700,13 +381,34 @@ module TragicLaserPHY(
 
 	end
 
-	//do this combinatorially to save a cycle of latency
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// TX symbol generation
+
+	//Do this combinatorially to save a cycle of latency
 	always @(*) begin
-		case(tx_mlt3_state)
-			0:	tx_symbol	<= TX_SYMBOL_0;
-			1:	tx_symbol	<= TX_SYMBOL_N1;
-			2:	tx_symbol	<= TX_SYMBOL_0;
-			3:	tx_symbol	<= TX_SYMBOL_1;
+
+		//Default: nothing happening
+		tx_symbol		<= TX_SYMBOL_0;
+
+		case(link_speed)
+
+			LINK_SPEED_DOWN: begin
+			end
+
+			//10Base-T not implemented
+			LINK_SPEED_10: begin
+			end
+
+			//100Base-TX
+			LINK_SPEED_100: begin
+				case(tx_mlt3_state)
+					0:	tx_symbol	<= TX_SYMBOL_0;
+					1:	tx_symbol	<= TX_SYMBOL_N1;
+					2:	tx_symbol	<= TX_SYMBOL_0;
+					3:	tx_symbol	<= TX_SYMBOL_1;
+				endcase
+			end
+
 		endcase
 	end
 

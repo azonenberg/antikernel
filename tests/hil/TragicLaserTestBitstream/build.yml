@@ -68,6 +68,7 @@ TragicLaserTestBitstream:
     sources:
         - TragicLaserTestBitstream.v
         - TragicLaserPHY.v
+        - TragicLaserPHY_iobufs.v
         - ../../../antikernel-ipcores/clock/crossing/HandshakeSynchronizer.v
         - ../../../antikernel-ipcores/clock/crossing/ThreeStageSynchronizer.v
         - ../../../antikernel-ipcores/dataflow/SingleClockFifo.v
