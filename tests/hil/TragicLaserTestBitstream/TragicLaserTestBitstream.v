@@ -42,12 +42,14 @@ module TragicLaserTestBitstream(
     input wire			rx_p_signal_hi,
 	input wire			rx_p_vref_hi,
 	input wire			rx_p_signal_lo,
-	input wire			rx_p_vref_lo,
+	input wire			rx_p_vref_lo//,
 
+	/*
 	input wire			rx_n_signal_hi,
 	input wire			rx_n_vref_hi,
 	input wire			rx_n_signal_lo,
 	input wire			rx_n_vref_lo
+	*/
     );
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -160,6 +162,11 @@ module TragicLaserTestBitstream(
     reg			mii_tx_er	= 0;
     reg[3:0]	mii_txd		= 0;
 
+    wire		mii_rx_clk;
+    wire		mii_rx_er;
+    wire		mii_rx_dv;
+    wire[3:0]	mii_rxd;
+
     TragicLaserPHY phy(
 		.clk_25mhz(clk_25mhz_bufg),
 		.clk_125mhz(clk_125mhz_bufg),
@@ -176,15 +183,22 @@ module TragicLaserTestBitstream(
 		.rx_p_signal_lo(rx_p_signal_lo),
 		.rx_p_vref_lo(rx_p_vref_lo),
 
+		/*
 		.rx_n_signal_hi(rx_n_signal_hi),
 		.rx_n_vref_hi(rx_n_vref_hi),
 		.rx_n_signal_lo(rx_n_signal_lo),
 		.rx_n_vref_lo(rx_n_vref_lo),
+		*/
 
 		.mii_tx_clk(mii_tx_clk),
 		.mii_tx_en(mii_tx_en),
 		.mii_tx_er(mii_tx_er),
 		.mii_txd(mii_txd),
+
+		.mii_rx_clk(mii_rx_clk),
+		.mii_rx_er(mii_rx_er),
+		.mii_rx_dv(mii_rx_dv),
+		.mii_rxd(mii_rxd),
 
 		.gpio(gpio)
 	);

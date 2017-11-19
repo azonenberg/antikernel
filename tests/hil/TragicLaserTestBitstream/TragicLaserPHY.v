@@ -79,16 +79,24 @@ module TragicLaserPHY(
 	input wire			rx_p_signal_lo,
 	input wire			rx_p_vref_lo,
 
+	//Optional negative side RX interface (not currently implemented)
+	/*
 	input wire			rx_n_signal_hi,
 	input wire			rx_n_vref_hi,
 	input wire			rx_n_signal_lo,
 	input wire			rx_n_vref_lo,
+	*/
 
     //MII interface
     output wire			mii_tx_clk,
     input wire			mii_tx_en,
     input wire			mii_tx_er,
     input wire[3:0]		mii_txd,
+
+    output wire			mii_rx_clk,		//always same as mii_tx_clk for this PHY to simplify clocking
+    output reg[3:0]		mii_rxd	= 0,
+    output reg			mii_rx_dv	= 0,
+    output reg			mii_rx_er	= 0,
 
 	//Debug GPIOs
     inout wire[9:0]		gpio
@@ -127,6 +135,7 @@ module TragicLaserPHY(
 		.O(rx_p_lo)
 	);
 
+	/*
 	IBUFDS #(
 		.DIFF_TERM("FALSE"),
 		.IOSTANDARD("LVDS_33")
@@ -144,6 +153,7 @@ module TragicLaserPHY(
 		.IB(rx_n_vref_lo),
 		.O(rx_n_lo)
 	);
+	*/
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 4x input oversampling
@@ -159,6 +169,15 @@ module TragicLaserPHY(
 		.CLK0(clk_500mhz_bufpll),
 		.CLKDIV(clk_125mhz),
 		.CE0(1'b1),
+		.CFB0(),
+		.CFB1(),
+		.CLK1(),
+		.DFB(),
+		.INCDEC(),
+		.SHIFTIN(),
+		.SHIFTOUT(),
+		.FABRICOUT(),
+		.VALID(),
 		.BITSLIP(1'b0),
 		.D(rx_p_hi),
 		.RST(1'b0),
@@ -180,6 +199,15 @@ module TragicLaserPHY(
 		.CLK0(clk_500mhz_bufpll),
 		.CLKDIV(clk_125mhz),
 		.CE0(1'b1),
+		.CFB0(),
+		.CFB1(),
+		.CLK1(),
+		.DFB(),
+		.INCDEC(),
+		.SHIFTIN(),
+		.SHIFTOUT(),
+		.FABRICOUT(),
+		.VALID(),
 		.BITSLIP(1'b0),
 		.D(rx_p_lo),
 		.RST(1'b0),
@@ -190,6 +218,7 @@ module TragicLaserPHY(
 		.Q4(rx_p_lo_arr[0])
 	);
 
+	/*
 	wire[3:0]	rx_n_hi_arr;
 	ISERDES2 #(
 		.DATA_RATE("SDR"),
@@ -231,6 +260,7 @@ module TragicLaserPHY(
 		.Q3(rx_n_lo_arr[1]),
 		.Q4(rx_n_lo_arr[0])
 	);
+	*/
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Output buffers for 10Mbps lines
@@ -278,6 +308,7 @@ module TragicLaserPHY(
 	) serdes_10m_p (
 		.CLKDIV(clk_125mhz),
 		.CLK0(clk_500mhz_bufpll),
+		.CLK1(),
 		.D1(tx_d_10m_p[0]),
 		.D2(tx_d_10m_p[1]),
 		.D3(tx_d_10m_p[2]),
@@ -314,6 +345,7 @@ module TragicLaserPHY(
 	) serdes_10m_n (
 		.CLKDIV(clk_125mhz),
 		.CLK0(clk_500mhz_bufpll),
+		.CLK1(),
 		.D1(tx_d_10m_n[0]),
 		.D2(tx_d_10m_n[1]),
 		.D3(tx_d_10m_n[2]),
@@ -383,6 +415,7 @@ module TragicLaserPHY(
 	) serdes_100m_p (
 		.CLKDIV(clk_125mhz),
 		.CLK0(clk_500mhz_bufpll),
+		.CLK1(),
 		.D1(tx_d_100m_p[0]),
 		.D2(tx_d_100m_p[1]),
 		.D3(tx_d_100m_p[2]),
@@ -419,6 +452,7 @@ module TragicLaserPHY(
 	) serdes_100m_n (
 		.CLKDIV(clk_125mhz),
 		.CLK0(clk_500mhz_bufpll),
+		.CLK1(),
 		.D1(tx_d_100m_n[0]),
 		.D2(tx_d_100m_n[1]),
 		.D3(tx_d_100m_n[2]),
@@ -448,8 +482,9 @@ module TragicLaserPHY(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// PMA layer: drive the H-bridge outputs depending on the chosen line rate and output waveform
 
-	localparam LINK_SPEED_10		= 0;	//also used for "link down"
-	localparam LINK_SPEED_100		= 1;
+	localparam LINK_SPEED_DOWN		= 0;	//autonegotiation etc
+	localparam LINK_SPEED_10		= 1;
+	localparam LINK_SPEED_100		= 2;
 
 	reg			link_speed			= LINK_SPEED_10;
 
@@ -460,7 +495,6 @@ module TragicLaserPHY(
 	localparam TX_SYMBOL_2			= 4;	//+2.5V
 
 	reg[2:0]	tx_symbol			= TX_SYMBOL_0;
-
 	reg[2:0]	tx_symbol_ff		= TX_SYMBOL_0;
 
 	always @(posedge clk_125mhz) begin
@@ -742,11 +776,11 @@ module TragicLaserPHY(
 	end
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Compute the RX MLT-3 state
+	// RX MLT-3 decoder: find state transitions
 
 	//leftmost bits are first chronologically
 	reg[15:0]	rx_p_state;
-	reg[15:0]	rx_n_state;
+	//reg[15:0]	rx_n_state;
 
 	integer i;
 	always @(*) begin
@@ -758,50 +792,17 @@ module TragicLaserPHY(
 				rx_p_state[i*4 +: 4]	<= 2;
 			else
 				rx_p_state[i*4 +: 4]	<= 1;
-
+			/*
 			if(rx_n_hi_arr[i] && rx_n_lo_arr[i])
 				rx_n_state[i*4 +: 4]	<= 3;
 			else if(rx_n_lo_arr[i])
 				rx_n_state[i*4 +: 4]	<= 2;
 			else
 				rx_n_state[i*4 +: 4]	<= 1;
+			*/
 		end
 
 	end
-
-	//debug: tx side too
-	reg[1:0] tx_p_state;
-	reg[1:0] tx_n_state;
-	always @(*) begin
-
-		//tristate
-		if(tx_t_100m_p[3])
-			tx_p_state	<= 2;
-
-		//high
-		else if(tx_d_100m_p[3])
-			tx_p_state	<= 3;
-
-		//low
-		else
-			tx_p_state	<= 1;
-
-		//tristate
-		if(tx_t_100m_n[3])
-			tx_n_state	<= 2;
-
-		//high
-		else if(tx_d_100m_n[3])
-			tx_n_state	<= 1;
-
-		//low
-		else
-			tx_n_state	<= 3;
-
-	end
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Find MLT-3 state transitions
 
 	//TODO: examine the actual state ordering (-1 to +1 should never happen)
 	//TODO: sanity checking by using both _P and _N legs of the RX
@@ -822,7 +823,7 @@ module TragicLaserPHY(
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// We have state transitions, now convert this to a stream of bits
+	// RX MLT-3 decoder: We have state transitions, now convert this to a stream of bits
 
 	reg[1:0]	rx_bits					= 0;
 	reg[1:0]	rx_bits_valid			= 0;
@@ -861,8 +862,7 @@ module TragicLaserPHY(
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// We have an irregular stream of bits, turn this back into 5-bit scrambled code groups.
-	// (note that, at this time, we're probably not synced to a 4b/5b boundary!)
+	// RX deserializer
 
 	reg[2:0]	rx_5b_buf_valid			= 0;
 	reg[5:0]	rx_5b_buf				= 0;
@@ -1125,40 +1125,148 @@ module TragicLaserPHY(
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Debug GPIOs
+	// RX elastic buffer and MII interface
 
-	reg[1:0]	tx_p_state_ff  = 0;
-	reg[1:0]	tx_p_state_ff1 = 0;
-	reg[1:0]	tx_p_state_ff2 = 0;
-	reg[1:0]	tx_p_state_ff3 = 0;
-	reg[1:0]	tx_p_state_ff4 = 0;
+	//Use the same divided clock for the RX
+	assign				mii_rx_clk		= mii_tx_clk;
 
-	reg			tx_mlt3_din_ff	= 0;
-	reg			tx_mlt3_din_ff2	= 0;
-	reg			tx_mlt3_din_ff3	= 0;
-	reg			tx_mlt3_din_ff4	= 0;
-	reg			tx_mlt3_din_ff5	= 0;
-	reg			tx_mlt3_din_ff6	= 0;
-	reg			tx_mlt3_din_ff7	= 0;
-	reg			tx_mlt3_din_ff8	= 0;
-	reg			tx_mlt3_din_ff9	= 0;
+	reg					rx_fifo_wr		= 0;
+	reg[4:0]			rx_fifo_wr_data	= 0;
+	reg					rx_fifo_rd		= 0;
+	wire[4:0]			rx_fifo_rd_data;
+	wire[5:0]			rx_fifo_rsize;
+	wire[5:0]			rx_fifo_wsize;
+	wire				rx_fifo_empty;
 
-	always @(posedge clk_125mhz) begin
-		tx_p_state_ff	<= tx_p_state;
-		tx_p_state_ff2	<= tx_p_state_ff;
-		tx_p_state_ff3	<= tx_p_state_ff2;
-		tx_p_state_ff4	<= tx_p_state_ff3;
+	//FIFO of incoming data nibbles (pushed at the line rate)
+	//Bit 4 is the "control character" bit
+	SingleClockFifo #(
+		.WIDTH(5),
+		.DEPTH(32),
+		.USE_BLOCK(0),
+		.OUT_REG(0)
+	) rx_elastic_fifo (
+		.clk(clk_125mhz),
 
-		tx_mlt3_din_ff	<= tx_mlt3_din;
-		tx_mlt3_din_ff2	<= tx_mlt3_din_ff;
-		tx_mlt3_din_ff3	<= tx_mlt3_din_ff2;
-		tx_mlt3_din_ff4	<= tx_mlt3_din_ff3;
-		tx_mlt3_din_ff5	<= tx_mlt3_din_ff4;
-		tx_mlt3_din_ff6	<= tx_mlt3_din_ff5;
-		tx_mlt3_din_ff7	<= tx_mlt3_din_ff6;
-		tx_mlt3_din_ff8	<= tx_mlt3_din_ff7;
-		tx_mlt3_din_ff9	<= tx_mlt3_din_ff8;
+		.wr(rx_fifo_wr),
+		.din(rx_fifo_wr_data),
+
+		.rd(rx_fifo_rd),
+		.dout(rx_fifo_rd_data),
+
+		.rsize(rx_fifo_rsize),
+		.wsize(rx_fifo_wsize),
+
+		.empty(rx_fifo_empty),
+		.full(),
+		.underflow(),
+		.overflow(),
+
+		.reset(rx_resync || !rx_stream_synced || !rx_lfsr_synced)	//Reset the FIFO any time we lose lock
+	);
+
+	//Push data into the FIFO
+	always @(*) begin
+
+		//Default to not pushing
+		rx_fifo_wr		<= 0;
+		rx_fifo_wr_data	<= 0;
+
+		if(rx_4b_code_valid) begin
+
+			//If we get an invalid character, ignore it for now
+			//TODO: push to tx_er
+			if(rx_4b_invalid) begin
+			end
+
+			//Don't push idle characters into the FIFO, we'll generate idle states on our own as needed
+			else if(rx_4b_ctl && (rx_4b_code == CTL_IDLE) ) begin
+			end
+
+			//It's a normal data/ctl character, push it
+			else begin
+				rx_fifo_wr		<= 1;
+				rx_fifo_wr_data	<= {rx_4b_ctl, rx_4b_code};
+			end
+
+		end
+
 	end
+
+	//Pop data from the FIFO and feed it to the MII
+	reg		starting_next_cycle	= 0;
+	always @(posedge clk_125mhz) begin
+		rx_fifo_rd			<= 0;
+
+		//If the FIFO has less than 16 nibbles in it, and a frame isn't already in progress, let it fill up a bit more.
+		//If we have plenty of data in the fifo, or we're already doing stuff, crunch the current word then pop it.
+		if(tx_mii_sync && (mii_rx_dv || (rx_fifo_rsize > 16)) ) begin
+
+			mii_rxd			<= 0;
+			mii_rx_er			<= 0;
+			starting_next_cycle	<= 0;
+
+			//If FIFO is empty, we underran it. Send an error.
+			//This shouldn't be possible unless the TX clock is WAY high.
+			if(rx_fifo_empty) begin
+				mii_rx_er		<= 1;
+				mii_rx_dv		<= 0;
+			end
+
+			else begin
+
+				//Control character
+				if(rx_fifo_rd_data[4]) begin
+
+					case(rx_fifo_rd_data[3:0])
+
+						//J: first half of start-of-stream: ignore
+						CTL_SSD_J: begin
+						end
+
+						//K: second half of start-of-stream, start the packet next cycle
+						CTL_SSD_K:	starting_next_cycle	<= 1;
+
+						//T: end of stream
+						CTL_END_T:	mii_rx_dv			<= 0;
+
+						//R: second half of end-of-stream, ignore
+						CTL_END_R: begin
+						end
+
+						//H: Error, then drop the packet
+						CTL_ERR_H: begin
+							mii_rx_er					<= 1;
+							mii_rx_dv					<= 0;
+						end
+
+						//Bad code: error, then drop the packet
+						//(should not make it into the fifo but just in case...)
+						default: begin
+							mii_rx_er					<= 1;
+							mii_rx_dv					<= 0;
+						end
+
+					endcase
+
+				end
+
+				//Data character. Ignore if we're not currently in a packet
+				else if(mii_rx_dv || starting_next_cycle) begin
+					mii_rx_dv		<= 1;
+					mii_rxd		<= rx_fifo_rd_data[3:0];
+				end
+
+				//Advance the FIFO
+				rx_fifo_rd			<= 1;
+			end
+
+		end
+
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Debug GPIOs
 
 	wire	la_ready;
 	wire	trig_out;
@@ -1168,7 +1276,7 @@ module TragicLaserPHY(
 		.WIDTH(128),
 		.DEPTH(1024),
 		.UART_CLKDIV(16'd1085),	//115200 @ 125 MHz
-		.USE_EXT_TRIG(1),
+		.USE_EXT_TRIG(0),
 		.SYMBOL_ROM(
 			{
 				16384'h0,
@@ -1177,12 +1285,15 @@ module TragicLaserPHY(
 				32'd1024,		//Capture depth (TODO auto-patch this?)
 				32'd128,		//Capture width (TODO auto-patch this?)
 				{ "mii_tx_en", 					8'h0, 8'h1,  8'h0 },
+				{ "mii_tx_er", 					8'h0, 8'h1,  8'h0 },
+				{ "mii_txd", 					8'h0, 8'h4,  8'h0 },
 				{ "rx_lfsr_synced", 			8'h0, 8'h1,  8'h0 },
 				{ "rx_stream_synced", 			8'h0, 8'h1,  8'h0 },
-				{ "rx_4b_code_valid",			8'h0, 8'h1,  8'h0 },
-				{ "rx_4b_invalid",				8'h0, 8'h1,  8'h0 },
-				{ "rx_4b_ctl",					8'h0, 8'h1,  8'h0 },
-				{ "rx_4b_code",					8'h0, 8'h4,  8'h0 }
+				{ "rx_fifo_wr", 				8'h0, 8'h1,  8'h0 },
+				{ "starting_next_cycle", 		8'h0, 8'h1,  8'h0 },
+				{ "mii_rx_dv",					8'h0, 8'h1,  8'h0 },
+				{ "mii_rx_er",					8'h0, 8'h1,  8'h0 },
+				{ "mii_rxd",					8'h0, 8'h4,  8'h0 }
 			}
 		)
 	) analyzer (
@@ -1190,19 +1301,22 @@ module TragicLaserPHY(
 		.capture_clk(clk_125mhz),
 		.din({
 				mii_tx_en,					//1
+				mii_tx_er,					//1
+				mii_txd,					//4
 				rx_lfsr_synced,				//1
 				rx_stream_synced,			//1
-				rx_4b_code_valid,			//1
-				rx_4b_invalid,				//1
-				rx_4b_ctl,					//1
-				rx_4b_code,					//4
+				rx_fifo_wr,					//1
+				starting_next_cycle,		//1
+				mii_rx_dv,					//1
+				mii_rx_er,					//1
+				mii_rxd,					//4
 
-				118'h0						//padding
+				112'h0						//padding
 			}),
 		.uart_rx(gpio[9]),
 		.uart_tx(gpio[7]),
 		.la_ready(la_ready),
-		.ext_trig(rx_stream_synced),
+		.ext_trig(1'b0),
 		.trig_out(trig_out),
 		.capture_done(capture_done)
 	);
