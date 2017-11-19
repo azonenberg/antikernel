@@ -459,9 +459,6 @@ module TragicLaserPHY(
 	localparam TX_SYMBOL_1			= 3;	//+1V
 	localparam TX_SYMBOL_2			= 4;	//+2.5V
 
-	//localparam TX_SYMBOL_WEAK_N2	= 5;	//-2.5V, weak drive
-	//localparam TX_SYMBOL_WEAK_2		= 6;	//+2.5V, weak drive
-
 	reg[2:0]	tx_symbol			= TX_SYMBOL_0;
 
 	reg[2:0]	tx_symbol_ff		= TX_SYMBOL_0;
@@ -536,20 +533,6 @@ module TragicLaserPHY(
 				//tx_n_a		<= 2'b00;
 			end
 
-			/*
-			//Weak -2.5V (pre-emphasis for 100base-TX -1V)
-			TX_SYMBOL_WEAK_N2: begin
-				tx_p_a		<= 2'bz0;
-				tx_n_a		<= 2'bz1;
-			end
-
-			//Weak 2.5V (pre-emphasis for 100base-TX +1V)
-			TX_SYMBOL_WEAK_2: begin
-				tx_p_a		<= 2'bz1;
-				tx_n_a		<= 2'bz0;
-			end
-			*/
-
 		endcase
 
 	end
@@ -571,15 +554,15 @@ module TragicLaserPHY(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// TX 4B/5B coder
 
-	localparam TX_CTL_IDLE	= 0;
-	localparam TX_CTL_SSD_J	= 1;
-	localparam TX_CTL_SSD_K	= 2;
-	localparam TX_CTL_END_T = 3;
-	localparam TX_CTL_END_R = 4;
-	localparam TX_CTL_ERR_H = 5;
+	localparam CTL_IDLE		= 0;
+	localparam CTL_SSD_J	= 1;
+	localparam CTL_SSD_K	= 2;
+	localparam CTL_END_T 	= 3;
+	localparam CTL_END_R 	= 4;
+	localparam CTL_ERR_H 	= 5;
 
 	reg			tx_ctl_char = 1;
-	reg[3:0]	tx_4b_code = TX_CTL_IDLE;
+	reg[3:0]	tx_4b_code = CTL_IDLE;
 
 	reg[4:0] tx_5b_code;
 
@@ -588,12 +571,12 @@ module TragicLaserPHY(
 		if(tx_ctl_char) begin
 
 			case(tx_4b_code)
-				TX_CTL_IDLE:	tx_5b_code <= 5'b11111;
-				TX_CTL_SSD_J:	tx_5b_code <= 5'b11000;
-				TX_CTL_SSD_K:	tx_5b_code <= 5'b10001;
-				TX_CTL_END_T:	tx_5b_code <= 5'b01101;
-				TX_CTL_END_R:	tx_5b_code <= 5'b00111;
-				TX_CTL_ERR_H:	tx_5b_code <= 5'b00100;
+				CTL_IDLE:	tx_5b_code <= 5'b11111;
+				CTL_SSD_J:	tx_5b_code <= 5'b11000;
+				CTL_SSD_K:	tx_5b_code <= 5'b10001;
+				CTL_END_T:	tx_5b_code <= 5'b01101;
+				CTL_END_R:	tx_5b_code <= 5'b00111;
+				CTL_ERR_H:	tx_5b_code <= 5'b00100;
 
 				//send idles for unknown/invalid control chars
 				default:		tx_5b_code <= 5'b11111;
@@ -713,22 +696,22 @@ module TragicLaserPHY(
 			tx_4b_code			<= mii_txd_ff;
 
 			//If we just sent the first half of the SSD, send the second half
-			if( tx_ctl_char && (tx_4b_code == TX_CTL_SSD_J) ) begin
+			if( tx_ctl_char && (tx_4b_code == CTL_SSD_J) ) begin
 				tx_ctl_char		<= 1;
-				tx_4b_code		<= TX_CTL_SSD_K;
+				tx_4b_code		<= CTL_SSD_K;
 			end
 
 			//When mii_tx_en goes low, send the first half of the end-of-stream delimiter
 			if(!mii_tx_en && mii_tx_en_ff) begin
 				tx_ctl_char		<= 1;
-				tx_4b_code		<= TX_CTL_END_T;
+				tx_4b_code		<= CTL_END_T;
 				frame_active	<= 0;
 			end
 
 			//If an error occurs, send an error character
 			if(mii_tx_er) begin
 				tx_ctl_char		<= 1;
-				tx_4b_code		<= TX_CTL_ERR_H;
+				tx_4b_code		<= CTL_ERR_H;
 				frame_active	<= 0;
 			end
 
@@ -739,19 +722,19 @@ module TragicLaserPHY(
 
 			//Default to sending idles
 			tx_ctl_char			<= 1;
-			tx_4b_code			<= TX_CTL_IDLE;
+			tx_4b_code			<= CTL_IDLE;
 
 			//When mii_tx_en goes high, send the first half of the start-of-stream delimiter
 			if(mii_tx_en && !mii_tx_en_ff) begin
 				frame_active	<= 1;
 				tx_ctl_char		<= 1;
-				tx_4b_code		<= TX_CTL_SSD_J;
+				tx_4b_code		<= CTL_SSD_J;
 			end
 
 			//If we just sent the first half of the ESD, send the second half
-			if( tx_ctl_char && (tx_4b_code == TX_CTL_END_T) ) begin
+			if( tx_ctl_char && (tx_4b_code == CTL_END_T) ) begin
 				tx_ctl_char		<= 1;
-				tx_4b_code		<= TX_CTL_END_R;
+				tx_4b_code		<= CTL_END_R;
 			end
 
 		end
@@ -820,13 +803,6 @@ module TragicLaserPHY(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Find MLT-3 state transitions
 
-	//Bitslip for debug to phase align us to the outgoing signal
-	reg[15:0]	rx_p_state_ff;
-	wire[15:0]	rx_p_state_bitslip = { rx_p_state_ff[7:0], rx_p_state[15:8] };
-	always @(posedge clk_125mhz) begin
-		rx_p_state_ff	<= rx_p_state;
-	end
-
 	//TODO: examine the actual state ordering (-1 to +1 should never happen)
 	//TODO: sanity checking by using both _P and _N legs of the RX
 
@@ -835,14 +811,14 @@ module TragicLaserPHY(
 	//Find changes
 	reg[3:0]	mlt3_state_changes = 0;
 	always @(*) begin
-		mlt3_state_changes[3]	<= (last_mlt3_state   != rx_p_state_bitslip[15:12]);
-		mlt3_state_changes[2]	<= (rx_p_state_bitslip[15:12] != rx_p_state_bitslip[11:8]);
-		mlt3_state_changes[1]	<= (rx_p_state_bitslip[11:8]  != rx_p_state_bitslip[7:4]);
-		mlt3_state_changes[0]	<= (rx_p_state_bitslip[7:4]   != rx_p_state_bitslip[3:0]);
+		mlt3_state_changes[3]	<= (last_mlt3_state   != rx_p_state[15:12]);
+		mlt3_state_changes[2]	<= (rx_p_state[15:12] != rx_p_state[11:8]);
+		mlt3_state_changes[1]	<= (rx_p_state[11:8]  != rx_p_state[7:4]);
+		mlt3_state_changes[0]	<= (rx_p_state[7:4]   != rx_p_state[3:0]);
 	end
 
 	always @(posedge clk_125mhz) begin
-		last_mlt3_state	<= rx_p_state_bitslip[1:0];
+		last_mlt3_state	<= rx_p_state[1:0];
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -855,7 +831,7 @@ module TragicLaserPHY(
 	always @(posedge clk_125mhz) begin
 
 		//Loop over the edge list and process potential edges
-		//May be 1 or 2 due to eye narrowing etc, but should never be >2
+		//May be 1 or 2 edges per clock due to eye narrowing etc, but should never be >2
 		rx_bits_valid	= 0;
 		rx_bits			= 0;
 		for(i = 0; i < 4; i = i+1) begin
@@ -930,6 +906,9 @@ module TragicLaserPHY(
 
 	reg[10:0]	rx_lfsr = 1;
 
+	//Request by the 4b/5b coder to re-synchronize
+	reg			rx_resync			= 0;
+
 	reg			rx_lfsr_synced		= 0;
 	reg[4:0]	rx_lfsr_wordcount	= 0;
 
@@ -945,6 +924,7 @@ module TragicLaserPHY(
 	reg[4:0]	rx_5b_code_ff		= 0;
 	reg			rx_5b_valid_ff		= 0;
 	wire[4:0]	rx_5b_code_unscrambled	= rx_5b_code_ff ^ rx_lfsr[4:0];
+	wire		rx_5b_valid_unscrambled = rx_5b_valid_ff;
 	always @(posedge clk_125mhz) begin
 		rx_5b_valid_ff	<= rx_5b_valid;
 		if(rx_5b_valid)
@@ -979,7 +959,8 @@ module TragicLaserPHY(
 			end
 
 			//Four MTUs passed without an IPG? Definitely lost lock!
-			if(rx_last_lock > 16'd12000) begin
+			//Also unlock if the 4b/5b decoder saw too many errors
+			if( (rx_last_lock > 16'd12000) || rx_resync )begin
 				rx_lfsr_synced			<= 0;
 				rx_lfsr_wordcount		<= 0;
 			end
@@ -1014,7 +995,134 @@ module TragicLaserPHY(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// RX codeword alignment
 
-	//Default to
+	//Keep a sliding window of the last 15 unscrambled bits
+	reg[14:0]	rx_last_15_unscrambled	= 0;
+	always @(posedge clk_125mhz) begin
+		if(rx_5b_valid_unscrambled)
+			rx_last_15_unscrambled	<= {rx_last_15_unscrambled[9:0], rx_5b_code_unscrambled};
+	end
+
+	//Search the sliding window for the J-K sequence (start of stream) and update our sync when we see it
+	reg			rx_stream_synced		= 0;
+	reg[2:0]	rx_stream_phase			= 0;
+	localparam RX_SSD_JK = 10'b1100010001;
+
+	always @(posedge clk_125mhz) begin
+
+		if(rx_5b_valid_unscrambled) begin
+
+			//If we lose LFSR sync, we've also lost the stream sync
+			if(!rx_lfsr_synced)
+				rx_stream_synced			<= 0;
+
+			//If not synced, attempt to resync
+			if(!rx_stream_synced) begin
+				for(i=0; i<5; i=i+1) begin
+					if(rx_last_15_unscrambled[i +: 10] == RX_SSD_JK) begin
+						rx_stream_synced		<= 1;
+						rx_stream_phase			<= i[2:0];
+					end
+				end
+			end
+
+		end
+
+	end
+
+	//Get the unscrambled, aligned 5-bit code groups
+	wire[4:0]	rx_5b_code_aligned		= rx_last_15_unscrambled[rx_stream_phase +: 5];
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// RX 4b/5b decoder
+
+	reg			rx_4b_invalid		= 0;
+	reg			rx_4b_ctl			= 0;
+	wire		rx_4b_code_valid	= rx_5b_valid_unscrambled;
+	reg[3:0]	rx_4b_code			= 0;
+
+	always @(*) begin
+
+		//Default to valid non-control char
+		rx_4b_ctl					<= 0;
+		rx_4b_invalid				<= 0;
+
+		case(rx_5b_code_aligned)
+
+			//Control characters
+			5'b11111: begin
+				rx_4b_ctl				<= 1;
+				rx_4b_code				<= CTL_IDLE;
+			end
+			5'b11000: begin
+				rx_4b_ctl				<= 1;
+				rx_4b_code				<= CTL_SSD_J;
+			end
+			5'b10001: begin
+				rx_4b_ctl				<= 1;
+				rx_4b_code				<= CTL_SSD_K;
+			end
+			5'b01101: begin
+				rx_4b_ctl				<= 1;
+				rx_4b_code				<= CTL_END_T;
+			end
+			5'b00111: begin
+				rx_4b_ctl				<= 1;
+				rx_4b_code				<= CTL_END_R;
+			end
+			5'b00100: begin
+				rx_4b_ctl				<= 1;
+				rx_4b_code				<= CTL_ERR_H;
+			end
+
+			//Data characters
+			5'b11110:	rx_4b_code		<= 4'h0;
+			5'b01001:	rx_4b_code		<= 4'h1;
+			5'b10100:	rx_4b_code		<= 4'h2;
+			5'b10101:	rx_4b_code		<= 4'h3;
+			5'b01010:	rx_4b_code		<= 4'h4;
+			5'b01011:	rx_4b_code		<= 4'h5;
+			5'b01110:	rx_4b_code		<= 4'h6;
+			5'b01111:	rx_4b_code		<= 4'h7;
+			5'b10010:	rx_4b_code		<= 4'h8;
+			5'b10011:	rx_4b_code		<= 4'h9;
+			5'b10110:	rx_4b_code		<= 4'ha;
+			5'b10111:	rx_4b_code		<= 4'hb;
+			5'b11010:	rx_4b_code		<= 4'hc;
+			5'b11011:	rx_4b_code		<= 4'hd;
+			5'b11100:	rx_4b_code		<= 4'he;
+			5'b11101:	rx_4b_code		<= 4'hf;
+
+			//Bad codeword!
+			default: begin
+				rx_4b_invalid			<= 1;
+				rx_4b_code				<= 0;
+			end
+
+		endcase
+
+	end
+
+	//Keep track of how many invalid characters we're seeing, re-sync the receiver if we see too many
+	reg[7:0]	num_invalid_chars		= 0;
+	reg[7:0]	valid_count				= 0;
+
+	always @(posedge clk_125mhz) begin
+		valid_count					<= valid_count + 1'h1;
+		rx_resync					<= 0;
+
+		if(rx_4b_code_valid && rx_4b_invalid)
+			num_invalid_chars		<= num_invalid_chars + 1'h1;
+
+		if(valid_count == 0) begin
+			num_invalid_chars		<= 0;
+
+			//16 invalid chars in 256? Something is way wrong, reset the link
+			//TODO: decide thresholds
+			if(num_invalid_chars > 'd16)
+				rx_resync			<= 1;
+
+		end
+	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Debug GPIOs
@@ -1056,25 +1164,11 @@ module TragicLaserPHY(
 	wire	trig_out;
 	wire	capture_done;
 
-	/*
-		0	tx_unscrambled_bit
-		1	tx_mlt3_din
-		2	tx_mlt3_state				tx_symbol					tx_mlt3_din_ff
-		3	tx_d_100m_p					tx_p_state					tx_mlt3_din_ff2
-		4	tx_p_state_ff											tx_mlt3_din_ff3
-		5	tx_p_state_ff2											tx_mlt3_din_ff4
-		6	tx_p_state_ff3											tx_mlt3_din_ff5
-		7	tx_p_state_ff4				rx_p_state_bitslip			tx_mlt3_din_ff6
-		8	rx_bits
-		9	rx_5b_buf					rx_5b_buf_valid
-		10	rx_5b_code					rx_5b_valid
-	 */
-
 	RedTinUartWrapper #(
 		.WIDTH(128),
 		.DEPTH(1024),
 		.UART_CLKDIV(16'd1085),	//115200 @ 125 MHz
-		.USE_EXT_TRIG(0),
+		.USE_EXT_TRIG(1),
 		.SYMBOL_ROM(
 			{
 				16384'h0,
@@ -1082,25 +1176,33 @@ module TragicLaserPHY(
 				32'd8000,		//period of internal clock, in ps
 				32'd1024,		//Capture depth (TODO auto-patch this?)
 				32'd128,		//Capture width (TODO auto-patch this?)
-				{ "rx_lfsr_synced", 	8'h0, 8'h1,  8'h0 },
-				{ "rx_5b_valid_ff", 	8'h0, 8'h1,  8'h0 },
-				{ "rx_5b_code_unscrambled", 8'h0, 8'h5,  8'h0 }
+				{ "mii_tx_en", 					8'h0, 8'h1,  8'h0 },
+				{ "rx_lfsr_synced", 			8'h0, 8'h1,  8'h0 },
+				{ "rx_stream_synced", 			8'h0, 8'h1,  8'h0 },
+				{ "rx_4b_code_valid",			8'h0, 8'h1,  8'h0 },
+				{ "rx_4b_invalid",				8'h0, 8'h1,  8'h0 },
+				{ "rx_4b_ctl",					8'h0, 8'h1,  8'h0 },
+				{ "rx_4b_code",					8'h0, 8'h4,  8'h0 }
 			}
 		)
 	) analyzer (
 		.clk(clk_125mhz),
 		.capture_clk(clk_125mhz),
 		.din({
-				rx_lfsr_synced,			//1
-				rx_5b_valid_ff,			//1
-				rx_5b_code_unscrambled,	//5
+				mii_tx_en,					//1
+				rx_lfsr_synced,				//1
+				rx_stream_synced,			//1
+				rx_4b_code_valid,			//1
+				rx_4b_invalid,				//1
+				rx_4b_ctl,					//1
+				rx_4b_code,					//4
 
-				121'h0				//padding
+				118'h0						//padding
 			}),
 		.uart_rx(gpio[9]),
 		.uart_tx(gpio[7]),
 		.la_ready(la_ready),
-		.ext_trig(1'b0),
+		.ext_trig(rx_stream_synced),
 		.trig_out(trig_out),
 		.capture_done(capture_done)
 	);
