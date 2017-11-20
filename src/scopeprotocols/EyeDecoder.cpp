@@ -114,12 +114,11 @@ bool EyeDecoder::DetectModulationLevels(AnalogCapture* din, EyeCapture* cap)
 			maxpeak = it.second;
 	}
 	int64_t peakthresh = maxpeak/4;
+	int64_t second_peak = 0;
+	double second_weighted = 0;
 	for(auto it : vhist)
 	{
-		//Skip peaks that aren't tall enough
 		int64_t count = it.second;
-		if(count < peakthresh)
-			continue;
 
 		//If we're pretty close to a taller peak (within neighborhood mV) then don't do anything
 		int mv = it.first;
@@ -151,8 +150,26 @@ bool EyeDecoder::DetectModulationLevels(AnalogCapture* din, EyeCapture* cap)
 			wcount += c;
 			weighted += c*v;
 		}
+
+		if(count < peakthresh)
+		{
+			//Skip peaks that aren't tall enough... but still save the second highest
+			if(count > second_peak)
+			{
+				second_peak = count;
+				second_weighted = weighted * 1e-3f / wcount;
+			}
+			continue;
+		}
+
 		cap->m_signalLevels.push_back(weighted * 1e-3f / wcount);
 	}
+
+	//Special case: if the signal has only one level it might be NRZ with a really low duty cycle
+	//Add the second highest peak in this case
+	if(cap->m_signalLevels.size() == 1)
+		cap->m_signalLevels.push_back(second_weighted);
+
 	sort(cap->m_signalLevels.begin(), cap->m_signalLevels.end());
 	/*LogDebug("    Signal appears to be using %d-level modulation\n", (int)cap->m_signalLevels.size());
 	for(auto v : cap->m_signalLevels)
