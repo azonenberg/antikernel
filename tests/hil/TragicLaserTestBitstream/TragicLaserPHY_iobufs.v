@@ -76,8 +76,8 @@ module TragicLaserPHY_iobufs(
 	input wire			tx_d_10m_n_full,
 	input wire			tx_t_10m_n_full,
 
-	output wire[3:0]	rx_p_hi_arr,
-	output wire[3:0]	rx_p_lo_arr
+	output reg[3:0]		rx_p_hi_arr	= 0,
+	output reg[3:0]		rx_p_lo_arr	= 0
 );
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,12 +130,15 @@ module TragicLaserPHY_iobufs(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 4x input oversampling
 
+	wire[3:0]	rx_p_hi_arr_raw;
+	wire[3:0]	rx_p_lo_arr_raw;
+
 	ISERDES2 #(
 		.DATA_RATE("SDR"),
 		.DATA_WIDTH(4),
 		.BITSLIP_ENABLE("FALSE"),
 		.SERDES_MODE("NONE"),
-		.INTERFACE_TYPE("NETWORKING")
+		.INTERFACE_TYPE("RETIMED")
 	) rx_p_hi_serdes (
 		.CLK0(clk_500mhz_bufpll),
 		.CLKDIV(clk_125mhz),
@@ -153,10 +156,10 @@ module TragicLaserPHY_iobufs(
 		.D(rx_p_hi),
 		.RST(1'b0),
 		.IOCE(serdes_strobe),
-		.Q1(rx_p_hi_arr[3]),
-		.Q2(rx_p_hi_arr[2]),
-		.Q3(rx_p_hi_arr[1]),
-		.Q4(rx_p_hi_arr[0])
+		.Q1(rx_p_hi_arr_raw[3]),
+		.Q2(rx_p_hi_arr_raw[2]),
+		.Q3(rx_p_hi_arr_raw[1]),
+		.Q4(rx_p_hi_arr_raw[0])
 	);
 
 	ISERDES2 #(
@@ -164,7 +167,7 @@ module TragicLaserPHY_iobufs(
 		.DATA_WIDTH(4),
 		.BITSLIP_ENABLE("FALSE"),
 		.SERDES_MODE("NONE"),
-		.INTERFACE_TYPE("NETWORKING")
+		.INTERFACE_TYPE("RETIMED")
 	) rx_p_lo_serdes (
 		.CLK0(clk_500mhz_bufpll),
 		.CLKDIV(clk_125mhz),
@@ -182,10 +185,10 @@ module TragicLaserPHY_iobufs(
 		.D(rx_p_lo),
 		.RST(1'b0),
 		.IOCE(serdes_strobe),
-		.Q1(rx_p_lo_arr[3]),
-		.Q2(rx_p_lo_arr[2]),
-		.Q3(rx_p_lo_arr[1]),
-		.Q4(rx_p_lo_arr[0])
+		.Q1(rx_p_lo_arr_raw[3]),
+		.Q2(rx_p_lo_arr_raw[2]),
+		.Q3(rx_p_lo_arr_raw[1]),
+		.Q4(rx_p_lo_arr_raw[0])
 	);
 
 	/*
@@ -195,7 +198,7 @@ module TragicLaserPHY_iobufs(
 		.DATA_WIDTH(4),
 		.BITSLIP_ENABLE("FALSE"),
 		.SERDES_MODE("NONE"),
-		.INTERFACE_TYPE("NETWORKING")
+		.INTERFACE_TYPE("RETIMED")
 	) rx_n_hi_serdes (
 		.CLK0(clk_500mhz_bufpll),
 		.CLKDIV(clk_125mhz),
@@ -216,7 +219,7 @@ module TragicLaserPHY_iobufs(
 		.DATA_WIDTH(4),
 		.BITSLIP_ENABLE("FALSE"),
 		.SERDES_MODE("NONE"),
-		.INTERFACE_TYPE("NETWORKING")
+		.INTERFACE_TYPE("RETIMED")
 	) rx_n_lo_serdes (
 		.CLK0(clk_500mhz_bufpll),
 		.CLKDIV(clk_125mhz),
@@ -231,6 +234,12 @@ module TragicLaserPHY_iobufs(
 		.Q4(rx_n_lo_arr[0])
 	);
 	*/
+
+	//Register the inputs to improve setup timing
+	always @(posedge clk_125mhz) begin
+		rx_p_hi_arr		<= rx_p_hi_arr_raw;
+		rx_p_lo_arr		<= rx_p_lo_arr_raw;
+	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Output buffers for 10Mbps lines
