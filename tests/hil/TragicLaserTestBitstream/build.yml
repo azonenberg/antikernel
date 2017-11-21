@@ -64,6 +64,11 @@ TragicLaserTestBitstream:
         #rx_n_signal_lo: 1
         #rx_n_vref_lo:   1
 
+    flags:
+        - global
+        - optimize/hierarchy/synth_only
+        - output/hierarchy/rebuild
+
     # All source code for now, no automatic generation
     sources:
         - TragicLaserTestBitstream.v

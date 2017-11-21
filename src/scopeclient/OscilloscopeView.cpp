@@ -573,7 +573,7 @@ void OscilloscopeView::MakeTimeRanges(vector<time_range>& ranges)
 		int64_t len = capture->GetSampleLen(i);
 		double sample_width = tscale * len;
 		double msw = m_renderers.begin()->second->m_maxsamplewidth;
-		if(	( analog && (len > 1) ) || (!analog && (sample_width > msw) ) )
+		if(	( analog && (len > 1) ) || (!analog && (sample_width > 500) ) )
 		{
 			sample_width = msw;
 			double xmid = startpos + sample_width/2;

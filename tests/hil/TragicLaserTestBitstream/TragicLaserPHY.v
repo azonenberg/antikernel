@@ -105,7 +105,8 @@ module TragicLaserPHY(
 
 	//Debug GPIOs
     inout wire[9:0]		gpio,
-    output reg[1:0]		led
+    output reg[1:0]		led,
+    input wire[7:0]		mstate
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -582,6 +583,8 @@ module TragicLaserPHY(
 			//Check for idle characters (0x1f descrambled).
 			if(rx_5b_code_unscrambled == 5'h1f)
 				rx_idle_runlen		<= rx_idle_runlen + 1'h1;
+
+			//Not an idle, reset counter
 			else begin
 				rx_last_lock		<= rx_last_lock + 1'h1;
 				rx_idle_runlen		<= 0;
@@ -599,13 +602,7 @@ module TragicLaserPHY(
 			if(rx_idle_runlen == 4'h9) begin
 				rx_lfsr_synced	<= 1;
 				rx_last_lock	<= 0;
-			end
-
-			//Four MTUs passed without an IPG? Definitely lost lock!
-			//Also unlock if the 4b/5b decoder saw too many errors
-			if( (rx_last_lock > 16'd12000) || rx_resync )begin
-				rx_lfsr_synced			<= 0;
-				rx_lfsr_wordcount		<= 0;
+				rx_idle_runlen	<= 0;
 			end
 
 			//If we are NOT synced, try using the complement of the last few words as the LFSR sequence.
@@ -633,22 +630,32 @@ module TragicLaserPHY(
 
 		end
 
+		//Four MTUs passed without an IPG? Definitely lost lock!
+		//Also unlock if the 4b/5b decoder saw too many errors
+		if( (rx_last_lock > 16'd12000) || rx_resync )begin
+			rx_lfsr_synced			<= 0;
+			rx_lfsr_wordcount		<= 0;
+		end
+
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// RX codeword alignment
 
-	//Keep a sliding window of the last 15 unscrambled bits
-	reg[14:0]	rx_last_15_unscrambled	= 0;
+	//Keep a sliding window of the last 25 unscrambled bits
+	reg[24:0]	rx_last_25_unscrambled	= 0;
 	always @(posedge clk_125mhz) begin
 		if(rx_5b_valid_unscrambled)
-			rx_last_15_unscrambled	<= {rx_last_15_unscrambled[9:0], rx_5b_code_unscrambled};
+			rx_last_25_unscrambled	<= {rx_last_25_unscrambled[19:0], rx_5b_code_unscrambled};
 	end
 
-	//Search the sliding window for the J-K sequence (start of stream) and update our sync when we see it
+	//Search the sliding window for the J-K sequence (start of stream) and update our sync when we see it.
+	//As an extra sanity check, the J-K should immediately follow several idle sequences (5'b111111).
 	reg			rx_stream_synced		= 0;
 	reg[2:0]	rx_stream_phase			= 0;
-	localparam RX_SSD_JK = 10'b1100010001;
+	localparam RX_SSD_JK =  10'b1100010001;
+	localparam RX_IDLE_X2 = 10'b1111111111;
+	localparam RX_IDLE_SSD	= { RX_IDLE_X2, RX_SSD_JK };
 
 	always @(posedge clk_125mhz) begin
 
@@ -659,9 +666,9 @@ module TragicLaserPHY(
 				rx_stream_synced			<= 0;
 
 			//If not synced, attempt to resync
-			if(!rx_stream_synced) begin
+			else if(!rx_stream_synced) begin
 				for(i=0; i<5; i=i+1) begin
-					if(rx_last_15_unscrambled[i +: 10] == RX_SSD_JK) begin
+					if(rx_last_25_unscrambled[i +: 20] == RX_IDLE_SSD) begin
 						rx_stream_synced		<= 1;
 						rx_stream_phase			<= i[2:0];
 					end
@@ -673,7 +680,7 @@ module TragicLaserPHY(
 	end
 
 	//Get the unscrambled, aligned 5-bit code groups
-	wire[4:0]	rx_5b_code_aligned		= rx_last_15_unscrambled[rx_stream_phase +: 5];
+	wire[4:0]	rx_5b_code_aligned		= rx_last_25_unscrambled[rx_stream_phase +: 5];
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// RX 4b/5b decoder
@@ -755,18 +762,23 @@ module TragicLaserPHY(
 
 		if(link_speed == LINK_SPEED_100) begin
 
-			valid_count					<= valid_count + 1'h1;
+			//Only check for loss of sync if we're currently synced
+			if(rx_lfsr_synced && rx_stream_synced) begin
 
-			if(rx_4b_code_valid && rx_4b_invalid)
-				num_invalid_chars		<= num_invalid_chars + 1'h1;
+				valid_count					<= valid_count + 1'h1;
 
-			if(valid_count == 0) begin
-				num_invalid_chars		<= 0;
+				if(rx_4b_code_valid && rx_4b_invalid)
+					num_invalid_chars		<= num_invalid_chars + 1'h1;
 
-				//16 invalid chars in 256? Something is way wrong, re-sync the link
-				//TODO: decide thresholds
-				if(num_invalid_chars > 'd16)
-					rx_resync			<= 1;
+				if(valid_count == 0) begin
+					num_invalid_chars		<= 0;
+
+					//16 invalid chars in 256? Something is way wrong, re-sync the link
+					//TODO: decide thresholds
+					if(num_invalid_chars > 'd16)
+						rx_resync			<= 1;
+
+				end
 
 			end
 
@@ -1353,6 +1365,14 @@ module TragicLaserPHY(
 	wire	trig_out;
 	wire	capture_done;
 
+	wire[15:0]	mlt3_state_changes_padded =
+	{
+		3'h0, mlt3_state_changes[3],
+		3'h0, mlt3_state_changes[2],
+		3'h0, mlt3_state_changes[1],
+		3'h0, mlt3_state_changes[0]
+	};
+
 	RedTinUartWrapper #(
 		.WIDTH(128),
 		.DEPTH(1024),
@@ -1369,18 +1389,13 @@ module TragicLaserPHY(
 				{ "rx_lfsr_synced", 			8'h0, 8'h1,  8'h0 },
 				{ "rx_stream_synced", 			8'h0, 8'h1,  8'h0 },
 				{ "rx_resync",					8'h0, 8'h1,  8'h0 },
-				{ "rx_4b_ctl",					8'h0, 8'h1,  8'h0 },
-				{ "rx_4b_code",					8'h0, 8'h4,  8'h0 },
-				{ "mii_rx_dv",					8'h0, 8'h1,  8'h0 },
-				{ "mii_rx_er",					8'h0, 8'h1,  8'h0 },
-				{ "mii_rxd",					8'h0, 8'h4,  8'h0 },
-				//{ "rx_p_state",					8'h0, 8'h10,  8'h0 },
 				{ "rx_5b_code_unscrambled",		8'h0, 8'h5,  8'h0 },
 				{ "rx_5b_code_aligned",			8'h0, 8'h5,  8'h0 },
-
-				{ "mii_tx_en",					8'h0, 8'h1,  8'h0 },
-				{ "mii_tx_er",					8'h0, 8'h1,  8'h0 },
-				{ "mii_txd",					8'h0, 8'h4,  8'h0 }
+				{ "rx_4b_ctl",					8'h0, 8'h1,  8'h0 },
+				{ "rx_4b_code",					8'h0, 8'h4,  8'h0 },
+				{ "mii_rx_er",					8'h0, 8'h1,  8'h0 },
+				{ "mii_rx_dv",					8'h0, 8'h1,  8'h0 },
+				{ "mii_rxd",					8'h0, 8'h4,  8'h0 }
 			}
 		)
 	) analyzer (
@@ -1391,20 +1406,15 @@ module TragicLaserPHY(
 				rx_lfsr_synced,				//1
 				rx_stream_synced,			//1
 				rx_resync,					//1
-				rx_4b_ctl,					//1
-				rx_4b_code,					//4
-				mii_rx_dv,					//1
-				mii_rx_er,					//1
-				mii_rxd,					//4
-				//rx_p_state,				//16
 				rx_5b_code_unscrambled,		//5
 				rx_5b_code_aligned,			//5
+				rx_4b_ctl,					//1
+				rx_4b_code,					//4
+				mii_rx_er,					//1
+				mii_rx_dv,					//1
+				mii_rxd,					//4
 
-				mii_tx_en,					//1
-				mii_tx_er,					//1
-				mii_txd,					//4
-
-				96'h0						//padding
+				102'h0						//padding
 			}),
 		.uart_rx(gpio[9]),
 		.uart_tx(gpio[7]),
@@ -1414,10 +1424,10 @@ module TragicLaserPHY(
 		.capture_done(capture_done)
 	);
 
+	//Output link state to the LEDs
 	always @(*) begin
 		led[0]	<= (link_speed == LINK_SPEED_100);
-		led[1]	<= 0;
-		//led[1]	<= rx_stream_synced;
+		led[1]	<= rx_lfsr_synced;
 	end
 
 	assign gpio[8] = 0;

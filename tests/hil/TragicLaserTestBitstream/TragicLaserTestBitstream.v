@@ -167,6 +167,8 @@ module TragicLaserTestBitstream(
     wire		mii_rx_dv;
     wire[3:0]	mii_rxd;
 
+    reg[7:0]	mstate = 0;
+
     TragicLaserPHY phy(
 		.clk_25mhz(clk_25mhz_bufg),
 		.clk_125mhz(clk_125mhz_bufg),
@@ -201,7 +203,8 @@ module TragicLaserTestBitstream(
 		.mii_rxd(mii_rxd),
 
 		.led(led),
-		.gpio(gpio)
+		.gpio(gpio),
+		.mstate(mstate)
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -309,8 +312,7 @@ module TragicLaserTestBitstream(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // MII bus
 
-    reg[7:0]	mcount	= 0;
-    reg[7:0]	mstate = 0;
+    reg[15:0]	mcount	= 0;
 
     reg[7:0]	packet_data[255:0];
     initial begin
@@ -423,14 +425,17 @@ module TragicLaserTestBitstream(
 		//crc_reset			<= 0;
 		//crc_update			<= 0;
 
-		mii_tx_en	<= 0;
+		mii_tx_en		<= 0;
+		mii_txd			<= 0;
 
 		case(mstate)
 
 			//Wait, then start the frame
 			0: begin
 				mcount		<= mcount + 1'h1;
-				if(mcount == 255) begin
+				//if(mcount == 65535) begin
+				if(mcount == 1024) begin
+					mcount			<= 0;
 					mii_tx_en		<= 1;
 					mstate			<= 1;
 					//crc_reset		<= 1;

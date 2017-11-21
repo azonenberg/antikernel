@@ -177,7 +177,7 @@ void Ethernet100BaseTDecoder::Refresh()
 	{
 		if(TrySync(bits, descrambled_bits, idle_offset))
 		{
-			//LogDebug("Got good LFSR sync at offset %u\n", idle_offset);
+			LogDebug("Got good LFSR sync at offset %u\n", idle_offset);
 			synced = true;
 			break;
 		}
