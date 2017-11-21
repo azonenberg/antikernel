@@ -104,7 +104,8 @@ module TragicLaserPHY(
     output reg			mii_rx_er	= 0,
 
 	//Debug GPIOs
-    inout wire[9:0]		gpio
+    inout wire[9:0]		gpio,
+    output reg[1:0]		led
 	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,143 +115,36 @@ module TragicLaserPHY(
 	assign			mii_tx_clk	= clk_25mhz;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// I/O buffers
+	// Physical Medium Attachment
+	// Turns outbound symbols into H-bridge control signals, and inbound voltages into level-detect signals
 
-	reg[3:0]		tx_d_100m_p	= 4'h0;
-	reg[3:0]		tx_t_100m_p	= 4'hf;
+	`include "TragicLaserPHY_symbols.vh"
 
-	reg[3:0]		tx_d_100m_n	= 4'h0;
-	reg[3:0]		tx_t_100m_n	= 4'hf;
+	reg[2:0]	tx_symbol			= TX_SYMBOL_0;
 
-	reg[3:0]		tx_d_10m_p	= 4'h0;
-	reg[3:0]		tx_t_10m_p	= 4'hf;
+	wire[3:0]	rx_p_hi_arr;
+	wire[3:0]	rx_p_lo_arr;
 
-	reg[3:0]		tx_d_10m_n	= 4'h0;
-	reg[3:0]		tx_t_10m_n	= 4'hf;
-
-	wire[3:0]		rx_p_hi_arr;
-	wire[3:0]		rx_p_lo_arr;
-
-	TragicLaserPHY_iobufs iobufs(
+	TragicLaserPHY_PMA pma(
 		.clk_125mhz(clk_125mhz),
 		.clk_500mhz_bufpll(clk_500mhz_bufpll),
 		.serdes_strobe(serdes_strobe),
 
-		.tx_p_a(tx_p_a),
 		.tx_p_b(tx_p_b),
-		.tx_n_a(tx_n_a),
+		.tx_p_a(tx_p_a),
 		.tx_n_b(tx_n_b),
+		.tx_n_a(tx_n_a),
 
 		.rx_p_signal_hi(rx_p_signal_hi),
 		.rx_p_vref_hi(rx_p_vref_hi),
 		.rx_p_signal_lo(rx_p_signal_lo),
 		.rx_p_vref_lo(rx_p_vref_lo),
 
-		.tx_d_100m_p(tx_d_100m_p),
-		.tx_t_100m_p(tx_t_100m_p),
-		.tx_d_100m_n(tx_d_100m_n),
-		.tx_t_100m_n(tx_t_100m_n),
-
-		.tx_d_10m_p(tx_d_10m_p),
-		.tx_t_10m_p(tx_t_10m_p),
-		.tx_d_10m_n(tx_d_10m_n),
-		.tx_t_10m_n(tx_t_10m_n),
+		.tx_symbol(tx_symbol),
 
 		.rx_p_hi_arr(rx_p_hi_arr),
 		.rx_p_lo_arr(rx_p_lo_arr)
 	);
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// PMA layer: drive the H-bridge outputs depending on the chosen line rate and output waveform
-
-	localparam LINK_SPEED_DOWN		= 0;	//autonegotiation etc
-	localparam LINK_SPEED_10		= 1;
-	localparam LINK_SPEED_100		= 2;
-
-	reg[1:0]	link_speed			= LINK_SPEED_100;
-
-	localparam TX_SYMBOL_N2			= 0;	//-2.5V
-	localparam TX_SYMBOL_N1			= 1;	//-1V
-	localparam TX_SYMBOL_0			= 2;	// 0V
-	localparam TX_SYMBOL_1			= 3;	//+1V
-	localparam TX_SYMBOL_2			= 4;	//+2.5V
-
-	reg[2:0]	tx_symbol			= TX_SYMBOL_0;
-	reg[2:0]	tx_symbol_ff		= TX_SYMBOL_0;
-
-	always @(posedge clk_125mhz) begin
-
-		//Tristate all drivers by default
-		tx_t_100m_p			<= 4'b1111;
-		tx_t_100m_n			<= 4'b1111;
-
-		tx_t_10m_p			<= 4'b1111;
-		tx_t_10m_n			<= 4'b1111;
-
-		tx_symbol_ff		<= tx_symbol;
-
-		case(tx_symbol)
-
-			//10baseT -2.5V
-			TX_SYMBOL_N2: begin
-				//tx_p_a		<= 2'b00;
-				//tx_n_a		<= 2'b11;
-			end
-
-			//100baseTX -1V
-			TX_SYMBOL_N1: begin
-				tx_t_100m_p		<= 4'b0000;
-				tx_t_100m_n		<= 4'b0000;
-
-				tx_d_100m_p		<= 4'b0000;
-				tx_d_100m_n		<= 4'b1111;
-			end
-
-			//100baseTX 0 or 10baseT differential idle - leave all drivers tristated
-			TX_SYMBOL_0: begin
-
-				//If we're coming from a 100baseTX -1 state, drive +1 briefly
-				if(tx_symbol_ff == TX_SYMBOL_N1) begin
-					tx_t_10m_p		<= 4'b1110;
-					tx_t_10m_n		<= 4'b1110;
-
-					tx_d_10m_p		<= 4'b1111;
-					tx_d_10m_n		<= 4'b0000;
-				end
-
-				//If we're coming from a 100baseTX +1 state, drive -1 briefly
-				else if(tx_symbol_ff == TX_SYMBOL_1) begin
-					tx_t_10m_p		<= 4'b1110;
-					tx_t_10m_n		<= 4'b1110;
-
-					tx_d_10m_p		<= 4'b0000;
-					tx_d_10m_n		<= 4'b1111;
-				end
-
-			end
-
-			//100baseTX 1V
-			TX_SYMBOL_1: begin
-
-				tx_t_100m_p		<= 4'b0000;
-				tx_t_100m_n		<= 4'b0000;
-
-				tx_d_100m_p		<= 4'b1111;
-				tx_d_100m_n		<= 4'b0000;
-
-				//tx_p_b		<= 1'b1;
-				//tx_n_b		<= 1'b0;
-			end
-
-			//10baseT +2.5V
-			TX_SYMBOL_2: begin
-				//tx_p_a		<= 2'b11;
-				//tx_n_a		<= 2'b00;
-			end
-
-		endcase
-
-	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Sync from MII clock to TX clock domain
@@ -264,6 +158,39 @@ module TragicLaserPHY(
 	end
 	always @(posedge clk_125mhz) begin
 		tx_toggle_ff		<= tx_toggle;
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// TX autonegotiation pulse generator
+
+	localparam LINK_SPEED_DOWN		= 0;	//autonegotiation etc
+	localparam LINK_SPEED_10		= 1;
+	localparam LINK_SPEED_100		= 2;
+
+	reg[1:0]	link_speed			= LINK_SPEED_DOWN;
+
+	//outbound data (+2.5 or 0)
+	reg			tx_aneg_data	= 0;
+
+	//One FLP lasts ~100 ns, clock period is 8 ns.
+	//We send 104 ns long pulses (13 clocks long) to be on the safe side.
+	reg			tx_flp_en		= 0;
+	reg[3:0]	tx_flp_count	= 0;
+	always @(posedge clk_125mhz) begin
+
+		if(tx_flp_en) begin
+			tx_flp_count		<= 1;
+			tx_aneg_data		<= 1;
+		end
+
+		if(tx_flp_count) begin
+			tx_flp_count		<= tx_flp_count + 1'h1;
+			if(tx_flp_count == 'd13) begin
+				tx_aneg_data	<= 0;
+				tx_flp_count	<= 0;
+			end
+		end
+
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -392,7 +319,12 @@ module TragicLaserPHY(
 
 		case(link_speed)
 
+			//Autonegotiation: send positive going pulses or zeroes
 			LINK_SPEED_DOWN: begin
+				if(tx_aneg_data)
+					tx_symbol		<= TX_SYMBOL_2;
+				else
+					tx_symbol		<= TX_SYMBOL_0;
 			end
 
 			//10Base-T not implemented
@@ -416,12 +348,14 @@ module TragicLaserPHY(
 	// TX MII interface
 
 	reg			mii_tx_en_ff		= 0;
+	reg			mii_tx_en_ff2		= 0;
 	reg			frame_active		= 0;
 	reg[3:0]	mii_txd_ff			= 0;
 
 	always @(posedge mii_tx_clk) begin
 
 		mii_tx_en_ff			<= mii_tx_en;
+		mii_tx_en_ff2			<= mii_tx_en_ff;
 		mii_txd_ff				<= mii_txd;
 
 		//Sending a frame
@@ -438,7 +372,7 @@ module TragicLaserPHY(
 			end
 
 			//When mii_tx_en goes low, send the first half of the end-of-stream delimiter
-			if(!mii_tx_en && mii_tx_en_ff) begin
+			if(!mii_tx_en_ff && mii_tx_en_ff2) begin
 				tx_ctl_char		<= 1;
 				tx_4b_code		<= CTL_END_T;
 				frame_active	<= 0;
@@ -636,7 +570,14 @@ module TragicLaserPHY(
 	//Advance the LFSR and check for lock
 	always @(posedge clk_125mhz) begin
 
-		if(rx_5b_valid) begin
+		//If link isn't at 100M speed, dont even bother checking
+		if(link_speed != LINK_SPEED_100) begin
+			rx_lfsr_synced			<= 0;
+			rx_last_lock			<= 0;
+			rx_idle_runlen			<= 0;
+		end
+
+		else if(rx_5b_valid ) begin
 
 			//Check for idle characters (0x1f descrambled).
 			if(rx_5b_code_unscrambled == 5'h1f)
@@ -745,8 +686,8 @@ module TragicLaserPHY(
 	always @(*) begin
 
 		//Default to valid non-control char
-		rx_4b_ctl					<= 0;
-		rx_4b_invalid				<= 0;
+		rx_4b_ctl						<= 0;
+		rx_4b_invalid					<= 0;
 
 		case(rx_5b_code_aligned)
 
@@ -809,21 +750,34 @@ module TragicLaserPHY(
 	reg[7:0]	valid_count				= 0;
 
 	always @(posedge clk_125mhz) begin
-		valid_count					<= valid_count + 1'h1;
-		rx_resync					<= 0;
 
-		if(rx_4b_code_valid && rx_4b_invalid)
-			num_invalid_chars		<= num_invalid_chars + 1'h1;
+		rx_resync						<= 0;
 
-		if(valid_count == 0) begin
-			num_invalid_chars		<= 0;
+		if(link_speed == LINK_SPEED_100) begin
 
-			//16 invalid chars in 256? Something is way wrong, reset the link
-			//TODO: decide thresholds
-			if(num_invalid_chars > 'd16)
-				rx_resync			<= 1;
+			valid_count					<= valid_count + 1'h1;
+
+			if(rx_4b_code_valid && rx_4b_invalid)
+				num_invalid_chars		<= num_invalid_chars + 1'h1;
+
+			if(valid_count == 0) begin
+				num_invalid_chars		<= 0;
+
+				//16 invalid chars in 256? Something is way wrong, re-sync the link
+				//TODO: decide thresholds
+				if(num_invalid_chars > 'd16)
+					rx_resync			<= 1;
+
+			end
 
 		end
+
+		//Link down? Reset everything
+		else begin
+			num_invalid_chars		<= 0;
+			valid_count				<= 0;
+		end
+
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -968,6 +922,431 @@ module TragicLaserPHY(
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// TX autonegotiation serializer
+
+	//The link codeword
+	reg[15:0]	tx_link_codeword 		= 0;
+
+	reg[23:0]	tx_flp_interval_count	= 0;
+	reg[4:0]	tx_flp_bit_count		= 0;
+
+	reg			tx_aneg_word_sent		= 0;
+
+	localparam TX_FLP_STATE_WAIT		= 0;
+	localparam TX_FLP_STATE_CLOCK_WAIT	= 1;
+	localparam TX_FLP_STATE_DATA_WAIT	= 2;
+
+	reg[1:0]	tx_flp_state			= TX_FLP_STATE_WAIT;
+
+	always @(posedge clk_125mhz) begin
+
+		tx_flp_en			<= 0;
+		tx_aneg_word_sent	<= 0;
+
+		if(link_speed == LINK_SPEED_DOWN) begin
+
+			case(tx_flp_state)
+
+				//Wait for the next burst
+				TX_FLP_STATE_WAIT: begin
+					tx_flp_interval_count		<= tx_flp_interval_count + 1'h1;
+
+					//Bursts are nominally 16 ms (2000000 clocks) apart.
+					//Send a clock pulse if we're starting a burst, then wait
+					if(tx_flp_interval_count == 24'd1999999) begin
+						tx_flp_en				<= 1;
+						tx_flp_state			<= TX_FLP_STATE_CLOCK_WAIT;
+						tx_flp_interval_count	<= 0;
+						tx_flp_bit_count		<= 0;
+					end
+
+				end	//end TX_FLP_STATE_WAIT
+
+				//Wait for the end of the clock period (start of data period)
+				TX_FLP_STATE_CLOCK_WAIT: begin
+
+					tx_flp_interval_count		<= tx_flp_interval_count + 1'h1;
+
+					//Pulses are nominally 62.5 us (7812 clocks) apart
+					if(tx_flp_interval_count == 24'd7812) begin
+
+						//Send the data bit
+						tx_flp_en				<= tx_link_codeword[15 - tx_flp_bit_count];
+						tx_flp_bit_count		<= tx_flp_bit_count + 1'h1;
+
+						//Wait until the next clock period
+						tx_flp_interval_count	<= 0;
+						tx_flp_state			<= TX_FLP_STATE_DATA_WAIT;
+
+					end
+
+				end	//end TX_FLP_STATE_CLOCK_WAIT
+
+				//Wait until the end of the data period (start of clock period)
+				TX_FLP_STATE_DATA_WAIT: begin
+
+					tx_flp_interval_count		<= tx_flp_interval_count + 1'h1;
+
+					//Pulses are nominally 62.5 us (7812 clocks) apart
+					if(tx_flp_interval_count == 24'd7812) begin
+
+						//Send the clock bit
+						tx_flp_en				<= 1;
+
+						//Reset counters
+						tx_flp_interval_count	<= 0;
+
+						//If we've sent a total of 17 clock bits and 16 data bits, stop
+						if(tx_flp_bit_count == 5'd16) begin
+							tx_aneg_word_sent	<= 1;
+							tx_flp_state		<= TX_FLP_STATE_WAIT;
+						end
+
+						//Nope, get ready to send the next data bit
+						else
+							tx_flp_state		<= TX_FLP_STATE_CLOCK_WAIT;
+
+					end
+
+				end	//end TX_FLP_STATE_DATA_WAIT
+
+			endcase
+
+		end
+
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// RX autonegotiation deserializer
+
+	//FLPs are significantly slower than either our 125 MHz system clock or our 500 MHz oversampling clock.
+	//Simplify things a bit and only trigger when we have a stable value.
+	wire	rx_aneg_bval	= (rx_p_state == 16'h3333);
+
+	reg			rx_link_codeword_updated	= 0;
+	reg[15:0]	rx_link_codeword			= 0;
+	reg[15:0]	rx_link_tempword			= 0;
+
+	reg[23:0]	rx_aneg_timer				= 0;
+	reg[4:0]	rx_aneg_bit_count			= 0;
+
+	localparam RX_ANEG_STATE_IDLE			= 4'h0;
+	localparam RX_ANEG_STATE_CLOCK_PULSE	= 4'h1;
+	localparam RX_ANEG_STATE_DATA_PULSE		= 4'h2;
+	localparam RX_ANEG_STATE_DROP_PULSE		= 4'h3;
+	localparam RX_ANEG_STATE_CLOCK_WAIT		= 4'h4;
+	localparam RX_ANEG_STATE_DATA_WAIT		= 4'h5;
+
+	reg[3:0]	rx_aneg_state				= RX_ANEG_STATE_IDLE;
+
+	reg			rx_aneg_bval_ff				= 0;
+
+	always @(posedge clk_125mhz) begin
+
+		rx_link_codeword_updated			<= 0;
+
+		//Extra register stage for synchronization
+		rx_aneg_bval_ff						<= rx_aneg_bval;
+
+		if(link_speed == LINK_SPEED_DOWN) begin
+
+			case(rx_aneg_state)
+
+				//IDLE - sit around and wait for a pulse to start
+				RX_ANEG_STATE_IDLE: begin
+
+					rx_aneg_timer				<= rx_aneg_timer + 1'h1;
+					rx_aneg_bit_count			<= 0;
+
+					//If we get a pulse, it's probably the clock starting a new FLP code word.
+					if(rx_aneg_bval_ff) begin
+
+						rx_aneg_timer			<= 0;
+
+						//If we've waited less than 7 ms (875000) since the last pulse, though, that's not enough time.
+						//We're probably in the middle of a dropped codeword.
+						//Reset the timer and wait longer.
+						if(rx_aneg_timer < 875000) begin
+						end
+
+						//Time checks out, this is the start of a new code burst!
+						else
+							rx_aneg_state		<= RX_ANEG_STATE_CLOCK_PULSE;
+					end
+
+				end //end RX_ANEG_STATE_IDLE
+
+				//Clock pulse - signal is high, wait for it to go low
+				RX_ANEG_STATE_CLOCK_PULSE: begin
+
+					if(!rx_aneg_bval) begin
+
+						//If we've read 16 bits, we're done with this code burst!
+						if(rx_aneg_bit_count == 16) begin
+							rx_link_codeword			<= rx_link_tempword;
+							rx_link_tempword			<= 0;
+							rx_link_codeword_updated	<= 1;
+							rx_aneg_state				<= RX_ANEG_STATE_IDLE;
+						end
+
+						//Nope, wait for next data word
+						else begin
+							rx_aneg_timer		<= 0;
+							rx_aneg_state		<= RX_ANEG_STATE_DATA_PULSE;
+						end
+
+					end
+				end	//end RX_ANEG_STATE_CLOCK_PULSE
+
+				//Wait for signal to go high again, indicating either a data or clock pulse.
+				RX_ANEG_STATE_DATA_PULSE: begin
+
+					rx_aneg_timer				<= rx_aneg_timer + 1'h1;
+
+					//If we've gone >140 us (17500 clocks) without a clock, we're not synced anymore.
+					//Give up and wait for the next burst.
+					if(rx_aneg_timer > 17500)
+						rx_aneg_state			<= RX_ANEG_STATE_DROP_PULSE;
+
+					//We got a pulse!
+					else if(rx_aneg_bval_ff) begin
+
+						//If last pulse was less than 55 us (6875 clocks) ago, it's a glitch.
+						//Drop this codeword and hope the next one is cleaner.
+						if(rx_aneg_timer < 6875)
+							rx_aneg_state		<= RX_ANEG_STATE_DROP_PULSE;
+
+						else begin
+							rx_aneg_bit_count	<= rx_aneg_bit_count + 1'h1;
+							rx_aneg_timer		<= 0;
+
+							//If last pulse was less than 70 us (8750 clocks) ago, it's a "1" data pulse.
+							//Record it, then wait for next clock pulse
+							if(rx_aneg_timer < 8750) begin
+								rx_link_tempword	<= {rx_link_tempword[14:0], 1'b1};
+								rx_aneg_state		<= RX_ANEG_STATE_DATA_WAIT;
+							end
+
+							//Nope, last pulse was closer to 125us ago. It's a "0" data pulse and we're currently
+							//in the subsequent clock period. Record it, then wait for clock to end
+							else begin
+								rx_link_tempword	<= {rx_link_tempword[14:0], 1'b0};
+								rx_aneg_state		<= RX_ANEG_STATE_CLOCK_PULSE;
+							end
+
+						end
+
+					end
+
+				end	//end RX_ANEG_STATE_DATA_PULSE
+
+				//Data pulse is high, wait for it to go low
+				RX_ANEG_STATE_DATA_WAIT: begin
+
+					//Done with data bit, wait for next clock
+					if(!rx_aneg_bval_ff)
+						rx_aneg_state	<= RX_ANEG_STATE_CLOCK_WAIT;
+
+				end	//end RX_ANEG_STATE_DATA_WAIT
+
+				//Wait for the signal to go high (expecting a clock pulse)
+				RX_ANEG_STATE_CLOCK_WAIT: begin
+
+					rx_aneg_timer				<= rx_aneg_timer + 1'h1;
+
+					//If we've gone >140 us (17500 clocks) without a clock, we're not synced anymore.
+					//Give up and wait for the next burst.
+					if(rx_aneg_timer > 17500)
+						rx_aneg_state			<= RX_ANEG_STATE_DROP_PULSE;
+
+					//Got a clock! Wait for it to end
+					else if(rx_aneg_bval_ff)
+						rx_aneg_state			<= RX_ANEG_STATE_CLOCK_PULSE;
+
+				end	//end RX_ANEG_STATE_CLOCK_WAIT
+
+				//Drop this pulse
+				RX_ANEG_STATE_DROP_PULSE: begin
+					if(!rx_aneg_bval_ff) begin
+						rx_aneg_timer	<= 0;
+						rx_aneg_state	<= RX_ANEG_STATE_IDLE;
+					end
+				end	//end RX_ANEG_STATE_DROP_PULSE
+
+			endcase
+
+		end
+
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Main autonegotiation state machine
+
+	wire[4:0] 	tx_aneg_sel		= 5'h10;		//IEEE 802.3 Ethernet
+	wire[6:0]	tx_aneg_ability = 7'b0001000;	//Left to right:
+												//no 10/half
+												//no 10/full
+												//no 100/half
+												//100/full
+												//no 100/T4
+												//no pause
+												//no asymmetric pause
+
+	wire		tx_aneg_xnp		= 0;			//extended next-page not supported
+	wire		tx_aneg_rf		= 0;			//remote fault not supported
+	reg			tx_aneg_ack		= 0;
+	wire		tx_aneg_np		= 0;			//next page not supported
+
+	always @(*) begin
+		tx_link_codeword	<=					//note, bit numbering is reversed from the 802.3 spec
+												//since we send bit 15 first instead of 0
+		{
+			tx_aneg_sel,
+			tx_aneg_ability,
+			tx_aneg_xnp,
+			tx_aneg_rf,
+			tx_aneg_ack,
+			tx_aneg_np
+		};
+	end
+
+	localparam ANEG_STATE_IDLE			= 4'h0;
+	localparam ANEG_STATE_WAIT_FOR_ACK	= 4'h1;
+	localparam ANEG_STATE_VERIFY_ACK	= 4'h2;
+	localparam ANEG_STATE_LINK_PENDING	= 4'h3;
+	localparam ANEG_STATE_LINK_UP		= 4'h4;
+
+	reg[3:0]	aneg_state			= ANEG_STATE_IDLE;
+
+	reg[15:0]	aneg_last_code		= 0;
+	reg[2:0]	aneg_matches		= 0;
+	reg[31:0]	link_down_count		= 0;
+
+	always @(posedge clk_125mhz) begin
+
+		case(aneg_state)
+
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// IDLE -
+
+			ANEG_STATE_IDLE: begin
+
+				//Wait for new link codewords
+				if(rx_link_codeword_updated) begin
+
+					//If we get a code word that doesn't match the last code, reset things
+					//note, we don't care about ack/NP at this time
+					if(rx_link_codeword[15:2] != aneg_last_code[15:2]) begin
+						aneg_matches	<= 0;
+						tx_aneg_ack		<= 0;
+						aneg_last_code	<= rx_link_codeword;
+					end
+
+					//If it's the same, keep count
+					else begin
+						aneg_matches	<= aneg_matches + 1'h1;
+
+						//After 3 matches, set the ack bit, then wait for the other end to acknowledge it
+						if(aneg_matches == 2) begin
+							tx_aneg_ack		<= 1;
+							aneg_matches	<= 0;
+							aneg_state		<= ANEG_STATE_WAIT_FOR_ACK;
+						end
+
+					end
+
+				end
+
+			end	//end ANEG_STATE_IDLE
+
+			ANEG_STATE_WAIT_FOR_ACK: begin
+
+				//If the other end has the ACK bit, move on
+				if(rx_link_codeword_updated && rx_link_codeword[1])
+					aneg_state		<= ANEG_STATE_VERIFY_ACK;
+
+			end	//end ANEG_STATE_WAIT_FOR_ACK
+
+			ANEG_STATE_VERIFY_ACK: begin
+
+				if(rx_link_codeword_updated) begin
+
+					//If we get a code word that doesn't match the last code, reset things
+					if(rx_link_codeword != aneg_last_code) begin
+						aneg_matches	<= 0;
+						tx_aneg_ack		<= 0;
+						aneg_last_code	<= rx_link_codeword;
+						aneg_state		<= ANEG_STATE_IDLE;
+					end
+
+					//If it's the same, keep count
+					else begin
+						aneg_matches	<= aneg_matches + 1'h1;
+
+						//After 3 matches, actually execute things!
+						if(aneg_matches == 2) begin
+
+							//This should be an 802.3 base page. If not, give up
+							if(rx_link_codeword[15:11] != 5'h10)
+								aneg_state	<= ANEG_STATE_IDLE;
+
+							//If the other end does not support 100/full, give up.
+							//TODO: 10/full support
+							else if(!rx_link_codeword[7])
+								aneg_state	<= ANEG_STATE_IDLE;
+
+							//If the remote fault bit is set, give up
+							else if(rx_link_codeword[2])
+								aneg_state	<= ANEG_STATE_IDLE;
+
+							//If we get to this point, we're good!
+							//The remote side supports 100Base-TX, bring the link up.
+							else begin
+								aneg_state	<= ANEG_STATE_LINK_PENDING;
+								link_speed	<= LINK_SPEED_100;
+							end
+
+						end
+
+					end
+
+				end
+
+			end //end ANEG_STATE_VERIFY_ACK
+
+			ANEG_STATE_LINK_PENDING: begin
+
+				aneg_matches	<= 0;
+
+				//The link is up! Wait for everything to sync
+				if(rx_lfsr_synced && rx_stream_synced)
+					aneg_state	<= ANEG_STATE_LINK_UP;
+
+			end	//end ANEG_STATE_LINK_PENDING
+
+			ANEG_STATE_LINK_UP: begin
+
+				if(rx_lfsr_synced)
+					link_down_count	<= 0;
+
+				//If the LFSR is not synced, start counting.
+				//Drop the link after 500 ms with no lock
+				else begin
+					link_down_count	<= link_down_count + 1'h1;
+
+					if(link_down_count == 32'd62500000) begin
+						aneg_state	<= ANEG_STATE_IDLE;
+						link_speed	<= LINK_SPEED_DOWN;
+					end
+				end
+
+			end	//end ANEG_STATE_LINK_UP
+
+		endcase
+
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Debug GPIOs
 
 	wire	la_ready;
@@ -986,42 +1365,60 @@ module TragicLaserPHY(
 				32'd8000,		//period of internal clock, in ps
 				32'd1024,		//Capture depth (TODO auto-patch this?)
 				32'd128,		//Capture width (TODO auto-patch this?)
-				{ "mii_tx_en", 					8'h0, 8'h1,  8'h0 },
-				{ "mii_tx_er", 					8'h0, 8'h1,  8'h0 },
-				{ "mii_txd", 					8'h0, 8'h4,  8'h0 },
+				{ "link_speed",					8'h0, 8'h2,  8'h0 },
 				{ "rx_lfsr_synced", 			8'h0, 8'h1,  8'h0 },
 				{ "rx_stream_synced", 			8'h0, 8'h1,  8'h0 },
-				{ "rx_fifo_wr", 				8'h0, 8'h1,  8'h0 },
-				{ "starting_next_cycle", 		8'h0, 8'h1,  8'h0 },
+				{ "rx_resync",					8'h0, 8'h1,  8'h0 },
+				{ "rx_4b_ctl",					8'h0, 8'h1,  8'h0 },
+				{ "rx_4b_code",					8'h0, 8'h4,  8'h0 },
 				{ "mii_rx_dv",					8'h0, 8'h1,  8'h0 },
 				{ "mii_rx_er",					8'h0, 8'h1,  8'h0 },
-				{ "mii_rxd",					8'h0, 8'h4,  8'h0 }
+				{ "mii_rxd",					8'h0, 8'h4,  8'h0 },
+				//{ "rx_p_state",					8'h0, 8'h10,  8'h0 },
+				{ "rx_5b_code_unscrambled",		8'h0, 8'h5,  8'h0 },
+				{ "rx_5b_code_aligned",			8'h0, 8'h5,  8'h0 },
+
+				{ "mii_tx_en",					8'h0, 8'h1,  8'h0 },
+				{ "mii_tx_er",					8'h0, 8'h1,  8'h0 },
+				{ "mii_txd",					8'h0, 8'h4,  8'h0 }
 			}
 		)
 	) analyzer (
 		.clk(clk_125mhz),
 		.capture_clk(clk_125mhz),
 		.din({
-				mii_tx_en,					//1
-				mii_tx_er,					//1
-				mii_txd,					//4
+				link_speed,					//2
 				rx_lfsr_synced,				//1
 				rx_stream_synced,			//1
-				rx_fifo_wr,					//1
-				starting_next_cycle,		//1
+				rx_resync,					//1
+				rx_4b_ctl,					//1
+				rx_4b_code,					//4
 				mii_rx_dv,					//1
 				mii_rx_er,					//1
 				mii_rxd,					//4
+				//rx_p_state,				//16
+				rx_5b_code_unscrambled,		//5
+				rx_5b_code_aligned,			//5
 
-				112'h0						//padding
+				mii_tx_en,					//1
+				mii_tx_er,					//1
+				mii_txd,					//4
+
+				96'h0						//padding
 			}),
 		.uart_rx(gpio[9]),
 		.uart_tx(gpio[7]),
 		.la_ready(la_ready),
-		.ext_trig(1'b0),
+		.ext_trig(),
 		.trig_out(trig_out),
 		.capture_done(capture_done)
 	);
+
+	always @(*) begin
+		led[0]	<= (link_speed == LINK_SPEED_100);
+		led[1]	<= 0;
+		//led[1]	<= rx_stream_synced;
+	end
 
 	assign gpio[8] = 0;
 	assign gpio[6:3] = 0;
@@ -1029,7 +1426,7 @@ module TragicLaserPHY(
 	DDROutputBuffer #(.WIDTH(1))
 		ddrbuf(.clk_p(clk_125mhz), .clk_n(!clk_125mhz), .dout(gpio[1]), .din0(1'b0), .din1(1'b1));
 
-	assign gpio[0] = la_ready;			//d0
-	assign gpio[2] = capture_done;		//d3
+	assign gpio[0] = (link_speed == LINK_SPEED_DOWN);
+	assign gpio[2] = (link_speed == LINK_SPEED_100);
 
 endmodule

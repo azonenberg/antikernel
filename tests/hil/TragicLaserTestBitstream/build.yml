@@ -69,6 +69,7 @@ TragicLaserTestBitstream:
         - TragicLaserTestBitstream.v
         - TragicLaserPHY.v
         - TragicLaserPHY_iobufs.v
+        - TragicLaserPHY_PMA.v
         - ../../../antikernel-ipcores/clock/crossing/HandshakeSynchronizer.v
         - ../../../antikernel-ipcores/clock/crossing/ThreeStageSynchronizer.v
         - ../../../antikernel-ipcores/dataflow/SingleClockFifo.v
@@ -78,4 +79,5 @@ TragicLaserTestBitstream:
         - ../../../antikernel-ipcores/la/RedTinLogicAnalyzer.v
         - ../../../antikernel-ipcores/la/RedTinLogicAnalyzer_trigger.v
         - ../../../antikernel-ipcores/la/RedTinUartWrapper.v
+        - ../../../antikernel-ipcores/math/CRC32_Ethernet.v
         - ../../../antikernel-ipcores/interface/uart/UART.v

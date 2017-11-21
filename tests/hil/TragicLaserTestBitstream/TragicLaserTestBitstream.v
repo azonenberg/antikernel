@@ -31,7 +31,7 @@
 module TragicLaserTestBitstream(
 	input wire 			clk_100mhz,
 
-    output reg[1:0] 	led = 0,
+    output wire[1:0] 	led,
     inout wire[9:0] 	gpio,
 
     output wire			tx_p_b,
@@ -159,7 +159,7 @@ module TragicLaserTestBitstream(
 
     wire		mii_tx_clk;
     reg			mii_tx_en	= 0;
-    reg			mii_tx_er	= 0;
+    wire		mii_tx_er 	= 0;
     reg[3:0]	mii_txd		= 0;
 
     wire		mii_rx_clk;
@@ -200,8 +200,111 @@ module TragicLaserTestBitstream(
 		.mii_rx_dv(mii_rx_dv),
 		.mii_rxd(mii_rxd),
 
+		.led(led),
 		.gpio(gpio)
 	);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // CRC calculation
+
+	/*
+    reg			mii_tx_en_adv	= 0;
+    reg[3:0]	mii_txd_adv		= 0;
+
+    reg			crc_reset		= 0;
+    reg			crc_update		= 0;
+    reg[7:0]	crc_din			= 8'hff;
+    wire[31:0]	crc_dout;
+
+	CRC32_Ethernet crc(
+		.clk(mii_tx_clk),
+		.reset(crc_reset),
+		.update(crc_update),
+		.din(crc_din),
+		.crc_flipped(crc_dout)
+	);
+
+	reg[3:0]	frame_state		= 0;
+
+	always @(posedge mii_tx_clk) begin
+
+		case(frame_state)
+
+			0: begin
+				mii_tx_en	<= 0;
+				mii_txd		<= 0;
+
+				if(mii_tx_en_adv) begin
+					mii_tx_en	<= 1;
+					mii_txd		<= mii_txd_adv;
+					if(mii_txd_adv == 4'hd)		//done with preamble
+						frame_state	<= 1;
+				end
+			end
+
+			1: begin
+
+				//Default to pushing more frame data
+				if(mii_tx_en_adv) begin
+					mii_tx_en	<= 1;
+					mii_txd		<= mii_txd_adv;
+				end
+
+				//Push first CRC word
+				else begin
+					mii_tx_en	<= 1;
+					mii_txd		<= crc_dout[31:28];
+					frame_state	<= 2;
+				end
+
+			end
+
+			2: begin
+				mii_tx_en	<= 1;
+				mii_txd		<= crc_dout[27:24];
+				frame_state	<= 3;
+			end
+
+			3: begin
+				mii_tx_en	<= 1;
+				mii_txd		<= crc_dout[23:20];
+				frame_state	<= 4;
+			end
+
+			4: begin
+				mii_tx_en	<= 1;
+				mii_txd		<= crc_dout[19:16];
+				frame_state	<= 5;
+			end
+
+			5: begin
+				mii_tx_en	<= 1;
+				mii_txd		<= crc_dout[15:12];
+				frame_state	<= 6;
+			end
+
+			6: begin
+				mii_tx_en	<= 1;
+				mii_txd		<= crc_dout[11:8];
+				frame_state	<= 7;
+			end
+
+			7: begin
+				mii_tx_en	<= 1;
+				mii_txd		<= crc_dout[7:4];
+				frame_state	<= 8;
+			end
+
+			8: begin
+				mii_tx_en	<= 1;
+				mii_txd		<= crc_dout[3:0];
+				frame_state	<= 0;
+			end
+
+		endcase
+
+	end
+	*/
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // MII bus
@@ -209,9 +312,118 @@ module TragicLaserTestBitstream(
     reg[7:0]	mcount	= 0;
     reg[7:0]	mstate = 0;
 
+    reg[7:0]	packet_data[255:0];
+    initial begin
+		packet_data[0]	<= 8'hff;		//Dest MAC
+		packet_data[1]	<= 8'hff;
+		packet_data[2]	<= 8'hff;
+		packet_data[3]	<= 8'hff;
+		packet_data[4]	<= 8'hff;
+		packet_data[5]	<= 8'hff;
+
+		packet_data[6]	<= 8'hcc;		//Src MAC
+		packet_data[7]	<= 8'hcc;
+		packet_data[8]	<= 8'hcc;
+		packet_data[9]	<= 8'hcc;
+		packet_data[10]	<= 8'hcc;
+		packet_data[11]	<= 8'hcc;
+
+		packet_data[12]	<= 8'h08;		//IPv4
+		packet_data[13]	<= 8'h00;
+
+		packet_data[14]	<= 8'h45;		//IPv4, min header size
+		packet_data[15]	<= 8'h00;		//no diffserv, no ECN
+		packet_data[16]	<= 8'h00;		//length
+		packet_data[17]	<= 8'h40;		//44 bytes payload, 20 bytes header = 64 total
+
+		packet_data[18]	<= 8'h00;		//ID
+		packet_data[19]	<= 8'h00;
+		packet_data[20] <= 8'h40;		//Dont fragment, high fragoff
+		packet_data[21]	<= 8'h00;		//low fragoff
+
+		packet_data[22]	<= 8'hff;		//TTL
+		packet_data[23]	<= 8'h11;		//UDP
+		packet_data[24]	<= 8'hcc;		//Header checksum FIXME
+		packet_data[25]	<= 8'hcc;
+
+		packet_data[26]	<= 8'h00;		//Source IP
+		packet_data[27]	<= 8'h00;
+		packet_data[28]	<= 8'h00;
+		packet_data[29]	<= 8'h00;
+
+		packet_data[30]	<= 8'hff;		//Dest IP
+		packet_data[31]	<= 8'hff;
+		packet_data[32]	<= 8'hff;
+		packet_data[33]	<= 8'hff;
+
+		packet_data[34]	<= 8'h01;		//Source port
+		packet_data[35]	<= 8'h00;
+		packet_data[36]	<= 8'h01;		//Dest port
+		packet_data[37]	<= 8'h00;
+
+		packet_data[38]	<= 8'h00;		//44 bytes (36 of payload)
+		packet_data[39] <= 8'h2c;
+		packet_data[40]	<= 8'h00;		//Checksum (not set)
+		packet_data[41]	<= 8'h00;
+
+		packet_data[42]	<= 8'h00;		//Packet body
+		packet_data[43]	<= 8'h00;
+		packet_data[44]	<= 8'h00;
+		packet_data[45]	<= 8'h00;
+
+		packet_data[46]	<= 8'h00;
+		packet_data[47]	<= 8'h00;
+		packet_data[48]	<= 8'h00;
+		packet_data[49]	<= 8'h00;
+
+		packet_data[50]	<= 8'h00;
+		packet_data[51]	<= 8'h00;
+		packet_data[52]	<= 8'h00;
+		packet_data[53]	<= 8'h00;
+
+		packet_data[54]	<= 8'h00;
+		packet_data[55]	<= 8'h00;
+		packet_data[56]	<= 8'h00;
+		packet_data[57]	<= 8'h00;
+
+		packet_data[58]	<= 8'h00;
+		packet_data[59]	<= 8'h00;
+		packet_data[60]	<= 8'h00;
+		packet_data[61]	<= 8'h00;
+
+		packet_data[62]	<= 8'h00;
+		packet_data[63]	<= 8'h00;
+		packet_data[64]	<= 8'h00;
+		packet_data[65]	<= 8'h00;
+
+		packet_data[66]	<= 8'h00;
+		packet_data[67]	<= 8'h00;
+		packet_data[68]	<= 8'h00;
+		packet_data[69]	<= 8'h00;
+
+		packet_data[70]	<= 8'h00;
+		packet_data[71]	<= 8'h00;
+		packet_data[72]	<= 8'h00;
+		packet_data[73]	<= 8'h00;
+
+		packet_data[74]	<= 8'h00;
+		packet_data[75]	<= 8'h00;
+		packet_data[76]	<= 8'h00;
+		packet_data[77]	<= 8'h00;
+
+		packet_data[78]	<= 8'h21;		//CRC
+		packet_data[79]	<= 8'hf4;
+		packet_data[80]	<= 8'had;
+		packet_data[81]	<= 8'hec;
+
+    end
+
     always @(posedge mii_tx_clk) begin
 
-		mii_tx_er			<= 0;
+		//crc_reset			<= 0;
+		//crc_update			<= 0;
+
+		mii_tx_en	<= 0;
 
 		case(mstate)
 
@@ -219,32 +431,46 @@ module TragicLaserTestBitstream(
 			0: begin
 				mcount		<= mcount + 1'h1;
 				if(mcount == 255) begin
-					mii_tx_en	<= 1;
-					mstate		<= 1;
+					mii_tx_en		<= 1;
+					mstate			<= 1;
+					//crc_reset		<= 1;
 				end
 			end
 
 			//Preamble
 			1: begin
-				mii_txd			<= 4'h5;
-				mcount			<= mcount + 1'h1;
+				mii_tx_en			<= 1;
+				mii_txd				<= 4'h5;
+				mcount				<= mcount + 1'h1;
 				if(mcount == 15) begin
-					mii_txd		<= 4'hd;
-					mstate		<= 2;
-					mcount		<= 0;
+					mii_txd			<= 4'hd;
+					mstate			<= 2;
+					mcount			<= 0;
 				end
 			end
 
-			//64 dummy bytes
+			//Send a single hard-coded packet
 			2: begin
-				mii_txd			<= 4'hc;
-				mcount			<= mcount + 1'h1;
+				mii_tx_en			<= 1;
+				mii_txd				<= packet_data[mcount][3:0];
+				mstate				<= 3;
 
-				if(mcount == 63) begin
-					mii_tx_en	<= 0;
-					mcount		<= 0;
-					mstate		<= 0;
+				//Done!
+				if(mcount == 82) begin
+					mii_tx_en		<= 0;
+					mii_txd			<= 0;
+					mcount			<= 0;
+					mstate			<= 0;
 				end
+			end
+
+			3: begin
+				mii_tx_en			<= 1;
+				mii_txd				<= packet_data[mcount][7:4];
+				mstate				<= 2;
+
+				mcount				<= mcount + 1'h1;
+
 			end
 
 		endcase

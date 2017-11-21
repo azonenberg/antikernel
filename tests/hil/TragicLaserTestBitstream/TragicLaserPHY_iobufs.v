@@ -55,17 +55,26 @@ module TragicLaserPHY_iobufs(
 	input wire			rx_n_vref_lo,
 	*/
 
+	//100M drivers
 	input wire[3:0]		tx_d_100m_p,
 	input wire[3:0]		tx_t_100m_p,
 
 	input wire[3:0]		tx_d_100m_n,
 	input wire[3:0]		tx_t_100m_n,
 
+	//weak pre-emphasis drivers
 	input wire[3:0]		tx_d_10m_p,
 	input wire[3:0]		tx_t_10m_p,
 
 	input wire[3:0]		tx_d_10m_n,
 	input wire[3:0]		tx_t_10m_n,
+
+	//Full strength drivers (no serialization)
+	input wire			tx_d_10m_p_full,
+	input wire			tx_t_10m_p_full,
+
+	input wire			tx_d_10m_n_full,
+	input wire			tx_t_10m_n_full,
 
 	output wire[3:0]	rx_p_hi_arr,
 	output wire[3:0]	rx_p_lo_arr
@@ -232,13 +241,30 @@ module TragicLaserPHY_iobufs(
 	wire			tx_n_a0_raw;
 	wire			tx_n_a0_t;
 
-	assign tx_n_a[1] = 1'bz;
-	assign tx_p_a[1] = 1'bz;
+	//Actual 10M
+	OBUFT #(
+		.DRIVE(24),
+		.SLEW("FAST")
+	) obuf_10m_p1(
+		.I(tx_d_10m_p_full),
+		.T(tx_t_10m_p_full),
+		.O(tx_p_a[1])
+	);
 
 	OBUFT #(
-		.DRIVE(2),
+		.DRIVE(24),
 		.SLEW("FAST")
-	) obuf_10m_p0(
+	)  obuf_10m_n1(
+		.I(tx_d_10m_n_full),
+		.T(tx_t_10m_n_full),
+		.O(tx_n_a[1])
+	);
+
+	//Pre-emphasis
+	OBUFT #(
+		.DRIVE(2),
+		.SLEW("SLOW")
+	)  obuf_10m_p0(
 		.I(tx_p_a0_raw),
 		.T(tx_p_a0_t),
 		.O(tx_p_a[0])
@@ -246,8 +272,8 @@ module TragicLaserPHY_iobufs(
 
 	OBUFT #(
 		.DRIVE(2),
-		.SLEW("FAST")
-	) obuf_10m_n0(
+		.SLEW("SLOW")
+	)  obuf_10m_n0(
 		.I(tx_n_a0_raw),
 		.T(tx_n_a0_t),
 		.O(tx_n_a[0])
