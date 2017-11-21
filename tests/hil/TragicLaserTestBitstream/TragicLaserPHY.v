@@ -485,8 +485,8 @@ module TragicLaserPHY(
 			else begin
 				time_since_last_edge	= time_since_last_edge + 1'h1;
 
-				//If last edge was >= 5 cycles ago, emit a "0" bit
-				if(time_since_last_edge >= 5) begin
+				//If last edge was >= 6 cycles ago, emit a "0" bit
+				if(time_since_last_edge >= 6) begin
 					rx_bits					= {rx_bits[0], 1'b0};
 					rx_bits_valid			= rx_bits_valid + 1'h1;
 					time_since_last_edge	= time_since_last_edge - 8'h4;	//round to 1 clock
@@ -1359,6 +1359,57 @@ module TragicLaserPHY(
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Output link state to the LEDs
+
+	reg			frame_pulse_active	= 0;
+	reg			frame_pulse_dark	= 0;
+	reg[23:0]	frame_pulse_count	= 0;
+
+	//We want to blink at 4 Hz (one toggle per 15625000 clocks) during activity periods
+	localparam	LED_COUNT_MAX = 15624999;
+
+	always @(posedge clk_125mhz) begin
+
+		//Link light
+		led[0]	<= (link_speed == LINK_SPEED_100) && rx_lfsr_synced;
+
+		//Link down? Keep activity light off
+		if(!led[0])
+			led[1]					<= 0;
+
+		//During dark periods, ignore incoming packets and keep the light off
+		else if(frame_pulse_dark) begin
+			led[1]					<= 0;
+			frame_pulse_count		<= frame_pulse_count + 1'h1;
+			if(frame_pulse_count == LED_COUNT_MAX) begin
+				frame_pulse_count	<= 0;
+				frame_pulse_dark	<= 0;
+			end
+		end
+
+		//If a frame is active, count
+		else if(frame_pulse_active) begin
+			frame_pulse_count		<= frame_pulse_count + 1'h1;
+
+			//At end of blink, go into a dark period to keep the duty cycle sane
+			if(frame_pulse_count == LED_COUNT_MAX) begin
+				frame_pulse_count	<= 0;
+				frame_pulse_active	<= 0;
+				frame_pulse_dark	<= 1;
+			end
+
+		end
+
+		//Not an active blink. If a packet comes in, turn on the light and start counting
+		else if(mii_rx_dv) begin
+			frame_pulse_active		<= 1;
+			frame_pulse_count		<= 1;
+			led[1]					<= 1;
+		end
+
+	end
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Debug GPIOs
 
 	wire	la_ready;
@@ -1375,7 +1426,7 @@ module TragicLaserPHY(
 
 	RedTinUartWrapper #(
 		.WIDTH(128),
-		.DEPTH(1024),
+		.DEPTH(2048),
 		.UART_CLKDIV(16'd1085),	//115200 @ 125 MHz
 		.USE_EXT_TRIG(0),
 		.SYMBOL_ROM(
@@ -1383,16 +1434,25 @@ module TragicLaserPHY(
 				16384'h0,
 				"DEBUGROM", 				8'h0, 8'h01, 8'h00,
 				32'd8000,		//period of internal clock, in ps
-				32'd1024,		//Capture depth (TODO auto-patch this?)
+				32'd2048,		//Capture depth (TODO auto-patch this?)
 				32'd128,		//Capture width (TODO auto-patch this?)
 				{ "link_speed",					8'h0, 8'h2,  8'h0 },
 				{ "rx_lfsr_synced", 			8'h0, 8'h1,  8'h0 },
 				{ "rx_stream_synced", 			8'h0, 8'h1,  8'h0 },
+				//{ "rx_idle_runlen",				8'h0, 8'h4,  8'h0 },
 				{ "rx_resync",					8'h0, 8'h1,  8'h0 },
+				/*{ "rx_p_state",					8'h0, 8'h10,  8'h0 },
+				{ "mlt3_state_changes_padded",	8'h0, 8'h10,  8'h0 },
+				{ "rx_bits",					8'h0, 8'h2,  8'h0 },
+				{ "rx_bits_valid",				8'h0, 8'h2,  8'h0 },
+				{ "rx_5b_buf",					8'h0, 8'h6,  8'h0 },
+				{ "rx_5b_buf_valid",			8'h0, 8'h3,  8'h0 },
+				{ "rx_5b_code",					8'h0, 8'h5,  8'h0 },
+				{ "~rx_lfsr_low",				8'h0, 8'h5,  8'h0 },
 				{ "rx_5b_code_unscrambled",		8'h0, 8'h5,  8'h0 },
 				{ "rx_5b_code_aligned",			8'h0, 8'h5,  8'h0 },
 				{ "rx_4b_ctl",					8'h0, 8'h1,  8'h0 },
-				{ "rx_4b_code",					8'h0, 8'h4,  8'h0 },
+				{ "rx_4b_code",					8'h0, 8'h4,  8'h0 },*/
 				{ "mii_rx_er",					8'h0, 8'h1,  8'h0 },
 				{ "mii_rx_dv",					8'h0, 8'h1,  8'h0 },
 				{ "mii_rxd",					8'h0, 8'h4,  8'h0 }
@@ -1405,16 +1465,25 @@ module TragicLaserPHY(
 				link_speed,					//2
 				rx_lfsr_synced,				//1
 				rx_stream_synced,			//1
+				//rx_idle_runlen,				//4
 				rx_resync,					//1
+				/*rx_p_state,					//16
+				mlt3_state_changes_padded,	//16
+				rx_bits,					//2
+				rx_bits_valid,				//2
+				rx_5b_buf,					//6
+				rx_5b_buf_valid,			//3
+				rx_5b_code,					//5
+				~rx_lfsr[4:0],				//5
 				rx_5b_code_unscrambled,		//5
 				rx_5b_code_aligned,			//5
 				rx_4b_ctl,					//1
-				rx_4b_code,					//4
+				rx_4b_code,					//4*/
 				mii_rx_er,					//1
 				mii_rx_dv,					//1
 				mii_rxd,					//4
 
-				102'h0						//padding
+				117'h0						//padding
 			}),
 		.uart_rx(gpio[9]),
 		.uart_tx(gpio[7]),
@@ -1423,12 +1492,6 @@ module TragicLaserPHY(
 		.trig_out(trig_out),
 		.capture_done(capture_done)
 	);
-
-	//Output link state to the LEDs
-	always @(*) begin
-		led[0]	<= (link_speed == LINK_SPEED_100);
-		led[1]	<= rx_lfsr_synced;
-	end
 
 	assign gpio[8] = 0;
 	assign gpio[6:3] = 0;
