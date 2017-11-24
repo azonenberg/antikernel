@@ -612,7 +612,7 @@ module TragicLaserPHY(
 				rx_lfsr_wordcount		<= rx_lfsr_wordcount + 1'h1;
 
 				//Every 32ndth message word (160 bits), try re-syncing if we're not locked yet
-				//(32, 11, and 5 are relatively prime so we should align eventually)
+				//(160 and 11 are relatively prime so we should align eventually)
 				if(rx_lfsr_wordcount == 0) begin
 					rx_idle_runlen		<= 0;
 					rx_last_lock		<= 0;
