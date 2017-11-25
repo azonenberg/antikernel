@@ -1488,16 +1488,17 @@ module TragicLaserPHY(
 		.uart_rx(gpio[9]),
 		.uart_tx(gpio[7]),
 		.la_ready(la_ready),
-		.ext_trig(),
+		.ext_trig(1'b0),
 		.trig_out(trig_out),
 		.capture_done(capture_done)
 	);
 
 	assign gpio[8] = 0;
 	assign gpio[6:3] = 0;
+	assign gpio[1] = 0;
 
-	DDROutputBuffer #(.WIDTH(1))
-		ddrbuf(.clk_p(clk_125mhz), .clk_n(!clk_125mhz), .dout(gpio[1]), .din0(1'b0), .din1(1'b1));
+	//DDROutputBuffer #(.WIDTH(1))
+	//	ddrbuf(.clk_p(clk_125mhz), .clk_n(!clk_125mhz), .dout(gpio[1]), .din0(1'b0), .din1(1'b1));
 
 	assign gpio[0] = (link_speed == LINK_SPEED_DOWN);
 	assign gpio[2] = (link_speed == LINK_SPEED_100);
