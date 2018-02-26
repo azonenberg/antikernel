@@ -124,6 +124,7 @@ void ProcessConnection(JtagInterface* iface, Socket& client)
 						catch(const JtagException& ex)
 						{
 							//If the actual shift operation fails, send an error code to the source
+							//FIXME: This is busticated! Client is trying to read a reply, not a status code
 							//if(ex.GetType() == JtagException::EXCEPTION_TYPE_ADAPTER)
 							if(true)
 							{
