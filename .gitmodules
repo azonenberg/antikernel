@@ -13,3 +13,6 @@
 [submodule "bsp"]
 	path = bsp
 	url = https://github.com/azonenberg/antikernel-bsps
+[submodule "src/jtaghal-apps"]
+	path = src/jtaghal-apps
+	url = git@github.com:azonenberg/jtaghal-apps.git
