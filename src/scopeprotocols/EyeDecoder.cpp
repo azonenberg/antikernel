@@ -171,9 +171,30 @@ bool EyeDecoder::DetectModulationLevels(AnalogCapture* din, EyeCapture* cap)
 		cap->m_signalLevels.push_back(second_weighted);
 
 	sort(cap->m_signalLevels.begin(), cap->m_signalLevels.end());
-	/*LogDebug("    Signal appears to be using %d-level modulation\n", (int)cap->m_signalLevels.size());
+	LogDebug("    Signal appears to be using %d-level modulation\n", (int)cap->m_signalLevels.size());
 	for(auto v : cap->m_signalLevels)
-		LogDebug("        %6.3f V\n", v);*/
+		LogDebug("        %6.3f V\n", v);
+
+	//Now that signal levels are sorted, make sure they're spaced well.
+	//If we have levels that are too close to each other, skip them
+	for(size_t i=0; i<cap->m_signalLevels.size()-1; i++)
+	{
+		float delta = fabs(cap->m_signalLevels[i] - cap->m_signalLevels[i+1]);
+		LogDebug("Delta at i=%zu is %.3f\n", i, delta);
+
+		//TODO: fine tune this threshold adaptively based on overall signal amplitude?
+		if(delta < 200)
+		{
+			LogDebug("Too small\n");
+
+			//Remove the innermost point (closer to zero)
+			//This is us if we're positive, but the next one if negative!
+			if(cap->m_signalLevels[i] < 0)
+				cap->m_signalLevels.erase(cap->m_signalLevels.begin() + (i+1) );
+			else
+				cap->m_signalLevels.erase(cap->m_signalLevels.begin() + i);
+		}
+	}
 
 	//Figure out decision points (eye centers)
 	for(size_t i=0; i<cap->m_signalLevels.size()-1; i++)
