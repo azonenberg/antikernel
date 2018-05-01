@@ -1,4 +1,4 @@
-update=Wed 18 Apr 2018 05:02:28 AM PDT
+update=Fri 01 Jan 2016 09:59:08 PM PST
 version=1
 last_client=kicad
 [pcbnew]
@@ -25,6 +25,23 @@ version=1
 NetIExt=net
 [general]
 version=1
+[eeschema]
+version=1
+LibDir=/nfs4/home/azonenberg/code/3rdparty/kicad-library/library;/nfs4/home/azonenberg/code/azonenberg-devboards/trunk/libs
+[eeschema/libraries]
+LibName1=analog-azonenberg
+LibName2=cmos
+LibName3=cypress-azonenberg
+LibName4=hirose-azonenberg
+LibName5=memory-azonenberg
+LibName6=microchip-azonenberg
+LibName7=osc-azonenberg
+LibName8=passive-azonenberg
+LibName9=power-azonenberg
+LibName10=special-azonenberg
+LibName11=xilinx-azonenberg
+LibName12=conn
+LibName13=device
 [schematic_editor]
 version=1
 PageLayoutDescrFile=
@@ -35,6 +52,3 @@ NetFmtName=
 SpiceForceRefPrefix=0
 SpiceUseNetNumbers=0
 LabSize=60
-[eeschema]
-version=1
-LibDir=

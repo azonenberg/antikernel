@@ -1,0 +1,1003 @@
+EESchema Schematic File Version 2
+LIBS:analog-azonenberg
+LIBS:cmos
+LIBS:cypress-azonenberg
+LIBS:hirose-azonenberg
+LIBS:memory-azonenberg
+LIBS:microchip-azonenberg
+LIBS:osc-azonenberg
+LIBS:passive-azonenberg
+LIBS:power-azonenberg
+LIBS:special-azonenberg
+LIBS:xilinx-azonenberg
+LIBS:conn
+LIBS:device
+LIBS:marblewalrus-switch-cache
+EELAYER 25 0
+EELAYER END
+$Descr A3 16535 11693
+encoding utf-8
+Sheet 8 13
+Title "MARBLEWALRUS Ethernet Switch"
+Date "2016-02-14"
+Rev "$Rev: 2303 $"
+Comp "Andrew Zonenberg"
+Comment1 "Card edge connector for backplane"
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L XC7A200T-xFFG1156x U5
+U 15 1 56984EEE
+P 3950 5200
+F 0 "U5" H 3950 5150 60  0000 L CNN
+F 1 "XC7A200T-1FFG1156C" H 3950 5050 60  0000 L CNN
+F 2 "azonenberg_pcb:BGA_1156_35x35_FULLARRAY_1MM" H 3950 5250 60  0001 C CNN
+F 3 "" H 3950 5250 60  0000 C CNN
+	15   3950 5200
+	1    0    0    -1  
+$EndComp
+$Comp
+L XC7A200T-xFFG1156x U5
+U 17 1 56984F55
+P 3950 8900
+F 0 "U5" H 3950 8850 60  0000 L CNN
+F 1 "XC7A200T-1FFG1156C" H 3950 8750 60  0000 L CNN
+F 2 "azonenberg_pcb:BGA_1156_35x35_FULLARRAY_1MM" H 3950 8950 60  0001 C CNN
+F 3 "" H 3950 8950 60  0000 C CNN
+	17   3950 8900
+	1    0    0    -1  
+$EndComp
+$Comp
+L CONN_MW_SWITCH_CARD J4
+U 1 1 569A6179
+P 13300 5150
+F 0 "J4" H 13300 5100 60  0000 L CNN
+F 1 "CONN_MW_SWITCH_CARD" H 13300 5000 60  0000 L CNN
+F 2 "azonenberg_pcb:CONN_MW_X16" H 13300 5150 60  0001 C CNN
+F 3 "" H 13300 5150 60  0000 C CNN
+	1    13300 5150
+	1    0    0    -1  
+$EndComp
+$Comp
+L CONN_MW_SWITCH_CARD J4
+U 2 1 569A6248
+P 13300 9050
+F 0 "J4" H 13300 9000 60  0000 L CNN
+F 1 "CONN_MW_SWITCH_CARD" H 13300 8900 60  0000 L CNN
+F 2 "azonenberg_pcb:CONN_MW_X16" H 13300 9050 60  0001 C CNN
+F 3 "" H 13300 9050 60  0000 C CNN
+	2    13300 9050
+	1    0    0    -1  
+$EndComp
+$Comp
+L CONN_MW_SWITCH_CARD J4
+U 3 1 569A62F0
+P 8150 7300
+F 0 "J4" H 8150 7250 60  0000 L CNN
+F 1 "CONN_MW_SWITCH_CARD" H 8150 7150 60  0000 L CNN
+F 2 "azonenberg_pcb:CONN_MW_X16" H 8150 7300 60  0001 C CNN
+F 3 "" H 8150 7300 60  0000 C CNN
+	3    8150 7300
+	1    0    0    -1  
+$EndComp
+Text Notes 3950 1350 0    60   ~ 0
+Need to import one more GTP from the front panel connector's GTP bank
+Text Notes 3950 1800 0    60   ~ 0
+Lower pin numbers on connector are at bottom\nSo we should have in order\n	bank 216 (with highest pin numbers first)\n	bank 116\n	extra GTP
+$Comp
+L C C94
+U 1 1 569A8750
+P 2750 8400
+F 0 "C94" V 2800 8500 50  0000 L CNN
+F 1 "0.1 uF" V 2800 8100 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 8250 30  0001 C CNN
+F 3 "" H 2750 8400 60  0000 C CNN
+	1    2750 8400
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C C95
+U 1 1 569A8A03
+P 2750 8600
+F 0 "C95" V 2800 8700 50  0000 L CNN
+F 1 "0.1 uF" V 2800 8300 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 8450 30  0001 C CNN
+F 3 "" H 2750 8600 60  0000 C CNN
+	1    2750 8600
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	2900 8400 3150 8400
+Wire Wire Line
+	3150 8400 3150 8450
+Wire Wire Line
+	3150 8450 3750 8450
+Wire Wire Line
+	2900 8600 3150 8600
+Wire Wire Line
+	3150 8600 3150 8550
+Wire Wire Line
+	3150 8550 3750 8550
+Text Label 2450 8400 2    60   ~ 0
+ETH0_TX_P
+Wire Wire Line
+	2450 8400 2600 8400
+Text Label 2450 8600 2    60   ~ 0
+ETH0_TX_N
+Wire Wire Line
+	2450 8600 2600 8600
+$Comp
+L C C92
+U 1 1 569A8B26
+P 2750 7800
+F 0 "C92" V 2800 7900 50  0000 L CNN
+F 1 "0.1 uF" V 2800 7500 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 7650 30  0001 C CNN
+F 3 "" H 2750 7800 60  0000 C CNN
+	1    2750 7800
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C C93
+U 1 1 569A8B2C
+P 2750 8000
+F 0 "C93" V 2800 8100 50  0000 L CNN
+F 1 "0.1 uF" V 2800 7700 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 7850 30  0001 C CNN
+F 3 "" H 2750 8000 60  0000 C CNN
+	1    2750 8000
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	2900 7800 3150 7800
+Wire Wire Line
+	3150 7800 3150 7850
+Wire Wire Line
+	3150 7850 3750 7850
+Wire Wire Line
+	2900 8000 3150 8000
+Wire Wire Line
+	3150 8000 3150 7950
+Wire Wire Line
+	3150 7950 3750 7950
+Text Label 2450 7800 2    60   ~ 0
+ETH1_TX_P
+Wire Wire Line
+	2450 7800 2600 7800
+Text Label 2450 8000 2    60   ~ 0
+ETH1_TX_N
+Wire Wire Line
+	2450 8000 2600 8000
+$Comp
+L C C90
+U 1 1 569A8C3A
+P 2750 7200
+F 0 "C90" V 2800 7300 50  0000 L CNN
+F 1 "0.1 uF" V 2800 6900 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 7050 30  0001 C CNN
+F 3 "" H 2750 7200 60  0000 C CNN
+	1    2750 7200
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C C91
+U 1 1 569A8C40
+P 2750 7400
+F 0 "C91" V 2800 7500 50  0000 L CNN
+F 1 "0.1 uF" V 2800 7100 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 7250 30  0001 C CNN
+F 3 "" H 2750 7400 60  0000 C CNN
+	1    2750 7400
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	2900 7200 3150 7200
+Wire Wire Line
+	3150 7200 3150 7250
+Wire Wire Line
+	3150 7250 3750 7250
+Wire Wire Line
+	2900 7400 3150 7400
+Wire Wire Line
+	3150 7400 3150 7350
+Wire Wire Line
+	3150 7350 3750 7350
+Text Label 2450 7200 2    60   ~ 0
+ETH2_TX_P
+Wire Wire Line
+	2450 7200 2600 7200
+Text Label 2450 7400 2    60   ~ 0
+ETH2_TX_N
+Wire Wire Line
+	2450 7400 2600 7400
+$Comp
+L C C88
+U 1 1 569A8D5E
+P 2750 6600
+F 0 "C88" V 2800 6700 50  0000 L CNN
+F 1 "0.1 uF" V 2800 6300 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 6450 30  0001 C CNN
+F 3 "" H 2750 6600 60  0000 C CNN
+	1    2750 6600
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C C89
+U 1 1 569A8D64
+P 2750 6800
+F 0 "C89" V 2800 6900 50  0000 L CNN
+F 1 "0.1 uF" V 2800 6500 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 6650 30  0001 C CNN
+F 3 "" H 2750 6800 60  0000 C CNN
+	1    2750 6800
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	2900 6600 3150 6600
+Wire Wire Line
+	3150 6600 3150 6650
+Wire Wire Line
+	3150 6650 3750 6650
+Wire Wire Line
+	2900 6800 3150 6800
+Wire Wire Line
+	3150 6800 3150 6750
+Wire Wire Line
+	3150 6750 3750 6750
+Text Label 2450 6600 2    60   ~ 0
+ETH3_TX_P
+Wire Wire Line
+	2450 6600 2600 6600
+Text Label 2450 6800 2    60   ~ 0
+ETH3_TX_N
+Wire Wire Line
+	2450 6800 2600 6800
+$Comp
+L C C80
+U 1 1 569A900C
+P 2750 2900
+F 0 "C80" V 2800 3000 50  0000 L CNN
+F 1 "0.1 uF" V 2800 2600 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 2750 30  0001 C CNN
+F 3 "" H 2750 2900 60  0000 C CNN
+	1    2750 2900
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C C81
+U 1 1 569A9012
+P 2750 3100
+F 0 "C81" V 2800 3200 50  0000 L CNN
+F 1 "0.1 uF" V 2800 2800 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 2950 30  0001 C CNN
+F 3 "" H 2750 3100 60  0000 C CNN
+	1    2750 3100
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	2900 2900 3150 2900
+Wire Wire Line
+	3150 2900 3150 2950
+Wire Wire Line
+	3150 2950 3750 2950
+Wire Wire Line
+	2900 3100 3150 3100
+Wire Wire Line
+	3150 3100 3150 3050
+Wire Wire Line
+	3150 3050 3750 3050
+Text Label 2450 2900 2    60   ~ 0
+ETH4_TX_P
+Wire Wire Line
+	2450 2900 2600 2900
+Text Label 2450 3100 2    60   ~ 0
+ETH4_TX_N
+Wire Wire Line
+	2450 3100 2600 3100
+$Comp
+L C C82
+U 1 1 569A9160
+P 2750 3500
+F 0 "C82" V 2800 3600 50  0000 L CNN
+F 1 "0.1 uF" V 2800 3200 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 3350 30  0001 C CNN
+F 3 "" H 2750 3500 60  0000 C CNN
+	1    2750 3500
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C C83
+U 1 1 569A9166
+P 2750 3700
+F 0 "C83" V 2800 3800 50  0000 L CNN
+F 1 "0.1 uF" V 2800 3400 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 3550 30  0001 C CNN
+F 3 "" H 2750 3700 60  0000 C CNN
+	1    2750 3700
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	2900 3500 3150 3500
+Wire Wire Line
+	3150 3500 3150 3550
+Wire Wire Line
+	3150 3550 3750 3550
+Wire Wire Line
+	2900 3700 3150 3700
+Wire Wire Line
+	3150 3700 3150 3650
+Wire Wire Line
+	3150 3650 3750 3650
+Text Label 2450 3500 2    60   ~ 0
+ETH5_TX_P
+Wire Wire Line
+	2450 3500 2600 3500
+Text Label 2450 3700 2    60   ~ 0
+ETH5_TX_N
+Wire Wire Line
+	2450 3700 2600 3700
+$Comp
+L C C84
+U 1 1 569A93FF
+P 2750 4100
+F 0 "C84" V 2800 4200 50  0000 L CNN
+F 1 "0.1 uF" V 2800 3800 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 3950 30  0001 C CNN
+F 3 "" H 2750 4100 60  0000 C CNN
+	1    2750 4100
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C C85
+U 1 1 569A9405
+P 2750 4300
+F 0 "C85" V 2800 4400 50  0000 L CNN
+F 1 "0.1 uF" V 2800 4000 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 4150 30  0001 C CNN
+F 3 "" H 2750 4300 60  0000 C CNN
+	1    2750 4300
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	2900 4100 3150 4100
+Wire Wire Line
+	3150 4100 3150 4150
+Wire Wire Line
+	3150 4150 3750 4150
+Wire Wire Line
+	2900 4300 3150 4300
+Wire Wire Line
+	3150 4300 3150 4250
+Wire Wire Line
+	3150 4250 3750 4250
+Text Label 2450 4100 2    60   ~ 0
+ETH6_TX_P
+Wire Wire Line
+	2450 4100 2600 4100
+Text Label 2450 4300 2    60   ~ 0
+ETH6_TX_N
+Wire Wire Line
+	2450 4300 2600 4300
+$Comp
+L C C86
+U 1 1 569A9536
+P 2750 4700
+F 0 "C86" V 2800 4800 50  0000 L CNN
+F 1 "0.1 uF" V 2800 4400 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 4550 30  0001 C CNN
+F 3 "" H 2750 4700 60  0000 C CNN
+	1    2750 4700
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C C87
+U 1 1 569A953C
+P 2750 4900
+F 0 "C87" V 2800 5000 50  0000 L CNN
+F 1 "0.1 uF" V 2800 4600 50  0000 L CNN
+F 2 "azonenberg_pcb:EIA_0402_CAP_NOSILK" H 2788 4750 30  0001 C CNN
+F 3 "" H 2750 4900 60  0000 C CNN
+	1    2750 4900
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	2900 4700 3150 4700
+Wire Wire Line
+	3150 4700 3150 4750
+Wire Wire Line
+	3150 4750 3750 4750
+Wire Wire Line
+	2900 4900 3150 4900
+Wire Wire Line
+	3150 4900 3150 4850
+Wire Wire Line
+	3150 4850 3750 4850
+Text Label 2450 4700 2    60   ~ 0
+ETH7_TX_P
+Wire Wire Line
+	2450 4700 2600 4700
+Text Label 2450 4900 2    60   ~ 0
+ETH7_TX_N
+Wire Wire Line
+	2450 4900 2600 4900
+Text Label 10100 4750 0    60   ~ 0
+ETH0_TX_P
+Text Label 10100 4850 0    60   ~ 0
+ETH0_TX_N
+Text HLabel 12900 3000 0    60   Output ~ 0
+12V0
+Wire Wire Line
+	12900 3000 13100 3000
+Wire Wire Line
+	13000 3000 13000 3500
+Wire Wire Line
+	13000 3100 13100 3100
+Connection ~ 13000 3000
+Wire Wire Line
+	13000 3200 13100 3200
+Connection ~ 13000 3100
+Wire Wire Line
+	13000 3300 13100 3300
+Connection ~ 13000 3200
+Wire Wire Line
+	13000 3400 13100 3400
+Connection ~ 13000 3300
+Wire Wire Line
+	13000 3500 13100 3500
+Connection ~ 13000 3400
+Text HLabel 12900 4000 0    60   Output ~ 0
+GND
+Wire Wire Line
+	12900 4000 13100 4000
+Wire Wire Line
+	13000 4000 13000 4900
+Wire Wire Line
+	13000 4100 13100 4100
+Connection ~ 13000 4000
+Wire Wire Line
+	13000 4200 13100 4200
+Connection ~ 13000 4100
+Wire Wire Line
+	13000 4300 13100 4300
+Connection ~ 13000 4200
+Wire Wire Line
+	13000 4400 13100 4400
+Connection ~ 13000 4300
+Wire Wire Line
+	13000 4500 13100 4500
+Connection ~ 13000 4400
+Wire Wire Line
+	13000 4600 13100 4600
+Connection ~ 13000 4500
+Wire Wire Line
+	13000 4700 13100 4700
+Connection ~ 13000 4600
+Wire Wire Line
+	13000 4800 13100 4800
+Connection ~ 13000 4700
+Wire Wire Line
+	13000 4900 13100 4900
+Connection ~ 13000 4800
+Wire Wire Line
+	7700 4750 7950 4750
+Wire Wire Line
+	7950 4850 7700 4850
+Text Label 10100 5050 0    60   ~ 0
+ETH1_TX_P
+Text Label 10100 5150 0    60   ~ 0
+ETH1_TX_N
+Wire Wire Line
+	7700 5050 7950 5050
+Wire Wire Line
+	7950 5150 7700 5150
+Text Label 10100 5350 0    60   ~ 0
+ETH2_TX_P
+Text Label 10100 5450 0    60   ~ 0
+ETH2_TX_N
+Wire Wire Line
+	7700 5350 7950 5350
+Wire Wire Line
+	7950 5450 7700 5450
+Text Label 10100 5650 0    60   ~ 0
+ETH3_TX_P
+Text Label 10100 5750 0    60   ~ 0
+ETH3_TX_N
+Wire Wire Line
+	7700 5650 7950 5650
+Wire Wire Line
+	7950 5750 7700 5750
+Text Label 10100 5950 0    60   ~ 0
+ETH4_TX_P
+Text Label 10100 6050 0    60   ~ 0
+ETH4_TX_N
+Wire Wire Line
+	7700 5950 7950 5950
+Wire Wire Line
+	7950 6050 7700 6050
+Text Label 10100 6250 0    60   ~ 0
+ETH5_TX_P
+Text Label 10100 6350 0    60   ~ 0
+ETH5_TX_N
+Wire Wire Line
+	7700 6250 7950 6250
+Wire Wire Line
+	7950 6350 7700 6350
+Text Label 10100 6550 0    60   ~ 0
+ETH6_TX_P
+Text Label 10100 6650 0    60   ~ 0
+ETH6_TX_N
+Wire Wire Line
+	7700 6550 7950 6550
+Wire Wire Line
+	7950 6650 7700 6650
+Text Label 10100 6850 0    60   ~ 0
+ETH7_TX_P
+Text Label 10100 6950 0    60   ~ 0
+ETH7_TX_N
+Wire Wire Line
+	7700 6850 7950 6850
+Wire Wire Line
+	7950 6950 7700 6950
+Text HLabel 3500 2200 0    60   Input ~ 0
+GTP_REFCLK0_P
+Text HLabel 3500 2300 0    60   Input ~ 0
+GTP_REFCLK0_N
+Text HLabel 3600 5900 0    60   Input ~ 0
+GTP_REFCLK1_P
+Text HLabel 3600 6000 0    60   Input ~ 0
+GTP_REFCLK1_N
+Wire Wire Line
+	3600 5900 3750 5900
+Wire Wire Line
+	3750 6000 3600 6000
+Wire Wire Line
+	3500 2200 3750 2200
+Wire Wire Line
+	3750 2300 3500 2300
+NoConn ~ 3750 6200
+NoConn ~ 3750 6300
+NoConn ~ 3750 2500
+NoConn ~ 3750 2600
+Text Label 2450 3250 2    60   ~ 0
+ETH4_RX_P
+Text Label 2450 3350 2    60   ~ 0
+ETH4_RX_N
+Wire Wire Line
+	2450 3250 3750 3250
+Wire Wire Line
+	2450 3350 3750 3350
+Text Label 2450 3850 2    60   ~ 0
+ETH5_RX_P
+Text Label 2450 3950 2    60   ~ 0
+ETH5_RX_N
+Wire Wire Line
+	2450 3850 3750 3850
+Wire Wire Line
+	2450 3950 3750 3950
+Text Label 2450 4450 2    60   ~ 0
+ETH6_RX_P
+Text Label 2450 4550 2    60   ~ 0
+ETH6_RX_N
+Wire Wire Line
+	2450 4450 3750 4450
+Wire Wire Line
+	2450 4550 3750 4550
+Text Label 2450 5050 2    60   ~ 0
+ETH7_RX_P
+Text Label 2450 5150 2    60   ~ 0
+ETH7_RX_N
+Wire Wire Line
+	2450 5050 3750 5050
+Wire Wire Line
+	2450 5150 3750 5150
+Text Label 2450 6950 2    60   ~ 0
+ETH3_RX_P
+Text Label 2450 7050 2    60   ~ 0
+ETH3_RX_N
+Wire Wire Line
+	2450 6950 3750 6950
+Wire Wire Line
+	2450 7050 3750 7050
+Text Label 2450 7550 2    60   ~ 0
+ETH2_RX_P
+Text Label 2450 7650 2    60   ~ 0
+ETH2_RX_N
+Wire Wire Line
+	2450 7550 3750 7550
+Wire Wire Line
+	2450 7650 3750 7650
+Text Label 2450 8150 2    60   ~ 0
+ETH1_RX_P
+Text Label 2450 8250 2    60   ~ 0
+ETH1_RX_N
+Wire Wire Line
+	2450 8150 3750 8150
+Wire Wire Line
+	2450 8250 3750 8250
+Text Label 2450 8750 2    60   ~ 0
+ETH0_RX_P
+Text Label 2450 8850 2    60   ~ 0
+ETH0_RX_N
+Wire Wire Line
+	2450 8750 3750 8750
+Wire Wire Line
+	2450 8850 3750 8850
+Text Label 7700 4750 2    60   ~ 0
+ETH0_RX_P
+Wire Wire Line
+	10100 4750 9850 4750
+Text Label 7700 4850 2    60   ~ 0
+ETH0_RX_N
+Wire Wire Line
+	10100 4850 9850 4850
+Text Label 7700 5050 2    60   ~ 0
+ETH1_RX_P
+Wire Wire Line
+	10100 5050 9850 5050
+Text Label 7700 5150 2    60   ~ 0
+ETH1_RX_N
+Wire Wire Line
+	10100 5150 9850 5150
+Text Label 7700 5350 2    60   ~ 0
+ETH2_RX_P
+Wire Wire Line
+	10100 5350 9850 5350
+Text Label 7700 5450 2    60   ~ 0
+ETH2_RX_N
+Wire Wire Line
+	10100 5450 9850 5450
+Text Label 7700 5650 2    60   ~ 0
+ETH3_RX_P
+Wire Wire Line
+	10100 5650 9850 5650
+Text Label 7700 5750 2    60   ~ 0
+ETH3_RX_N
+Wire Wire Line
+	10100 5750 9850 5750
+Text Label 7700 5950 2    60   ~ 0
+ETH4_RX_P
+Wire Wire Line
+	10100 5950 9850 5950
+Text Label 7700 6050 2    60   ~ 0
+ETH4_RX_N
+Wire Wire Line
+	10100 6050 9850 6050
+Text Label 7700 6250 2    60   ~ 0
+ETH5_RX_P
+Wire Wire Line
+	10100 6250 9850 6250
+Text Label 7700 6350 2    60   ~ 0
+ETH5_RX_N
+Wire Wire Line
+	10100 6350 9850 6350
+Text Label 7700 6550 2    60   ~ 0
+ETH6_RX_P
+Wire Wire Line
+	10100 6550 9850 6550
+Text Label 7700 6650 2    60   ~ 0
+ETH6_RX_N
+Wire Wire Line
+	10100 6650 9850 6650
+Text Label 7700 6850 2    60   ~ 0
+ETH7_RX_P
+Wire Wire Line
+	10100 6850 9850 6850
+Text Label 7700 6950 2    60   ~ 0
+ETH7_RX_N
+Wire Wire Line
+	10100 6950 9850 6950
+Text HLabel 15200 4700 2    60   Output ~ 0
+JTAG_TCK
+Text HLabel 15200 4800 2    60   Output ~ 0
+JTAG_TDI
+Text HLabel 15200 4900 2    60   Input ~ 0
+JTAG_TDO
+Text HLabel 15200 5000 2    60   Output ~ 0
+JTAG_TMS
+Wire Wire Line
+	15200 5000 14750 5000
+Wire Wire Line
+	14750 4900 15200 4900
+Wire Wire Line
+	15200 4800 14750 4800
+Wire Wire Line
+	14750 4700 15200 4700
+Text HLabel 13000 5100 0    60   Output ~ 0
+PROG_B
+Wire Wire Line
+	13000 5100 13100 5100
+Text HLabel 7700 7150 0    60   Output ~ 0
+ETH8_RX_P
+Text HLabel 7700 7250 0    60   Output ~ 0
+ETH8_RX_N
+Wire Wire Line
+	7700 7150 7950 7150
+Wire Wire Line
+	7950 7250 7700 7250
+Text HLabel 10100 7150 2    60   Input ~ 0
+ETH8_TX_P
+Text HLabel 10100 7250 2    60   Input ~ 0
+ETH8_TX_N
+Wire Wire Line
+	10100 7150 9850 7150
+Wire Wire Line
+	10100 7250 9850 7250
+Text Label 12900 5700 2    60   ~ 0
+GND
+Wire Wire Line
+	12900 5700 13100 5700
+Wire Wire Line
+	13000 5700 13000 9000
+Wire Wire Line
+	13000 5800 13100 5800
+Connection ~ 13000 5700
+Wire Wire Line
+	13000 5900 13100 5900
+Connection ~ 13000 5800
+Wire Wire Line
+	13000 6000 13100 6000
+Connection ~ 13000 5900
+Wire Wire Line
+	13000 6100 13100 6100
+Connection ~ 13000 6000
+Wire Wire Line
+	13000 6200 13100 6200
+Connection ~ 13000 6100
+Wire Wire Line
+	13000 6300 13100 6300
+Connection ~ 13000 6200
+Wire Wire Line
+	13000 6400 13100 6400
+Connection ~ 13000 6300
+Wire Wire Line
+	13000 6500 13100 6500
+Connection ~ 13000 6400
+Wire Wire Line
+	13000 6600 13100 6600
+Connection ~ 13000 6500
+Wire Wire Line
+	13000 6700 13100 6700
+Connection ~ 13000 6600
+Wire Wire Line
+	13000 6800 13100 6800
+Connection ~ 13000 6700
+Wire Wire Line
+	13000 6900 13100 6900
+Connection ~ 13000 6800
+Wire Wire Line
+	13000 7000 13100 7000
+Connection ~ 13000 6900
+Wire Wire Line
+	13000 7100 13100 7100
+Connection ~ 13000 7000
+Wire Wire Line
+	13000 7200 13100 7200
+Connection ~ 13000 7100
+Wire Wire Line
+	13000 7300 13100 7300
+Connection ~ 13000 7200
+Wire Wire Line
+	13000 7400 13100 7400
+Connection ~ 13000 7300
+Wire Wire Line
+	13000 7500 13100 7500
+Connection ~ 13000 7400
+Wire Wire Line
+	13000 7600 13100 7600
+Connection ~ 13000 7500
+Wire Wire Line
+	13000 7700 13100 7700
+Connection ~ 13000 7600
+Wire Wire Line
+	13000 7800 13100 7800
+Connection ~ 13000 7700
+Wire Wire Line
+	13000 7900 13100 7900
+Connection ~ 13000 7800
+Wire Wire Line
+	13000 8000 13100 8000
+Connection ~ 13000 7900
+Wire Wire Line
+	13000 8100 13100 8100
+Connection ~ 13000 8000
+Wire Wire Line
+	13000 8200 13100 8200
+Connection ~ 13000 8100
+Wire Wire Line
+	13000 8300 13100 8300
+Connection ~ 13000 8200
+Wire Wire Line
+	13000 8400 13100 8400
+Connection ~ 13000 8300
+Wire Wire Line
+	13000 8500 13100 8500
+Connection ~ 13000 8400
+Wire Wire Line
+	13000 8600 13100 8600
+Connection ~ 13000 8500
+Wire Wire Line
+	13000 8700 13100 8700
+Connection ~ 13000 8600
+Wire Wire Line
+	13000 8800 13100 8800
+Connection ~ 13000 8700
+Wire Wire Line
+	13000 8900 13100 8900
+Connection ~ 13000 8800
+Wire Wire Line
+	13000 9000 13100 9000
+Connection ~ 13000 8900
+Text Label 14150 5700 0    60   ~ 0
+GND
+Wire Wire Line
+	14150 5700 13950 5700
+Wire Wire Line
+	14050 5700 14050 9000
+Wire Wire Line
+	14050 5800 13950 5800
+Connection ~ 14050 5700
+Wire Wire Line
+	14050 5900 13950 5900
+Connection ~ 14050 5800
+Wire Wire Line
+	14050 6000 13950 6000
+Connection ~ 14050 5900
+Wire Wire Line
+	14050 6100 13950 6100
+Connection ~ 14050 6000
+Wire Wire Line
+	14050 6200 13950 6200
+Connection ~ 14050 6100
+Wire Wire Line
+	14050 6300 13950 6300
+Connection ~ 14050 6200
+Wire Wire Line
+	14050 6400 13950 6400
+Connection ~ 14050 6300
+Wire Wire Line
+	14050 6500 13950 6500
+Connection ~ 14050 6400
+Wire Wire Line
+	14050 6600 13950 6600
+Connection ~ 14050 6500
+Wire Wire Line
+	14050 6700 13950 6700
+Connection ~ 14050 6600
+Wire Wire Line
+	14050 6800 13950 6800
+Connection ~ 14050 6700
+Wire Wire Line
+	14050 6900 13950 6900
+Connection ~ 14050 6800
+Wire Wire Line
+	14050 7000 13950 7000
+Connection ~ 14050 6900
+Wire Wire Line
+	14050 7100 13950 7100
+Connection ~ 14050 7000
+Wire Wire Line
+	14050 7200 13950 7200
+Connection ~ 14050 7100
+Wire Wire Line
+	14050 7300 13950 7300
+Connection ~ 14050 7200
+Wire Wire Line
+	14050 7400 13950 7400
+Connection ~ 14050 7300
+Wire Wire Line
+	14050 7500 13950 7500
+Connection ~ 14050 7400
+Wire Wire Line
+	14050 7600 13950 7600
+Connection ~ 14050 7500
+Wire Wire Line
+	14050 7700 13950 7700
+Connection ~ 14050 7600
+Wire Wire Line
+	14050 7800 13950 7800
+Connection ~ 14050 7700
+Wire Wire Line
+	14050 7900 13950 7900
+Connection ~ 14050 7800
+Wire Wire Line
+	14050 8000 13950 8000
+Connection ~ 14050 7900
+Wire Wire Line
+	14050 8100 13950 8100
+Connection ~ 14050 8000
+Wire Wire Line
+	14050 8200 13950 8200
+Connection ~ 14050 8100
+Wire Wire Line
+	14050 8300 13950 8300
+Connection ~ 14050 8200
+Wire Wire Line
+	14050 8400 13950 8400
+Connection ~ 14050 8300
+Wire Wire Line
+	14050 8500 13950 8500
+Connection ~ 14050 8400
+Wire Wire Line
+	14050 8600 13950 8600
+Connection ~ 14050 8500
+Wire Wire Line
+	14050 8700 13950 8700
+Connection ~ 14050 8600
+Wire Wire Line
+	14050 8800 13950 8800
+Connection ~ 14050 8700
+Wire Wire Line
+	14050 8900 13950 8900
+Connection ~ 14050 8800
+Wire Wire Line
+	14050 9000 13950 9000
+Connection ~ 14050 8900
+$Comp
+L R R185
+U 1 1 56C99BF2
+P 3450 5700
+F 0 "R185" V 3530 5700 50  0000 C CNN
+F 1 "100 1%" V 3350 5700 50  0000 C CNN
+F 2 "azonenberg_pcb:EIA_0402_RES_NOSILK" V 3380 5700 30  0001 C CNN
+F 3 "" H 3450 5700 30  0000 C CNN
+	1    3450 5700
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	3600 5700 3750 5700
+Text HLabel 3300 5700 0    60   Input ~ 0
+GTP_VTT
+Text HLabel 12900 3700 0    60   Input ~ 0
+1V8
+Wire Wire Line
+	12900 3700 13100 3700
+Wire Wire Line
+	13000 3700 13000 3800
+Wire Wire Line
+	13000 3800 13100 3800
+Connection ~ 13000 3700
+Text HLabel 14950 4400 2    60   Output ~ 0
+BACKPLANE_I2C_SCL
+Wire Wire Line
+	14950 4400 14750 4400
+Text HLabel 14950 4500 2    60   BiDi ~ 0
+BACKPLANE_I2C_SDA
+Wire Wire Line
+	14950 4500 14750 4500
+Text Notes 8000 4600 0    60   ~ 0
+TX/RX names on connector are from\ncompute node's perspective, so cross over
+Text Label 3250 2950 0    60   ~ 0
+E4TX_P
+Text Label 3250 3050 0    60   ~ 0
+E4TX_N
+Text Label 3250 3550 0    60   ~ 0
+E5TX_P
+Text Label 3250 3650 0    60   ~ 0
+E5TX_N
+Text Label 3250 4150 0    60   ~ 0
+E6TX_P
+Text Label 3250 4250 0    60   ~ 0
+E6TX_N
+Text Label 3250 4750 0    60   ~ 0
+E7TX_P
+Text Label 3250 4850 0    60   ~ 0
+E7TX_N
+Text Label 3300 6650 0    60   ~ 0
+E3TX_P
+Text Label 3300 6750 0    60   ~ 0
+E3TX_N
+Text Label 3300 7250 0    60   ~ 0
+E2TX_P
+Text Label 3300 7350 0    60   ~ 0
+E2TX_N
+Text Label 3300 7850 0    60   ~ 0
+E1TX_P
+Text Label 3300 7950 0    60   ~ 0
+E1TX_N
+Text Label 3300 8450 0    60   ~ 0
+E0TX_P
+Text Label 3300 8550 0    60   ~ 0
+E0TX_N
+$EndSCHEMATC
