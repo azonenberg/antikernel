@@ -1423,7 +1423,7 @@ module TragicLaserPHY(
 		3'h0, mlt3_state_changes[1],
 		3'h0, mlt3_state_changes[0]
 	};
-
+	/*
 	RedTinUartWrapper #(
 		.WIDTH(128),
 		.DEPTH(2048),
@@ -1441,18 +1441,6 @@ module TragicLaserPHY(
 				{ "rx_stream_synced", 			8'h0, 8'h1,  8'h0 },
 				//{ "rx_idle_runlen",				8'h0, 8'h4,  8'h0 },
 				{ "rx_resync",					8'h0, 8'h1,  8'h0 },
-				/*{ "rx_p_state",					8'h0, 8'h10,  8'h0 },
-				{ "mlt3_state_changes_padded",	8'h0, 8'h10,  8'h0 },
-				{ "rx_bits",					8'h0, 8'h2,  8'h0 },
-				{ "rx_bits_valid",				8'h0, 8'h2,  8'h0 },
-				{ "rx_5b_buf",					8'h0, 8'h6,  8'h0 },
-				{ "rx_5b_buf_valid",			8'h0, 8'h3,  8'h0 },
-				{ "rx_5b_code",					8'h0, 8'h5,  8'h0 },
-				{ "~rx_lfsr_low",				8'h0, 8'h5,  8'h0 },
-				{ "rx_5b_code_unscrambled",		8'h0, 8'h5,  8'h0 },
-				{ "rx_5b_code_aligned",			8'h0, 8'h5,  8'h0 },
-				{ "rx_4b_ctl",					8'h0, 8'h1,  8'h0 },
-				{ "rx_4b_code",					8'h0, 8'h4,  8'h0 },*/
 				{ "mii_rx_er",					8'h0, 8'h1,  8'h0 },
 				{ "mii_rx_dv",					8'h0, 8'h1,  8'h0 },
 				{ "mii_rxd",					8'h0, 8'h4,  8'h0 }
@@ -1467,18 +1455,6 @@ module TragicLaserPHY(
 				rx_stream_synced,			//1
 				//rx_idle_runlen,				//4
 				rx_resync,					//1
-				/*rx_p_state,					//16
-				mlt3_state_changes_padded,	//16
-				rx_bits,					//2
-				rx_bits_valid,				//2
-				rx_5b_buf,					//6
-				rx_5b_buf_valid,			//3
-				rx_5b_code,					//5
-				~rx_lfsr[4:0],				//5
-				rx_5b_code_unscrambled,		//5
-				rx_5b_code_aligned,			//5
-				rx_4b_ctl,					//1
-				rx_4b_code,					//4*/
 				mii_rx_er,					//1
 				mii_rx_dv,					//1
 				mii_rxd,					//4
@@ -1492,6 +1468,7 @@ module TragicLaserPHY(
 		.trig_out(trig_out),
 		.capture_done(capture_done)
 	);
+	*/
 
 	assign gpio[8] = 0;
 	assign gpio[6:3] = 0;
