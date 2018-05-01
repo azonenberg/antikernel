@@ -53,13 +53,13 @@ protected:
 	Gtk::VBox m_vbox;
 		Gtk::HBox m_masterEnableHbox;
 			Gtk::Label m_masterEnableLabel;
-			Gtk::Switch m_masterEnableButton;
+			Gtk::ToggleButton m_masterEnableButton;
 			Gtk::Button m_revertButton;
 			Gtk::Button m_commitButton;
 		std::vector<Gtk::HSeparator> m_hseps;
 		std::vector<Gtk::HBox> m_channelLabelHboxes;
 			std::vector<Gtk::Label> m_channelLabels;
-			std::vector<Gtk::Switch> m_channelEnableButtons;
+			std::vector<Gtk::ToggleButton> m_channelEnableButtons;
 			std::vector<Gtk::Label> m_channelStatusLabels;
 		std::vector<Gtk::HBox> m_chanhboxes;
 			std::vector<Gtk::VBox> m_voltboxes;
@@ -76,6 +76,14 @@ protected:
 				std::vector<Gtk::HBox> m_imhboxes;
 					std::vector<Gtk::Label> m_mcurrentLabels;
 					std::vector<Gtk::Label> m_currentValueLabels;
+		Gtk::Frame m_voltageFrame;
+			Gtk::Label m_voltageFrameLabel;
+			Graph m_voltageGraph;
+				std::vector<Graphable*> m_voltageData;
+		Gtk::Frame m_currentFrame;
+			Gtk::Label m_currentFrameLabel;
+			Graph m_currentGraph;
+				std::vector<Graphable*> m_currentData;
 
 	//Our instrument connection
 	PowerSupply* m_psu;
@@ -93,6 +101,10 @@ protected:
 
 	virtual void on_show();
 	virtual void on_hide();
+
+	std::string m_hostname;
+
+	std::string GetColor(int i);
 };
 
 

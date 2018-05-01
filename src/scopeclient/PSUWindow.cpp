@@ -46,6 +46,7 @@ using namespace std;
  */
 PSUWindow::PSUWindow(PowerSupply* psu, std::string host, int port)
 	: m_psu(psu)
+	, m_hostname(host)
 {
 	//Set title
 	char title[256];
@@ -78,6 +79,13 @@ PSUWindow::PSUWindow(PowerSupply* psu, std::string host, int port)
  */
 PSUWindow::~PSUWindow()
 {
+	for(auto x : m_voltageData)
+		delete x;
+	m_voltageData.clear();
+
+	for(auto x : m_currentData)
+		delete x;
+	m_currentData.clear();
 }
 
 /**
@@ -126,7 +134,7 @@ void PSUWindow::CreateWidgets()
 			m_channelLabels[i].set_halign(Gtk::ALIGN_START);
 			m_channelLabels[i].override_font(Pango::FontDescription("sans bold 24"));
 			m_channelLabels[i].set_size_request(150, -1);
-		m_channelEnableButtons.push_back(Gtk::Switch());
+		m_channelEnableButtons.push_back(Gtk::ToggleButton());
 			m_channelEnableButtons[i].override_font(Pango::FontDescription("sans bold 16"));
 			m_channelEnableButtons[i].set_halign(Gtk::ALIGN_START);
 		m_voltageLabels.push_back(Gtk::Label());
@@ -196,6 +204,51 @@ void PSUWindow::CreateWidgets()
 		m_currentEntries[i].signal_changed().connect(
 			sigc::bind<int>(sigc::mem_fun(*this, &PSUWindow::OnChannelCurrentChanged), i));
 	}
+	m_vbox.pack_start(m_voltageFrame, Gtk::PACK_SHRINK);
+		m_voltageFrame.set_label_widget(m_voltageFrameLabel);
+			m_voltageFrameLabel.set_markup("<b>Output Voltage</b>");
+			m_voltageFrame.set_shadow_type(Gtk::SHADOW_NONE);
+		m_voltageFrame.add(m_voltageGraph);
+			m_voltageGraph.m_minScale = 0;
+			m_voltageGraph.m_maxScale = 1;
+			m_voltageGraph.m_scaleBump = 1;
+			m_voltageGraph.m_minRedline = -1;
+			m_voltageGraph.m_maxRedline = 100;
+			m_voltageGraph.m_units = "V";
+			m_voltageGraph.m_yAxisTitle = "";
+			m_voltageGraph.set_size_request(100, 200);
+			m_voltageGraph.m_seriesName = "voltage";
+			for(int i=0; i<m_psu->GetPowerChannelCount(); i++)
+			{
+				char str[16];
+				snprintf(str, sizeof(str), "CH%d", i+1);
+				m_voltageData.push_back(new Graphable(str));
+				m_voltageGraph.m_series.push_back(m_voltageData[i]);
+				m_voltageData[i]->m_color.set(GetColor(i));
+			}
+
+	m_vbox.pack_start(m_currentFrame, Gtk::PACK_SHRINK);
+		m_currentFrame.set_label_widget(m_currentFrameLabel);
+			m_currentFrameLabel.set_markup("<b>Output Current</b>");
+			m_currentFrame.set_shadow_type(Gtk::SHADOW_NONE);
+		m_currentFrame.add(m_currentGraph);
+			m_currentGraph.m_minScale = 0;
+			m_currentGraph.m_maxScale = 1;
+			m_currentGraph.m_scaleBump = 0.1;
+			m_currentGraph.m_minRedline = -1;
+			m_currentGraph.m_maxRedline = 100;
+			m_currentGraph.m_units = "A";
+			m_currentGraph.m_yAxisTitle = "";
+			m_currentGraph.set_size_request(100, 200);
+			m_currentGraph.m_seriesName = "current";
+			for(int i=0; i<m_psu->GetPowerChannelCount(); i++)
+			{
+				char str[16];
+				snprintf(str, sizeof(str), "CH%d", i+1);
+				m_currentData.push_back(new Graphable(str));
+				m_currentGraph.m_series.push_back(m_currentData[i]);
+				m_currentData[i]->m_color.set(GetColor(i));
+			}
 
 	//Revert changes (clear background and load all "nominal" text boxes with the right values
 	OnRevertChanges();
@@ -209,6 +262,43 @@ void PSUWindow::CreateWidgets()
 		sigc::mem_fun(*this, &PSUWindow::OnRevertChanges));
 
 	show_all();
+}
+
+string PSUWindow::GetColor(int i)
+{
+	//from colorbrewer2.org
+	const char* g_colorTable[10]=
+	{
+		"#A6CEE3",
+		"#1F78B4",
+		"#B2DF8A",
+		"#33A02C",
+		"#FB9A99",
+		"#E31A1C",
+		"#FDBF6F",
+		"#FF7F00",
+		"#CAB2D6",
+		"#6A3D9A"
+	};
+
+	//Special-case colors for azonenberg's lab
+	//TODO: make some kind of config file for this
+	if(m_hostname.find("left") != string::npos)
+	{
+		if(i == 0)
+			return "#c0c020";
+		else
+			return "#a06060";
+	}
+	else if(m_hostname.find("right") != string::npos)
+	{
+		if(i == 0)
+			return "#8080ff";
+		else
+			return "#80ff80";
+	}
+
+	return g_colorTable[i];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -234,17 +324,59 @@ void PSUWindow::OnCommitChanges()
 void PSUWindow::OnRevertChanges()
 {
 	char tmp[128];
+	float vmax = 0;
+	float imax = 0;
+
 	for(int i=0; i<m_psu->GetPowerChannelCount(); i++)
 	{
-		snprintf(tmp, sizeof(tmp), "%7.3f", m_psu->GetPowerVoltageNominal(i));
+		float v = m_psu->GetPowerVoltageNominal(i);
+		float c = m_psu->GetPowerCurrentNominal(i);
+
+		//Rescale graph to fit this channel
+		vmax = max(v, vmax);
+		imax = max(c, imax);
+
+		snprintf(tmp, sizeof(tmp), "%7.3f", v);
 		m_voltageEntries[i].set_text(tmp);
 
-		snprintf(tmp, sizeof(tmp), "%6.3f", m_psu->GetPowerCurrentNominal(i));
+		snprintf(tmp, sizeof(tmp), "%6.3f", c);
 		m_currentEntries[i].set_text(tmp);
 
 		//clear to white
 		m_voltageEntries[i].override_background_color(Gdk::RGBA("#ffffff"));
 		m_currentEntries[i].override_background_color(Gdk::RGBA("#ffffff"));
+	}
+
+	vmax = ceil(vmax);
+
+	m_voltageGraph.m_maxScale = vmax + 1;
+
+	//Pick scale ranges for current more intelligently
+	m_currentGraph.m_maxRedline = imax;
+	m_currentGraph.m_minRedline = -1;
+	if(imax > 1)
+	{
+		m_currentGraph.m_maxScale = ceil(imax) + 0.25;
+		m_currentGraph.m_scaleBump = 0.25;
+
+		m_currentGraph.m_units = "A";
+		m_currentGraph.m_unitScale = 1;
+	}
+	else if(imax > 0.25)
+	{
+		m_currentGraph.m_maxScale = imax + 0.1;
+		m_currentGraph.m_scaleBump = 0.1;
+
+		m_currentGraph.m_units = "mA";
+		m_currentGraph.m_unitScale = 1000;
+	}
+	else
+	{
+		m_currentGraph.m_maxScale = imax + 0.05;
+		m_currentGraph.m_scaleBump = 0.025;
+
+		m_currentGraph.m_units = "mA";
+		m_currentGraph.m_unitScale = 1000;
 	}
 }
 
@@ -293,6 +425,12 @@ bool PSUWindow::OnTimer(int /*timer*/)
 				snprintf(tmp, sizeof(tmp), "%7.3f  V", v);
 			m_voltageValueLabels[i].set_text(tmp);
 
+			//Update voltage graph with the new data
+			auto vseries = m_voltageData[i]->GetSeries("voltage");
+			vseries->push_back(GraphPoint(GetTime(), v));
+			while(vseries->size() > 100)
+				vseries->pop_front();
+
 			//Channel current
 			double c = m_psu->GetPowerCurrentActual(i);
 			if(fabs(c) < 1)
@@ -300,6 +438,12 @@ bool PSUWindow::OnTimer(int /*timer*/)
 			else
 				snprintf(tmp, sizeof(tmp), "%6.3f A", c);
 			m_currentValueLabels[i].set_text(tmp);
+
+			//Update current graph with the new data
+			auto iseries = m_currentData[i]->GetSeries("current");
+			iseries->push_back(GraphPoint(GetTime(), c));
+			while(iseries->size() > 100)
+				iseries->pop_front();
 
 			//Channel enable
 			bool enabled = m_psu->GetPowerChannelActive(i);

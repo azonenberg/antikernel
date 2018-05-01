@@ -2,7 +2,7 @@
 *                                                                                                                      *
 * ANTIKERNEL v0.1                                                                                                      *
 *                                                                                                                      *
-* Copyright (c) 2012-2017 Andrew D. Zonenberg                                                                          *
+* Copyright (c) 2012-2018 Andrew D. Zonenberg                                                                          *
 * All rights reserved.                                                                                                 *
 *                                                                                                                      *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the     *
@@ -30,35 +30,102 @@
 /**
 	@file
 	@author Andrew D. Zonenberg
-	@brief Main library include file
+	@brief Declaration of Graph and related classes
  */
 
-#ifndef scopehal_h
-#define scopehal_h
+#ifndef Graph_h
+#define Graph_h
 
-#include "../jtaghal/jtaghal.h"
+#include <gtkmm.h>
 
-#include <sigc++/sigc++.h>
+class GraphPoint
+{
+public:
+	double time;
+	float value;
 
-#include <vector>
-#include <string>
-#include <stdint.h>
+	GraphPoint(double t, float v)
+	{ time=t; value=v;}
+};
 
-#include "Instrument.h"
-#include "Multimeter.h"
-#include "Oscilloscope.h"
-#include "OscilloscopeChannel.h"
-#include "PowerSupply.h"
+typedef std::list<GraphPoint> Series;
 
-#include <cairomm/context.h>
+typedef std::map< std::string, Series* > SeriesMap;
 
-#include "Graph.h"
+class Graphable
+{
+public:
+	Graphable(std::string name = "")
+	: m_name(name)
+	{}
 
-void DrawString(float x, float y, const Cairo::RefPtr<Cairo::Context>& cr, std::string str, bool bBig);
-void GetStringWidth(const Cairo::RefPtr<Cairo::Context>& cr, std::string str, bool bBig, int& width, int& height);
+	virtual ~Graphable();
 
-uint64_t ConvertVectorSignalToScalar(std::vector<bool> bits);
+	Series* GetSeries(std::string name);
 
-std::string GetDefaultChannelColor(int i);
+	virtual bool visible();
+
+	Gdk::Color m_color;
+	std::string m_name;
+	SeriesMap m_series;							//Summarized data series for this node
+};
+
+//The graph window itself
+class Graph : public Gtk::Layout
+{
+public:
+	Graph();
+	~Graph();
+
+	//Configurable by parent
+	std::vector<Graphable*> m_series;
+	std::string m_seriesName;
+
+	float m_minScale;
+	float m_maxScale;
+	float m_scaleBump;
+
+	std::string m_units;
+	float m_unitScale;
+
+	float m_maxRedline;
+	float m_minRedline;
+
+	std::string m_yAxisTitle;
+
+protected:
+	virtual bool on_draw(const Cairo::RefPtr<Cairo::Context>& cr);
+
+	void DrawSeries(Series* pSeries, const Cairo::RefPtr<Cairo::Context>& cr, Gdk::Color);
+
+	float timeToPosition(double time);
+	float valueToPosition(float val);
+
+	bool OnTimer(int nTimer);
+
+	/////////////////////////////////////////////////////////
+	//Display data
+
+	int m_top;
+	int m_bottom;
+	int m_left;
+	int m_right;
+
+	int m_width;
+	int m_height;
+	float m_pheight;
+
+	float m_bodywidth;
+	float m_bodyheight;
+
+	const int m_lmargin;
+	const int m_rmargin;
+	const int m_tmargin;
+	const int m_bmargin;
+
+	double m_now;
+};
+
+double GetTime();
 
 #endif
