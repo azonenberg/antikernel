@@ -373,6 +373,12 @@ void EyeRenderer::RenderEyeBitmap(
 {
 	int row_width = ui_width*2;
 
+	if(row_width > 32768)
+	{
+		LogWarning("Excessive oversampling. Cairo cannot render bitmaps more than 32768 pixels across.\n");
+		return;
+	}
+
 	//Create pixel value histogram
 	int pixel_count = ui_width * m_height;
 	int64_t* histogram = new int64_t[pixel_count];
