@@ -121,7 +121,7 @@ module EthernetMACTable(
 	localparam MEM_DEPTH	= NUM_SETS*MACS_PER_SET;
 	
 	//Number of bits in an set ID
-	`include "../util/clog2.vh"
+	`include "../../../../antikernel-ipcores/synth_helpers/clog2.vh"
 	localparam SET_BITS		= clog2(NUM_SETS);
 	localparam INDEX_BITS	= clog2(MACS_PER_SET);
 	localparam ADDR_BITS	= SET_BITS + INDEX_BITS;
@@ -349,7 +349,10 @@ module EthernetMACTable(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Management state machine
 	
-	`include "EthernetMACTable_opcodes_constants.v"
+	//`include "EthernetMACTable_opcodes_constants.v"
+	localparam MACTBL_OP_FLUSH = 0;
+	localparam MACTBL_OP_PORTDUMP = 1;
+	localparam MACTBL_OP_GC = 0;
 	
 	localparam		MGMT_STATE_IDLE		= 0;
 	localparam		MGMT_STATE_DUMP_0	= 1;
