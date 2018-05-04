@@ -95,6 +95,8 @@ protected:
 
 	bool SendCommand(std::string cmd);
 	std::string ReadReply();
+
+	int m_activeChannel;
 };
 
 #endif

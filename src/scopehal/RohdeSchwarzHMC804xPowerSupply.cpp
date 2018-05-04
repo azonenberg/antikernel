@@ -39,6 +39,7 @@ RohdeSchwarzHMC804xPowerSupply::RohdeSchwarzHMC804xPowerSupply(string hostname, 
 	: m_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
 	, m_hostname(hostname)
 	, m_port(port)
+	, m_activeChannel(-1)
 {
 	LogDebug("Connecting to R&S HMC804x PSU at %s:%d\n", hostname.c_str(), port);
 
@@ -296,7 +297,20 @@ bool RohdeSchwarzHMC804xPowerSupply::SelectChannel(int chan)
 	if(m_channelCount == 1)
 		return true;
 
+	//Early-out if we're already on the requested channel
+	if(m_activeChannel == chan)
+		return true;
+
 	string cmd = "inst:nsel 1";
 	cmd[cmd.length()-1] += chan;
-	return SendCommand(cmd);
+	if(SendCommand(cmd))
+	{
+		m_activeChannel = chan;
+		return true;
+	}
+	else
+	{
+		m_activeChannel = -1;
+		return false;
+	}
 }
