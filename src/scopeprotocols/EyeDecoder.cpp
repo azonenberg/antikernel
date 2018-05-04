@@ -183,7 +183,7 @@ bool EyeDecoder::DetectModulationLevels(AnalogCapture* din, EyeCapture* cap)
 		LogDebug("Delta at i=%zu is %.3f\n", i, delta);
 
 		//TODO: fine tune this threshold adaptively based on overall signal amplitude?
-		if(delta < 200)
+		if(delta < 0.200)
 		{
 			LogDebug("Too small\n");
 
@@ -508,6 +508,7 @@ bool EyeDecoder::GenerateEyeData(AnalogCapture* din, EyeCapture* cap, map<int64_
 
 		//Re-trigger every uis_per_trigger UIs to compensate for clock skew between our guesstimated clock
 		//and the actual line rate
+		//TODO: proper CDR PLL for this
 		double num_uis = doff / m_uiWidthFractional;
 		if(num_uis > uis_per_trigger)
 		{
@@ -657,13 +658,11 @@ bool EyeDecoder::MeasureRiseFallTimes(AnalogCapture* din, EyeCapture* cap)
 		float startThreshold = originalVoltage + dv*0.1;
 		float endThreshold = endingVoltage - dv*0.1;
 
-		/*
 		LogDebug("Code %d->%d: startThreshold=%3.0f mV, endThreshold=%3.0f mV\n",
 			it.first.first,
 			it.first.second,
 			startThreshold * 1000,
 			endThreshold * 1000);
-		*/
 
 		int64_t timeSum = 0;
 		int64_t timeCount = 0;
@@ -700,6 +699,12 @@ bool EyeDecoder::MeasureRiseFallTimes(AnalogCapture* din, EyeCapture* cap)
 			}
 
 			int edgetime = endDelay + startDelay;
+
+			//If the edge is more than 3/4 a UI long, discount it.
+			//We probably have two high/low bits in a row.
+			if( edgetime > (3*m_uiWidth / 4) )
+				continue;
+
 			//LogDebug("    Edge = %d samples (%.2f ns)\n", edgetime, edgetime * cap->m_timescale * 1e-3f);
 
 			timeSum += edgetime;
