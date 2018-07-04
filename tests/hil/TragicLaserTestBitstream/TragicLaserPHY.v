@@ -177,19 +177,37 @@ module TragicLaserPHY(
 	//We send 104 ns long pulses (13 clocks long) to be on the safe side.
 	reg			tx_flp_en		= 0;
 	reg[3:0]	tx_flp_count	= 0;
+
+	parameter TEST_FLP_SQUAREWAVE = 1;
+
 	always @(posedge clk_125mhz) begin
 
-		if(tx_flp_en) begin
-			tx_flp_count		<= 1;
-			tx_aneg_data		<= 1;
-		end
+		//send a squarewave of FLPs for noise testing
+		if(TEST_FLP_SQUAREWAVE) begin
 
-		if(tx_flp_count) begin
 			tx_flp_count		<= tx_flp_count + 1'h1;
-			if(tx_flp_count == 'd13) begin
-				tx_aneg_data	<= 0;
+			if(tx_flp_count == 'd2) begin
+				tx_aneg_data	<= ~tx_aneg_data;
 				tx_flp_count	<= 0;
 			end
+
+		end
+
+		else begin
+
+			if(tx_flp_en) begin
+				tx_flp_count		<= 1;
+				tx_aneg_data		<= 1;
+			end
+
+			if(tx_flp_count) begin
+				tx_flp_count		<= tx_flp_count + 1'h1;
+				if(tx_flp_count == 'd13) begin
+					tx_aneg_data	<= 0;
+					tx_flp_count	<= 0;
+				end
+			end
+
 		end
 
 	end
@@ -950,6 +968,8 @@ module TragicLaserPHY(
 
 	reg[1:0]	tx_flp_state			= TX_FLP_STATE_WAIT;
 
+	parameter	TEST_CLOSE_FLP			= 0;	//set 1 to do much closer spaced FLPs
+
 	always @(posedge clk_125mhz) begin
 
 		tx_flp_en			<= 0;
@@ -965,7 +985,8 @@ module TragicLaserPHY(
 
 					//Bursts are nominally 16 ms (2000000 clocks) apart.
 					//Send a clock pulse if we're starting a burst, then wait
-					if(tx_flp_interval_count == 24'd1999999) begin
+					//Send them much closer together if requested, for debugging
+					if(tx_flp_interval_count == (TEST_CLOSE_FLP ? 24'd800 : 24'd1999999) ) begin
 						tx_flp_en				<= 1;
 						tx_flp_state			<= TX_FLP_STATE_CLOCK_WAIT;
 						tx_flp_interval_count	<= 0;
@@ -980,7 +1001,7 @@ module TragicLaserPHY(
 					tx_flp_interval_count		<= tx_flp_interval_count + 1'h1;
 
 					//Pulses are nominally 62.5 us (7812 clocks) apart
-					if(tx_flp_interval_count == 24'd7812) begin
+					if(tx_flp_interval_count == (TEST_CLOSE_FLP ? 24'd800 : 24'd7812)) begin
 
 						//Send the data bit
 						tx_flp_en				<= tx_link_codeword[15 - tx_flp_bit_count];
@@ -1000,7 +1021,7 @@ module TragicLaserPHY(
 					tx_flp_interval_count		<= tx_flp_interval_count + 1'h1;
 
 					//Pulses are nominally 62.5 us (7812 clocks) apart
-					if(tx_flp_interval_count == 24'd7812) begin
+					if(tx_flp_interval_count == (TEST_CLOSE_FLP ? 24'd800 : 24'd7812)) begin
 
 						//Send the clock bit
 						tx_flp_en				<= 1;
@@ -1209,6 +1230,8 @@ module TragicLaserPHY(
 	reg			tx_aneg_ack		= 0;
 	wire		tx_aneg_np		= 0;			//next page not supported
 
+	parameter	FORCE_LINK_UP	= 0;
+
 	always @(*) begin
 		tx_link_codeword	<=					//note, bit numbering is reversed from the 802.3 spec
 												//since we send bit 15 first instead of 0
@@ -1356,6 +1379,10 @@ module TragicLaserPHY(
 
 		endcase
 
+		if(FORCE_LINK_UP) begin
+			link_speed	<= LINK_SPEED_100;
+		end
+
 	end
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1470,8 +1497,7 @@ module TragicLaserPHY(
 	);
 	*/
 
-	assign gpio[8] = 0;
-	assign gpio[6:3] = 0;
+	assign gpio[9:3] = 0;
 	assign gpio[1] = 0;
 
 	//DDROutputBuffer #(.WIDTH(1))

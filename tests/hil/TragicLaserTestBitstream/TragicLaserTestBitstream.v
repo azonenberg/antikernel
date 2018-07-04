@@ -156,7 +156,11 @@ module TragicLaserTestBitstream(
 
     reg[7:0]	mstate = 0;
 
-    TragicLaserPHY phy(
+    TragicLaserPHY #(
+		.FORCE_LINK_UP(0),
+		.TEST_CLOSE_FLP(0),
+		.TEST_FLP_SQUAREWAVE(1)
+    ) phy(
 		.clk_25mhz(clk_25mhz_bufg),
 		.clk_125mhz(clk_125mhz_bufg),
 		.clk_500mhz_bufpll(clk_500mhz_bufpll),
