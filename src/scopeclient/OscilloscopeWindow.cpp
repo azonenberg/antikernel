@@ -75,7 +75,7 @@ OscilloscopeWindow::OscilloscopeWindow(Oscilloscope* scope, std::string host, in
 
 	//Set the update timer
 	sigc::slot<bool> slot = sigc::bind(sigc::mem_fun(*this, &OscilloscopeWindow::OnTimer), 1);
-	sigc::connection conn = Glib::signal_timeout().connect(slot, 250);
+	sigc::connection conn = Glib::signal_timeout().connect(slot, 5);
 
 	//Set up display time scale
 	m_timescale = 0;
@@ -161,10 +161,16 @@ bool OscilloscopeWindow::OnTimer(int /*timer*/)
 			if(status != Oscilloscope::TRIGGER_MODE_TRIGGERED)
 				return true;
 
+			double dt = GetTime() - m_tArm;
+			LogDebug("Triggered (trigger was armed for %.2f ms)\n", dt * 1000);
+
 			m_statprogress.set_text("Triggered");
 
 			//Triggered - get the data from each channel
+			double start = GetTime();
 			m_scope->AcquireData(sigc::mem_fun(*this, &OscilloscopeWindow::OnCaptureProgressUpdate));
+			dt = GetTime() - start;
+			LogDebug("    Capture downloaded in %.2f ms\n", dt * 1000);
 
 			//Set to a sane zoom if this is our first capture
 			//otherwise keep time scale unchanged
@@ -176,6 +182,10 @@ bool OscilloscopeWindow::OnTimer(int /*timer*/)
 			m_view.queue_draw();
 
 			m_waiting = false;
+
+			//TODO: if in continuous mode, trigger again
+			//TODO: have settings for this
+			//OnStart();
 		}
 		else
 			m_statprogress.set_text("Stopped");
@@ -265,12 +275,13 @@ void OscilloscopeWindow::OnStart()
 		//m_channelview.UpdateTriggers();
 
 		//Start the capture
+		m_tArm = GetTime();
 		m_scope->StartSingleTrigger();
 		m_waiting = true;
 
 		//Print to stdout so scripts know we're ready
-		LogDebug("Ready\n");
-		fflush(stdout);
+		//LogDebug("Ready\n");
+		//fflush(stdout);
 	}
 	catch(const JtagException& ex)
 	{

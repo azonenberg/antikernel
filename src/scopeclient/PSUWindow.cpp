@@ -428,7 +428,7 @@ bool PSUWindow::OnTimer(int /*timer*/)
 			//Update voltage graph with the new data
 			auto vseries = m_voltageData[i]->GetSeries("voltage");
 			vseries->push_back(GraphPoint(GetTime(), v));
-			while(vseries->size() > 100)
+			while(vseries->size() > 500)
 				vseries->pop_front();
 
 			//Channel current
@@ -442,7 +442,7 @@ bool PSUWindow::OnTimer(int /*timer*/)
 			//Update current graph with the new data
 			auto iseries = m_currentData[i]->GetSeries("current");
 			iseries->push_back(GraphPoint(GetTime(), c));
-			while(iseries->size() > 100)
+			while(iseries->size() > 500)
 				iseries->pop_front();
 
 			//Channel enable

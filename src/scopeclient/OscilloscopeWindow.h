@@ -88,6 +88,8 @@ protected:
 	void OnZoomChanged();
 
 	bool m_waiting;
+
+	double m_tArm;
 };
 
 #endif
