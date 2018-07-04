@@ -168,17 +168,38 @@ LeCroyVICPOscilloscope::LeCroyVICPOscilloscope(string hostname, unsigned short p
 			{
 				m_hasLA = true;
 				LogDebug("* MSXX (logic analyzer)\n");
-				m_digitalChannelCount = 16;
+				LogIndenter li;
 
-				char chn[8];
-				for(int i=0; i<16; i++)
+				//Only add the channels if we're showing them
+				//TODO: better way of doing this!!!
+				SendCommand("WAVEFORM_SETUP SP,0,NP,0,FP,0,SN,0");
+				string cmd = "Digital1:WF?";
+				SendCommand(cmd);
+				string data;
+				if(!ReadWaveformBlock(data))
+					return;
+				string tmp = data.substr(data.find("SelectedLines=") + 14);
+				tmp = tmp.substr(0, 16);
+				if(tmp == "0000000000000000")
 				{
-					snprintf(chn, sizeof(chn), "D%d", i);
-					m_channels.push_back(new OscilloscopeChannel(
-						chn,
-						OscilloscopeChannel::CHANNEL_TYPE_DIGITAL,
-						GetDefaultChannelColor(m_channels.size()),
-						1));
+					LogDebug("No digital channels enabled\n");
+					//TODO: allow turning them on/off dynamically
+				}
+
+				else
+				{
+					m_digitalChannelCount = 16;
+
+					char chn[8];
+					for(int i=0; i<16; i++)
+					{
+						snprintf(chn, sizeof(chn), "D%d", i);
+						m_channels.push_back(new OscilloscopeChannel(
+							chn,
+							OscilloscopeChannel::CHANNEL_TYPE_DIGITAL,
+							GetDefaultChannelColor(m_channels.size()),
+							1));
+					}
 				}
 			}
 
@@ -577,6 +598,21 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 	//if(num_sequences > 1)
 	//	LogDebug("Capturing %u sequences\n", num_sequences);
 
+	//Figure out the trigger delay in the capture (nominal zero is MIDDLE of capture!)
+	SendCommand("TRDL?");
+	string sdelay = ReadSingleBlockString();
+	float delay;
+	sscanf(sdelay.c_str(), "%f", &delay);
+
+	//Convert to offset from START of capture (add 5 divisions)
+	SendCommand("TDIV?");
+	string stdiv = ReadSingleBlockString();
+	float tdiv;
+	sscanf(stdiv.c_str(), "%f", &tdiv);
+	float trigoff = tdiv*5 + delay;
+	LogDebug("    Trigger offset from start of capture: %.3f ns (delay %f ns, tdiv %f ns)\n", trigoff * 1e9,
+		delay * 1e9, tdiv * 1e9);
+
 	for(unsigned int i=0; i<m_analogChannelCount; i++)
 	{
 		//If the channel is invisible, don't waste time capturing data
@@ -625,10 +661,11 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 			float v_gain = *reinterpret_cast<float*>(pdesc + 156);
 			float v_off = *reinterpret_cast<float*>(pdesc + 160);
 			float interval = *reinterpret_cast<float*>(pdesc + 176) * 1e12f;
-			//double h_off = *reinterpret_cast<double*>(pdesc + 180);
-			//double trig_time = *reinterpret_cast<double*>(pdesc + 296);
+			//double h_off = *reinterpret_cast<double*>(pdesc + 180) * interval;
+			//double h_unit = *reinterpret_cast<double*>(pdesc + 244);
+			//double trig_time = *reinterpret_cast<double*>(pdesc + 296);	//ps ref some arbitrary unit
 			//LogDebug("V: gain=%f off=%f\n", v_gain, v_off);
-			//LogDebug("    H: off=%lf\n", h_off * interval);
+			//LogDebug("    H: off=%lf\n", h_off);
 			//LogDebug("    Trigger time: %.0f ps\n", trig_time * 1e12f);
 			//LogDebug("Sample interval: %.2f ps\n", interval);
 
@@ -649,7 +686,9 @@ bool LeCroyVICPOscilloscope::AcquireData(sigc::slot1<int, float> progress_callba
 			}
 
 			int64_t trigtime_samples = trigtime * 1e12f / interval;
+			//int64_t trigoff_samples = trigoff * 1e12f / interval;
 			//LogDebug("    Trigger time: %.3f sec (%lu samples)\n", trigtime, trigtime_samples);
+			//LogDebug("    Trigger offset: %.3f sec (%lu samples)\n", trigoff, trigoff_samples);
 
 			//double dt = GetTime() - start;
 			//start = GetTime();

@@ -85,9 +85,12 @@ bool EyeDecoder::NeedsConfig()
 
 bool EyeDecoder::DetectModulationLevels(AnalogCapture* din, EyeCapture* cap)
 {
+	LogDebug("Detecting modulation levels\n");
+	LogIndenter li;
+
 	//Find the min/max voltage of the signal (used to set default bounds for the render).
 	//Additionally, generate a histogram of voltages. We need this to configure the trigger(s) correctly
-	//and do measurements on the eye opening(s) - since MLT-3, PAM-4, etc have multiple openings.
+	//and do measurements on the eye opening(s) - since MLT-3, PAM-x, etc have multiple openings.
 	cap->m_minVoltage = 999;
 	cap->m_maxVoltage = -999;
 	map<int, int64_t> vhist;							//1 mV bins
@@ -103,6 +106,7 @@ bool EyeDecoder::DetectModulationLevels(AnalogCapture* din, EyeCapture* cap)
 		if(f < cap->m_minVoltage)
 			cap->m_minVoltage = f;
 	}
+	LogDebug("Voltage range is %.3f to %.3f V\n", cap->m_minVoltage, cap->m_maxVoltage);
 
 	//Crunch the histogram to find the number of signal levels in use.
 	//We're looking for peaks of significant height (25% of maximum or more) and not too close to another peak.
@@ -113,13 +117,14 @@ bool EyeDecoder::DetectModulationLevels(AnalogCapture* din, EyeCapture* cap)
 		if(it.second > maxpeak)
 			maxpeak = it.second;
 	}
+	LogDebug("Highest histogram peak is %ld points\n", maxpeak);
+
 	int64_t peakthresh = maxpeak/4;
 	int64_t second_peak = 0;
 	double second_weighted = 0;
 	for(auto it : vhist)
 	{
 		int64_t count = it.second;
-
 		//If we're pretty close to a taller peak (within neighborhood mV) then don't do anything
 		int mv = it.first;
 		bool bigger = false;
@@ -134,6 +139,7 @@ bool EyeDecoder::DetectModulationLevels(AnalogCapture* din, EyeCapture* cap)
 				continue;
 			}
 		}
+
 		if(bigger)
 			continue;
 
@@ -183,8 +189,9 @@ bool EyeDecoder::DetectModulationLevels(AnalogCapture* din, EyeCapture* cap)
 		LogDebug("Delta at i=%zu is %.3f\n", i, delta);
 
 		//TODO: fine tune this threshold adaptively based on overall signal amplitude?
-		if(delta < 0.200)
+		if(delta < 0.175)
 		{
+			LogIndenter li;
 			LogDebug("Too small\n");
 
 			//Remove the innermost point (closer to zero)
@@ -197,6 +204,7 @@ bool EyeDecoder::DetectModulationLevels(AnalogCapture* din, EyeCapture* cap)
 	}
 
 	//Figure out decision points (eye centers)
+	//FIXME: This doesn't work well for PAM! Only MLT*
 	for(size_t i=0; i<cap->m_signalLevels.size()-1; i++)
 	{
 		float vlo = cap->m_signalLevels[i];
@@ -342,6 +350,7 @@ bool EyeDecoder::CalculateUIWidth(AnalogCapture* din, EyeCapture* cap)
 			ui_width_count ++;
 		}
 	}
+
 	double average_width = ui_width_sum * 1.0 / ui_width_count;
 	//LogDebug("    Average UI width (second pass): %.3lf samples\n", average_width);
 	m_uiWidth = round(average_width);
@@ -725,6 +734,8 @@ bool EyeDecoder::MeasureRiseFallTimes(AnalogCapture* din, EyeCapture* cap)
 
 void EyeDecoder::Refresh()
 {
+	LogIndenter li;
+
 	//Get the input data
 	if(m_channels[0] == NULL)
 	{
