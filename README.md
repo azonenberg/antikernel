@@ -20,7 +20,7 @@ well as writing specifications for not-yet-implemented peripherals/drivers/servi
 ## Stuff you might be interested in:
 
 * Project IRC channel: #antikernel on Freenode
-* Original PhD thesis: http://gradworks.umi.com/37/05/3705663.html
+* Original PhD thesis: https://pqdtopen.proquest.com/doc/1705867421.html?FMT=ABS
 * CHES 2016 paper: https://eprint.iacr.org/2016/550
 * CHES 2016 slides: http://www.chesworkshop.org/ches2016/presentations/0918%20Session%205/CHES2016_Session5_2.pdf
 * CHES 2016 video: https://www.iacr.org/cryptodb/data/paper.php?pubkey=27850
