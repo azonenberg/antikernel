@@ -1,0 +1,568 @@
+EESchema Schematic File Version 2
+LIBS:power
+LIBS:device
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:special
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:cmos
+LIBS:cypress-azonenberg
+LIBS:hirose-azonenberg
+LIBS:memory-azonenberg
+LIBS:microchip-azonenberg
+LIBS:osc-azonenberg
+LIBS:passive-azonenberg
+LIBS:power-azonenberg
+LIBS:special-azonenberg
+LIBS:xilinx-azonenberg
+LIBS:analog-azonenberg
+LIBS:cat5-tdr-cache
+EELAYER 25 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 6 11
+Title "FPGA pulse handling"
+Date "Fri 16 Jan 2015"
+Rev "$Rev: 1703 $"
+Comp "Andrew Zonenberg"
+Comment1 "Quad-Channel 1.25 GSa/s 12-bit Time-Domain Reflectometer"
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+Text HLabel 1700 2100 0    60   Output ~ 0
+CH1_PULSE_P
+Text HLabel 1700 2200 0    60   Output ~ 0
+CH1_PULSE_N
+Text HLabel 1700 3100 0    60   Output ~ 0
+CH2_PULSE_P
+Text HLabel 1700 3200 0    60   Output ~ 0
+CH2_PULSE_N
+Text HLabel 1700 1500 0    60   Output ~ 0
+CH3_PULSE_P
+Text HLabel 1700 1600 0    60   Output ~ 0
+CH3_PULSE_N
+Text HLabel 1700 3300 0    60   Output ~ 0
+CH4_PULSE_P
+Text HLabel 1700 3400 0    60   Output ~ 0
+CH4_PULSE_N
+Text HLabel 1700 900  0    60   Input ~ 0
+CH1_SAMPLE_P
+Text HLabel 1700 1000 0    60   Input ~ 0
+CH1_SAMPLE_N
+Text HLabel 1700 1300 0    60   Input ~ 0
+CH2_SAMPLE_P
+Text HLabel 1700 1400 0    60   Input ~ 0
+CH2_SAMPLE_N
+Text HLabel 1700 1100 0    60   Input ~ 0
+CH3_SAMPLE_P
+Text HLabel 1700 1200 0    60   Input ~ 0
+CH3_SAMPLE_N
+Text HLabel 1700 1700 0    60   Input ~ 0
+CH4_SAMPLE_P
+Text HLabel 1700 1800 0    60   Input ~ 0
+CH4_SAMPLE_N
+Text HLabel 2550 6500 0    60   Output ~ 0
+CH1_SPI_MOSI
+Text HLabel 1500 6600 0    60   Input ~ 0
+CH1_SPI_MISO
+Text HLabel 2550 6700 0    60   Output ~ 0
+CH1_SPI_SCK
+Text HLabel 2550 6800 0    60   Output ~ 0
+CH1_SPI_CS_N
+Text HLabel 2550 6900 0    60   Output ~ 0
+CH2_SPI_MOSI
+Text HLabel 1500 7000 0    60   Input ~ 0
+CH2_SPI_MISO
+Text HLabel 2550 7100 0    60   Output ~ 0
+CH2_SPI_SCK
+Text HLabel 2550 7200 0    60   Output ~ 0
+CH2_SPI_CS_N
+Text HLabel 5350 4700 0    60   Output ~ 0
+CH3_SPI_MOSI
+Text HLabel 4300 4600 0    60   Input ~ 0
+CH3_SPI_MISO
+Text HLabel 5350 4800 0    60   Output ~ 0
+CH3_SPI_SCK
+Text HLabel 5350 4900 0    60   Output ~ 0
+CH3_SPI_CS_N
+Text HLabel 5350 5100 0    60   Output ~ 0
+CH4_SPI_MOSI
+Text HLabel 4300 5000 0    60   Input ~ 0
+CH4_SPI_MISO
+Text HLabel 5350 5200 0    60   Output ~ 0
+CH4_SPI_SCK
+Text HLabel 5350 5300 0    60   Output ~ 0
+CH4_SPI_CS_N
+$Comp
+L XC7KxT-FBG484 U20
+U 7 1 54B0AF3F
+P 2050 5700
+F 0 "U20" H 2050 5600 60  0000 L CNN
+F 1 "XC7K70T-1FBG484" H 3150 5600 60  0000 R CNN
+F 2 "azonenberg:BGA_484_22x22_FULLARRAY_1MM" H 2050 5400 60  0001 C CNN
+F 3 "" H 2050 5400 60  0000 C CNN
+	7    2050 5700
+	1    0    0    -1  
+$EndComp
+Text Notes 9000 750  0    60   ~ 0
+VCCO = 1.8V
+NoConn ~ 1850 2300
+NoConn ~ 1850 2400
+NoConn ~ 1850 3900
+NoConn ~ 1850 4000
+NoConn ~ 1850 4300
+NoConn ~ 1850 4400
+NoConn ~ 1850 800 
+NoConn ~ 1850 5500
+NoConn ~ 1850 5700
+NoConn ~ 1850 5400
+NoConn ~ 1850 5300
+NoConn ~ 1850 4200
+NoConn ~ 1850 4100
+NoConn ~ 1850 3600
+NoConn ~ 1850 3500
+NoConn ~ 1850 5600
+NoConn ~ 1850 2500
+NoConn ~ 1850 2600
+NoConn ~ 1850 2700
+NoConn ~ 1850 2800
+NoConn ~ 1850 2900
+NoConn ~ 8800 1300
+NoConn ~ 8800 1700
+NoConn ~ 8800 4500
+NoConn ~ 8800 4600
+NoConn ~ 8800 5700
+Text Notes 2050 750  0    60   ~ 0
+VCCO = 1.8V
+Text HLabel 7600 5600 0    60   Input ~ 0
+DAC_SPI_MISO
+Text HLabel 8650 5200 0    60   Output ~ 0
+DAC_SPI_MOSI
+Text HLabel 8650 5100 0    60   Output ~ 0
+DAC_SPI_SCK
+Text HLabel 8650 5400 0    60   Output ~ 0
+DAC_SPI_CS_N
+$Comp
+L R R63
+U 1 1 54BC1FF3
+P 1750 6600
+F 0 "R63" V 1830 6600 50  0000 C CNN
+F 1 "49.9" V 1750 6600 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 1750 6600 60  0001 C CNN
+F 3 "" H 1750 6600 60  0000 C CNN
+	1    1750 6600
+	0    1    1    0   
+$EndComp
+$Comp
+L R R64
+U 1 1 54BC2138
+P 1750 7000
+F 0 "R64" V 1830 7000 50  0000 C CNN
+F 1 "49.9" V 1750 7000 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 1750 7000 60  0001 C CNN
+F 3 "" H 1750 7000 60  0000 C CNN
+	1    1750 7000
+	0    1    1    0   
+$EndComp
+$Comp
+L R R65
+U 1 1 54BC2176
+P 4550 4600
+F 0 "R65" V 4630 4600 50  0000 C CNN
+F 1 "49.9" V 4550 4600 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 4550 4600 60  0001 C CNN
+F 3 "" H 4550 4600 60  0000 C CNN
+	1    4550 4600
+	0    1    1    0   
+$EndComp
+$Comp
+L R R66
+U 1 1 54BC21A4
+P 4550 5000
+F 0 "R66" V 4630 5000 50  0000 C CNN
+F 1 "49.9" V 4550 5000 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 4550 5000 60  0001 C CNN
+F 3 "" H 4550 5000 60  0000 C CNN
+	1    4550 5000
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	1700 1500 1850 1500
+Wire Wire Line
+	1850 1600 1700 1600
+Wire Wire Line
+	1700 2100 1850 2100
+Wire Wire Line
+	1850 2200 1700 2200
+Wire Wire Line
+	1700 3100 1850 3100
+Wire Wire Line
+	1850 3200 1700 3200
+Wire Wire Line
+	1700 3300 1850 3300
+Wire Wire Line
+	1850 3400 1700 3400
+Wire Wire Line
+	1700 1100 1850 1100
+Wire Wire Line
+	1850 1200 1700 1200
+Wire Wire Line
+	1700 1300 1850 1300
+Wire Wire Line
+	1850 1400 1700 1400
+Wire Wire Line
+	1700 1700 1850 1700
+Wire Wire Line
+	1850 1800 1700 1800
+Wire Wire Line
+	8650 4800 8800 4800
+Wire Wire Line
+	8650 1200 8800 1200
+Wire Wire Line
+	8650 900  8800 900 
+Wire Wire Line
+	8800 4200 8650 4200
+Wire Wire Line
+	8800 1800 8650 1800
+Wire Wire Line
+	8650 2300 8800 2300
+Wire Wire Line
+	8800 3800 8650 3800
+Wire Wire Line
+	8800 2200 8650 2200
+Wire Wire Line
+	8650 2400 8800 2400
+Wire Wire Line
+	8800 2700 8650 2700
+Wire Wire Line
+	8100 5600 8800 5600
+Wire Wire Line
+	8800 5400 8650 5400
+Wire Wire Line
+	8800 5200 8650 5200
+$Comp
+L R R67
+U 1 1 54BC2704
+P 7850 5600
+F 0 "R67" V 7930 5600 50  0000 C CNN
+F 1 "49.9" V 7850 5600 50  0000 C CNN
+F 2 "azonenberg:EIA_0402_RES_NOSILK" H 7850 5600 60  0001 C CNN
+F 3 "" H 7850 5600 60  0000 C CNN
+	1    7850 5600
+	0    1    1    0   
+$EndComp
+Text HLabel 8650 5300 0    60   Output ~ 0
+TDR_LED1
+Text HLabel 8650 5500 0    60   Output ~ 0
+TDR_LED2
+NoConn ~ 1850 3000
+NoConn ~ 1850 3700
+NoConn ~ 1850 3800
+NoConn ~ 1850 4500
+NoConn ~ 1850 4600
+NoConn ~ 1850 4700
+NoConn ~ 1850 4800
+NoConn ~ 1850 4900
+NoConn ~ 1850 5000
+NoConn ~ 1850 5100
+NoConn ~ 1850 5200
+NoConn ~ 8800 4400
+NoConn ~ 8800 3000
+NoConn ~ 8800 3100
+NoConn ~ 8800 1600
+NoConn ~ 8800 1500
+NoConn ~ 8800 1100
+NoConn ~ 8800 1000
+NoConn ~ 8800 800 
+$Comp
+L TXB0108DQS U13
+U 1 1 54AD3E44
+P 3200 7500
+F 0 "U13" H 3200 7450 60  0000 C CNN
+F 1 "TXB0108DQS" H 3200 7350 60  0000 C CNN
+F 2 "azonenberg:DFN_20_0.4MM_2x4MM" H 3200 7500 60  0001 C CNN
+F 3 "" H 3200 7500 60  0000 C CNN
+	1    3200 7500
+	-1   0    0    -1  
+$EndComp
+Text HLabel 4000 6300 2    60   Input ~ 0
+1V8
+Wire Wire Line
+	2450 6300 2550 6300
+Text HLabel 2550 7400 0    60   Input ~ 0
+GND
+Wire Wire Line
+	4000 7400 3800 7400
+Text HLabel 2450 6300 0    60   Input ~ 0
+2V5
+Wire Wire Line
+	4000 6300 3800 6300
+Wire Wire Line
+	2000 6600 2550 6600
+Wire Wire Line
+	2000 7000 2550 7000
+$Comp
+L TXB0108DQS U19
+U 1 1 54AD4BBB
+P 6000 5600
+F 0 "U19" H 6000 5550 60  0000 C CNN
+F 1 "TXB0108DQS" H 6000 5450 60  0000 C CNN
+F 2 "azonenberg:DFN_20_0.4MM_2x4MM" H 6000 5600 60  0001 C CNN
+F 3 "" H 6000 5600 60  0000 C CNN
+	1    6000 5600
+	-1   0    0    -1  
+$EndComp
+Text Label 4000 6500 0    60   ~ 0
+CH1_SPI_MOSI_1V8
+Wire Wire Line
+	4000 6500 3800 6500
+Text Label 4000 6600 0    60   ~ 0
+CH1_SPI_MISO_1V8
+Text Label 4000 6700 0    60   ~ 0
+CH1_SPI_SCK_1V8
+Text Label 4000 6800 0    60   ~ 0
+CH1_SPI_CS_N_1V8
+Text Label 4000 6900 0    60   ~ 0
+CH2_SPI_MOSI_1V8
+Text Label 4000 7000 0    60   ~ 0
+CH2_SPI_MISO_1V8
+Text Label 4000 7100 0    60   ~ 0
+CH2_SPI_SCK_1V8
+Text Label 4000 7200 0    60   ~ 0
+CH2_SPI_CS_N_1V8
+Wire Wire Line
+	4000 6600 3800 6600
+Wire Wire Line
+	4000 6800 3800 6800
+Wire Wire Line
+	3800 6700 4000 6700
+Wire Wire Line
+	4000 6900 3800 6900
+Wire Wire Line
+	3800 7000 4000 7000
+Wire Wire Line
+	4000 7100 3800 7100
+Wire Wire Line
+	3800 7200 4000 7200
+Text Label 4000 7400 0    60   ~ 0
+1V8
+Text Label 8650 2200 2    60   ~ 0
+CH1_SPI_MOSI_1V8
+Text Label 8650 2400 2    60   ~ 0
+CH1_SPI_MISO_1V8
+Text Label 8650 2100 2    60   ~ 0
+CH1_SPI_SCK_1V8
+Text Label 8650 2300 2    60   ~ 0
+CH1_SPI_CS_N_1V8
+Text Label 8650 1800 2    60   ~ 0
+CH2_SPI_MOSI_1V8
+Text Label 8650 1400 2    60   ~ 0
+CH2_SPI_MISO_1V8
+Text Label 8650 1200 2    60   ~ 0
+CH2_SPI_SCK_1V8
+Text Label 8650 900  2    60   ~ 0
+CH2_SPI_CS_N_1V8
+Wire Wire Line
+	6800 5500 6600 5500
+Wire Wire Line
+	6800 4400 6600 4400
+Text Label 6800 4700 0    60   ~ 0
+CH3_SPI_MOSI_1V8
+Wire Wire Line
+	6800 4600 6600 4600
+Text Label 6800 4600 0    60   ~ 0
+CH3_SPI_MISO_1V8
+Text Label 6800 4800 0    60   ~ 0
+CH3_SPI_SCK_1V8
+Text Label 6800 4900 0    60   ~ 0
+CH3_SPI_CS_N_1V8
+Text Label 6800 5100 0    60   ~ 0
+CH4_SPI_MOSI_1V8
+Text Label 6800 5000 0    60   ~ 0
+CH4_SPI_MISO_1V8
+Text Label 6800 5200 0    60   ~ 0
+CH4_SPI_SCK_1V8
+Text Label 6800 5300 0    60   ~ 0
+CH4_SPI_CS_N_1V8
+Wire Wire Line
+	6800 4700 6600 4700
+Wire Wire Line
+	6800 4900 6600 4900
+Wire Wire Line
+	6600 4800 6800 4800
+Wire Wire Line
+	6800 5000 6600 5000
+Wire Wire Line
+	6600 5100 6800 5100
+Wire Wire Line
+	6800 5200 6600 5200
+Wire Wire Line
+	6600 5300 6800 5300
+Text Label 6800 5500 0    60   ~ 0
+1V8
+Wire Wire Line
+	4800 5000 5350 5000
+Wire Wire Line
+	5350 4600 4800 4600
+Text Label 5350 4400 2    60   ~ 0
+2V5
+Text Label 6800 4400 0    60   ~ 0
+1V8
+Text Label 5350 5500 2    60   ~ 0
+GND
+$Comp
+L C C173
+U 1 1 54AD5B67
+P 5350 6600
+F 0 "C173" H 5400 6700 50  0000 L CNN
+F 1 "0.1 uF" H 5400 6500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 5350 6600 60  0001 C CNN
+F 3 "" H 5350 6600 60  0000 C CNN
+	1    5350 6600
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C174
+U 1 1 54AD5BB0
+P 5650 6600
+F 0 "C174" H 5700 6700 50  0000 L CNN
+F 1 "0.1 uF" H 5700 6500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 5650 6600 60  0001 C CNN
+F 3 "" H 5650 6600 60  0000 C CNN
+	1    5650 6600
+	1    0    0    -1  
+$EndComp
+Text Label 5350 6400 2    60   ~ 0
+1V8
+Wire Wire Line
+	5350 6400 5650 6400
+Text Label 5350 6800 2    60   ~ 0
+GND
+Wire Wire Line
+	5350 6800 6350 6800
+$Comp
+L C C175
+U 1 1 54AD5CCA
+P 6000 6600
+F 0 "C175" H 6050 6700 50  0000 L CNN
+F 1 "0.1 uF" H 6050 6500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 6000 6600 60  0001 C CNN
+F 3 "" H 6000 6600 60  0000 C CNN
+	1    6000 6600
+	1    0    0    -1  
+$EndComp
+Connection ~ 5650 6800
+Text Label 6000 6400 2    60   ~ 0
+2V5
+$Comp
+L C C176
+U 1 1 54AD5D6A
+P 6350 6600
+F 0 "C176" H 6400 6700 50  0000 L CNN
+F 1 "0.1 uF" H 6400 6500 50  0000 L CNN
+F 2 "azonenberg:EIA_0402_CAP_NOSILK" H 6350 6600 60  0001 C CNN
+F 3 "" H 6350 6600 60  0000 C CNN
+	1    6350 6600
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	6350 6400 6000 6400
+Connection ~ 6000 6800
+Text Label 8650 4800 2    60   ~ 0
+CH3_SPI_MOSI_1V8
+Text Label 8650 5000 2    60   ~ 0
+CH3_SPI_MISO_1V8
+Text Label 8650 4200 2    60   ~ 0
+CH3_SPI_SCK_1V8
+Text Label 8650 4700 2    60   ~ 0
+CH3_SPI_CS_N_1V8
+Text Label 8650 3700 2    60   ~ 0
+CH4_SPI_MOSI_1V8
+Text Label 8650 3800 2    60   ~ 0
+CH4_SPI_MISO_1V8
+Text Label 8650 2800 2    60   ~ 0
+CH4_SPI_SCK_1V8
+Text Label 8650 2700 2    60   ~ 0
+CH4_SPI_CS_N_1V8
+Wire Wire Line
+	8650 2100 8800 2100
+Wire Wire Line
+	8650 1400 8800 1400
+Wire Wire Line
+	1700 900  1850 900 
+Wire Wire Line
+	1850 1000 1700 1000
+NoConn ~ 1850 1900
+NoConn ~ 1850 2000
+Wire Wire Line
+	8650 5100 8800 5100
+Text Label 8600 5800 2    60   ~ 0
+DAC_SPI_MISO_TERM
+Connection ~ 8600 5600
+Wire Wire Line
+	8600 5600 8600 5800
+NoConn ~ 8800 4900
+Wire Wire Line
+	8650 5000 8800 5000
+Wire Wire Line
+	8800 4700 8650 4700
+NoConn ~ 8800 2600
+NoConn ~ 8800 3200
+Wire Wire Line
+	8650 2800 8800 2800
+NoConn ~ 8800 3500
+NoConn ~ 8800 3600
+Wire Wire Line
+	8650 3700 8800 3700
+NoConn ~ 8800 3300
+NoConn ~ 8800 3400
+NoConn ~ 8800 3900
+NoConn ~ 8800 4000
+NoConn ~ 8800 4100
+NoConn ~ 8800 2500
+NoConn ~ 8800 4300
+NoConn ~ 8800 1900
+NoConn ~ 8800 2000
+Wire Wire Line
+	8650 5300 8800 5300
+Wire Wire Line
+	8650 5500 8800 5500
+$Comp
+L XC7KxT-FBG484 U20
+U 8 1 54B0C6C5
+P 9000 5700
+F 0 "U20" H 9000 5600 60  0000 L CNN
+F 1 "XC7K70T-1FBG484" H 10100 5600 60  0000 R CNN
+F 2 "azonenberg:BGA_484_22x22_FULLARRAY_1MM" H 9000 5400 60  0001 C CNN
+F 3 "" H 9000 5400 60  0000 C CNN
+	8    9000 5700
+	1    0    0    -1  
+$EndComp
+NoConn ~ 8800 2900
+$EndSCHEMATC
