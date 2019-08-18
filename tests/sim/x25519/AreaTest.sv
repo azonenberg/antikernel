@@ -24,12 +24,11 @@ module AreaTest(
 		.probe_out5(i)
 	);
 
-	X25519_MultPass dut(
+	X25519_Mult dut(
 		.clk(clk),
 		.en(en),
 		.a(a),
 		.b(b),
-		.i(i),
 		.out_valid(add_valid),
 		.out(add_out)
 	);
