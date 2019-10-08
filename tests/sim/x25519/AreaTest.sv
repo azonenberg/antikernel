@@ -1,36 +1,51 @@
 module AreaTest(
-	input wire clk
+	input wire clk_200mhz_p,
+	input wire clk_200mhz_n
 );
 
-	wire[263:0] a;
-	wire[263:0] b;
-	wire		en;
-
-	wire[4:0]	i;
-
-	wire[263:0]	add_out;
-	wire		add_valid;
-
-	vio_0 vio(
-		.clk(clk),
-		.probe_in0(add_out[255:0]),
-		.probe_in1(add_out[263:256]),
-		.probe_in2(add_valid),
-		.probe_out0(a[255:0]),
-		.probe_out1(a[263:256]),
-		.probe_out2(b[255:0]),
-		.probe_out3(b[263:256]),
-		.probe_out4(en),
-		.probe_out5(i)
+	wire		clk_200mhz;
+	IBUFGDS ibuf(
+		.I(clk_200mhz_p),
+		.IB(clk_200mhz_n),
+		.O(clk_200mhz)
 	);
 
-	X25519_Mult dut(
+	wire	clk;
+	clk_wiz_0 pll(
+		.clk_in1(clk_200mhz),
+		.clk_out1(clk)
+		);
+
+	wire[255:0] work_in;
+	wire[255:0] e;
+	logic		en = 0;
+	wire[255:0]	out;
+	wire		out_valid;
+
+	wire		toggle;
+	vio_0 vio(
+		.clk(clk),
+		.probe_in0(out),
+		.probe_in1(out_valid),
+		.probe_out0(work_in),
+		.probe_out1(e),
+		.probe_out2(toggle)
+	);
+
+	logic	toggle_ff = 0;
+	always_ff @(posedge clk) begin
+		toggle_ff	<= toggle;
+
+		en 			<= (toggle != toggle_ff);
+	end
+
+	X25519_ScalarMult dut(
 		.clk(clk),
 		.en(en),
-		.a(a),
-		.b(b),
-		.out_valid(add_valid),
-		.out(add_out)
+		.work_in(work_in),
+		.e(e),
+		.out_valid(out_valid),
+		.work_out(out)
 	);
 
 endmodule

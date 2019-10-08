@@ -31,8 +31,7 @@ module TestMainLoop();
 	wire			out_valid;
 	wire[255:0]		work_out;
 
-	//actually the whole crypto_scalarmult, need to rename it!
-	X25519_MainLoop dut(
+	X25519_ScalarMult dut(
 		.clk(clk),
 		.en(en),
 		.work_in(work_in),
@@ -54,14 +53,14 @@ module TestMainLoop();
 			0: begin
 				en			<= 1;
 
-				work_in		<= 256'h873d418211b4c6b2d4e9175d5a58b7329a9f635a8de8f8c246fbabcdecff73c6;
-				e			<= 256'h5c21740e549bcdab5e580525a3310d66c9332e76e71b547ce3f2ba294a516960;
+				e			<= 256'h4efd154fe4e2b3365c3bb5be55aa21ac6cfa4ebc3d7938984eb51bf8f87f1a0b;
+				work_in		<= 256'ha98249329ef0af94d3047370a21a2b8605cb775f344de032e8ca13a429231ce1;
 				state		<= 1;
 			end
 
 			1: begin
 				if(out_valid) begin
-					if(work_out !== 256'h394d5f49ab5a11eb88e82e70019dfbfb2d61fbad01e37c0345ff1129c090c3e5) begin
+					if(work_out !== 256'h16a5809b6050c51eb0b3b00ed972c12e22bc8cb71ac00f99f30c44395bdf3f85) begin
 						$display("FAIL: work_out mismatch");
 						$finish;
 					end
