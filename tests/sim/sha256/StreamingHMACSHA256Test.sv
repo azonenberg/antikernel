@@ -57,10 +57,14 @@ module StreamingHMACSHA256Test();
 	wire			hash_valid;
 	wire[255:0]		hash;
 
-	/*
-	StreamingSHA256 dut(
+	wire			ready;
+
+	StreamingHMACSHA256 dut(
 		.clk(clk),
+		.key(key),
+		.key_update(key_update),
 		.start(start),
+		.ready(ready),
 		.update(update),
 		.data_in(data_in),
 		.bytes_valid(bytes_valid),
@@ -68,7 +72,6 @@ module StreamingHMACSHA256Test();
 		.hash_valid(hash_valid),
 		.hash(hash)
 	);
-	*/
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Test inputs
@@ -92,16 +95,18 @@ module StreamingHMACSHA256Test();
 				state		<= 1;
 
 				key_update	<= 1;
-				key			<= {160'h0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b, 352'h0 };
+				key			<= {160'h0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b, 352'h0};
 
 				$display("RFC 4231 Test Vector #1: ");
 			end
 
 			1: begin
-				update		<= 1;
-				data_in		<= {"Hi T"};
-				bytes_valid	<= 4;
-				state		<= 2;
+				if(ready) begin
+					update		<= 1;
+					data_in		<= {"Hi T"};
+					bytes_valid	<= 4;
+					state		<= 2;
+				end
 			end
 
 			2: begin
