@@ -126,6 +126,57 @@ module StreamingHMACSHA256Test();
 					if(hash == 256'hb0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7) begin
 						$display("PASS");
 						state	<= 5;
+
+						//"what do ya want for nothing?", "Jefe" -> 5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843
+						//RFC4231 test vector #2
+						start		<= 1;
+						key_update	<= 1;
+						count		<= 0;
+						key			<= { "Jefe", 480'h0 };
+
+						$display("RFC 4231 Test Vector #2: ");
+					end
+					else begin
+						$display("FAIL");
+						$finish;
+					end
+				end
+			end
+
+			5: begin
+				if(ready)
+					state	<= 6;
+			end
+
+			6: begin
+				count		<= count + 1;
+				update		<= 1;
+				bytes_valid	<= 4;
+
+				case(count)
+					0: data_in	<= "what";
+					1: data_in <= " do ";
+					2: data_in <= "ya w";
+					3: data_in <= "ant ";
+					4: data_in <= "for ";
+					5: data_in <= "noth";
+					6: begin
+						data_in <= "ing?";
+						state	<= 7;
+					end
+				endcase
+			end
+
+			7: begin
+				finalize	<= 1;
+				state		<= 8;
+			end
+
+			8: begin
+				if(hash_valid) begin
+					if(hash == 256'h5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843) begin
+						$display("PASS");
+						state	<= 9;
 					end
 					else begin
 						$display("FAIL");
