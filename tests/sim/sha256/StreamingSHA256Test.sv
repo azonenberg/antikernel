@@ -352,8 +352,10 @@ module StreamingSHA256Test();
 
 			22: begin
 				count2		<= count2 + 1;
-				if(count2 == 50)
-					state		<= 23;
+				if(count2 == 50) begin
+					count	<= 14;
+					state	<= 23;
+				end
 			end
 
 			23: begin
