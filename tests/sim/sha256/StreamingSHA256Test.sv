@@ -70,6 +70,7 @@ module StreamingSHA256Test();
 
 	logic[7:0] state = 0;
 	logic[7:0] count = 0;
+	logic[7:0] count2 = 0;
 
 	always_ff @(posedge clk) begin
 
@@ -321,7 +322,60 @@ module StreamingSHA256Test();
 				if(hash_valid) begin
 					if(hash == 256'h1581baebc5f9dcfd89c658b3c3303203fc0e2f93e3f9e0b593d8b2b8112c6eda) begin
 						$display("PASS");
+
+						//"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" ->
+						//b6ac3cc10386331c765f04f041c147d0f278f2aed8eaa021e2d0057fc6f6ff9e
+						//2x full block of content, then third block with padding+length
+						$display("Hash 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA':");
+						start	<= 1;
 						state	<= 21;
+						count	<= 0;
+					end
+					else begin
+						$display("FAIL");
+						$finish;
+					end
+				end
+			end
+
+			21: begin
+				update		<= 1;
+				data_in		<= "AAAA";
+				bytes_valid	<= 4;
+				count		<= count + 1;
+
+				if(count == 13) begin
+					state	<= 22;
+					count2	<= 0;
+				end
+			end
+
+			22: begin
+				count2		<= count2 + 1;
+				if(count2 == 50)
+					state		<= 23;
+			end
+
+			23: begin
+				update		<= 1;
+				data_in		<= "AAAA";
+				bytes_valid	<= 4;
+				count		<= count + 1;
+
+				if(count == 31)
+					state	<= 24;
+			end
+
+			24: begin
+				finalize	<= 1;
+				state		<= 25;
+			end
+
+			25: begin
+				if(hash_valid) begin
+					if(hash == 256'hb6ac3cc10386331c765f04f041c147d0f278f2aed8eaa021e2d0057fc6f6ff9e) begin
+						$display("PASS");
+						$finish;
 					end
 					else begin
 						$display("FAIL");
